@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
+import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
+import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,153 +14,307 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
   bool isLoading = false;
+  bool isSignUp = true; // Default to sign up mode
 
   @override
   void dispose() {
     nameController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    // Show loading state
-    setState(() {
-      isLoading = true;
-    });
+  void _handleAuth() {
+    if (isSignUp) {
+      if (nameController.text.isEmpty || phoneController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all fields')),
+        );
+        return;
+      }
+      context.read<AuthBloc>().add(
+            AuthRegisterRequested(
+              nameController.text,
+              phoneController.text,
+            ),
+          );
+    } else {
+      if (phoneController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter your phone number')),
+        );
+        return;
+      }
+      context.read<AuthBloc>().add(
+            AuthLoginRequested(phoneController.text),
+          );
+    }
+  }
 
-    // Save the login status
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    
-    // Save the user name if needed
-    if (nameController.text.isNotEmpty) {
-      await prefs.setString('userName', nameController.text);
-    }
-    
-    // Simulate a delay for loading
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Navigate to home screen
-    if (mounted) {
-      context.go('/');
-    }
+  void _toggleAuthMode() {
+    setState(() {
+      isSignUp = !isSignUp;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF1F2), // Light pink background
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - 
-                  MediaQuery.of(context).padding.top - 
-                  MediaQuery.of(context).padding.bottom,
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-                    // App name and motto
-                    Text(
-                      'LOTTO',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+    final size = MediaQuery.of(context).size;
+
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                backgroundColor: theme.primaryColor,
+                duration: const Duration(seconds: 1),
+                content: Text(state.message)),
+          );
+          context.go('/'); // Navigate to home page
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("User already exists or invalid number")),
+          );
+        }
+      },
+      child: Scaffold(
+          backgroundColor:
+              const Color(0xFFFFF1F2), // Keeping the light pink background
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width > 600 ? size.width * 0.15 : 32.0,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 500, // Maximum width for larger screens
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'How Lucky Your Day Is',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 60),
-                    
-                    // App logo
-                    SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: Icon(
-                        Icons.auto_awesome,
-                        size: 80,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 60),
-                    
-                    // Name input field
-                    Text(
-                      'What We Call You',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: TextField(
-                        controller: nameController,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          hintText: 'Enter Here',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // App branding with subtle animation - KEEPING THIS IN THE SAME POSITION
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0.8, end: 1.0),
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Transform.scale(
+                              scale: value,
+                              child: child,
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              SizedBox(height: size.height * 0.02),
+                              Text(
+                                'LOTTO',
+                                style: TextStyle(
+                                  fontSize: size.width > 600 ? 80 : 72,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'How Lucky Your Day Is',
+                                style: TextStyle(
+                                  fontSize: size.width > 600 ? 18 : 16,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0.5,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // Login button
-                    ElevatedButton(
-                      onPressed: isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(24),
-                        disabledBackgroundColor: theme.primaryColor.withOpacity(0.6),
-                      ),
-                      child: isLoading
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
+
+                        // Responsive spacing
+                        SizedBox(height: size.height * 0.08),
+
+                        // Form title
+                        Text(
+                          isSignUp
+                              ? 'Sign Up to Continue'
+                              : 'Sign In to Continue',
+                          style: TextStyle(
+                            fontSize: size.width > 600 ? 18 : 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        SizedBox(height: size.height * 0.025),
+
+                        // Dynamic form fields based on mode with maintained animation
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedCrossFade(
+                                firstChild: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.03),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  margin: const EdgeInsets.only(bottom: 15),
+                                  child: TextField(
+                                    controller: nameController,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Name or username',
+                                      hintStyle: TextStyle(
+                                        color: Colors.black38,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                secondChild: const SizedBox.shrink(),
+                                crossFadeState: isSignUp
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
+                                duration: const Duration(milliseconds: 300),
                               ),
-                            )
-                          : Icon(
-                              Icons.arrow_forward,
-                              size: 28,
+                              // Phone number field - Always visible
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.03),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: TextField(
+                                  controller: phoneController,
+                                  textAlign: TextAlign.center,
+                                  keyboardType: TextInputType.phone,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Mobile number',
+                                    hintStyle: TextStyle(
+                                      color: Colors.black38,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Toggle button below text fields
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: _toggleAuthMode,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 16.0),
+                              child: Text(
+                                isSignUp
+                                    ? 'Sign In Instead'
+                                    : 'Sign Up Instead',
+                                style: TextStyle(
+                                  color: theme.primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
+                          ),
+                        ),
+
+                        // KEPT THE SAME SPACING
+                        SizedBox(height: size.height * 0.04),
+
+                        // Elegant button with animation - Same as original
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.primaryColor
+                                    .withOpacity(isLoading ? 0.2 : 0.3),
+                                blurRadius: 20,
+                                spreadRadius: 3,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: BlocBuilder<AuthBloc, AuthState>(
+                            builder: (context, state) {
+                              return ElevatedButton(
+                                onPressed:
+                                    state is AuthLoading ? null : _handleAuth,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.all(
+                                      size.width > 600 ? 32 : 28),
+                                  elevation: 0,
+                                  disabledBackgroundColor:
+                                      theme.primaryColor.withOpacity(0.7),
+                                ),
+                                child: state is AuthLoading
+                                    ? SizedBox(
+                                        width: size.width > 600 ? 32 : 28,
+                                        height: size.width > 600 ? 32 : 28,
+                                        child: const CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: size.width > 600 ? 36 : 32,
+                                      ),
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: size.height * 0.05),
+                      ],
                     ),
-                    const SizedBox(height: 30),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
+          )),
     );
   }
 }

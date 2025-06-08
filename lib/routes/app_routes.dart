@@ -12,6 +12,5 @@ class RouteNames {
   static const String splashScreen = 'splashScreen';
   static const String settings = 'settings';
   static const String claimScreen = 'claimScreen';
-
   // Add more route names as needed
 }

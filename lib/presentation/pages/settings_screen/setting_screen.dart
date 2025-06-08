@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -18,7 +19,7 @@ class SettingsScreen extends StatelessWidget {
           onPressed: () => context.go('/'),
         ),
         title: Text(
-          'Profile',
+          'profile'.tr(),
           style: theme.textTheme.titleLarge?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -30,68 +31,150 @@ class SettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSection(
-              'Profile',
+              'profile'.tr(),
               [
                 _buildListTile(
-                  'Email',
+                  'email'.tr(),
                   Icons.email_outlined,
                   subtitle: 'vishnulalvm007@gmail.com',
                   showArrow: false,
                 ),
                 _buildListTile(
-                  'Google',
+                  'google'.tr(),
                   Icons.g_mobiledata,
-                  trailing:
-                      Text('Connected', style: TextStyle(color: Colors.grey)),
+                  trailing: Text(
+                    'connected'.tr(),
+                    style: TextStyle(color: Colors.grey),
+                  ),
                   showArrow: false,
                 ),
               ],
               theme,
             ),
             _buildSection(
-              'About',
+              'about'.tr(),
               [
-                _buildListTile('Terms of Use', Icons.description_outlined),
-                _buildListTile('Privacy Policy', Icons.privacy_tip_outlined),
+                _buildListTile('terms_of_use'.tr(), Icons.description_outlined),
+                _buildListTile('privacy_policy'.tr(), Icons.privacy_tip_outlined),
                 _buildListTile(
-                  'Check for updates',
+                  'check_for_updates'.tr(),
                   Icons.update,
-                  trailing:
-                      Text('1.0.8(39)', style: TextStyle(color: Colors.grey)),
+                  trailing: Text(
+                    '1.0.8(39)',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               ],
               theme,
             ),
             _buildSection(
-              'App',
+              'app'.tr(),
               [
                 _buildListTile(
-                  'Color Scheme',
+                  'color_scheme'.tr(),
                   Icons.palette_outlined,
-                  trailing:
-                      Text('System', style: TextStyle(color: Colors.grey)),
+                  trailing: Text(
+                    'system'.tr(),
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 _buildListTile(
-                  'App Language',
+                  'app_language'.tr(),
                   Icons.language,
-                  trailing:
-                      Text('English', style: TextStyle(color: Colors.grey)),
+                  trailing: Text(
+                    _getCurrentLanguageName(context),
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  onTap: () => _showLanguageDialog(context),
                 ),
               ],
               theme,
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child:
-                  _buildListTile('Contact us', Icons.contact_support_outlined),
+              child: _buildListTile(
+                'contact_us'.tr(),
+                Icons.contact_support_outlined,
+              ),
             ),
-            _buildActionButton('Log out', Icons.logout,
-                onTap: () {}, isDestructive: false, theme: theme),
-            _buildActionButton('Delete account', Icons.delete_forever,
-                onTap: () {}, isDestructive: true, theme: theme),
+            _buildActionButton(
+              'log_out'.tr(),
+              Icons.logout,
+              onTap: () {},
+              isDestructive: false,
+              theme: theme,
+            ),
+            _buildActionButton(
+              'delete_account'.tr(),
+              Icons.delete_forever,
+              onTap: () {},
+              isDestructive: true,
+              theme: theme,
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  String _getCurrentLanguageName(BuildContext context) {
+    final currentLocale = context.locale;
+    switch (currentLocale.languageCode) {
+      case 'en':
+        return 'english'.tr();
+      case 'ml':
+        return 'malayalam'.tr();
+      case 'hi':
+        return 'hindi'.tr();
+      default:
+        return 'english'.tr();
+    }
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('app_language'.tr()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildLanguageOption(
+                context,
+                'english'.tr(),
+                const Locale('en'),
+              ),
+              _buildLanguageOption(
+                context,
+                'malayalam'.tr(),
+                const Locale('ml'),
+              ),
+              _buildLanguageOption(
+                context,
+                'hindi'.tr(),
+                const Locale('hi'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext context,
+    String languageName,
+    Locale locale,
+  ) {
+    final isSelected = context.locale == locale;
+    return ListTile(
+      title: Text(languageName),
+      trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+      onTap: () {
+        context.setLocale(locale);
+        Navigator.of(context).pop();
+      },
     );
   }
 
@@ -128,14 +211,15 @@ class SettingsScreen extends StatelessWidget {
     String? subtitle,
     Widget? trailing,
     bool showArrow = true,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: trailing ??
-          (showArrow ? Icon(Icons.arrow_forward_ios, size: 16) : null),
-      onTap: () {},
+          (showArrow ? const Icon(Icons.arrow_forward_ios, size: 16) : null),
+      onTap: onTap ?? () {},
     );
   }
 

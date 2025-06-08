@@ -13,6 +13,21 @@ class BarcodeScannerScreen extends StatefulWidget {
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool isFlashOn = false;
+  DateTime selectedDate = DateTime.now();
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,17 +52,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
           ),
           onPressed: () => context.go('/'), // Using GoRouter
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.search,
-              color: theme.appBarTheme.actionsIconTheme?.color,
-            ),
-            onPressed: () {
-              // Implement search functionality
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -71,13 +75,31 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: theme.primaryColor, // Instead of Colors.white
+                      color: theme.primaryColor,
                       width: 2.0,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   width: MediaQuery.of(context).size.width * 0.8,
                   height: 200,
+                ),
+                // Text in the center of the scanner
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Scan Barcode in Lottery for Get your Result',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -88,6 +110,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Date chooser button
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: _buildDateChooserButton(context, theme),
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -112,16 +139,41 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   ],
                 ),
                 SizedBox(height: 20),
-                Text(
-                  'Scan Barcode in Lottery for Get your Result',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDateChooserButton(BuildContext context, ThemeData theme) {
+    return InkWell(
+      onTap: () => _selectDate(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        decoration: BoxDecoration(
+          color: theme.primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today,
+              color: theme.primaryColor,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.primaryColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -175,34 +227,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   }
 
   void _handleScannedBarcode(String barcodeValue) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final theme = Theme.of(context);
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Text(
-            'Barcode Found',
-            style: theme.textTheme.titleLarge,
-          ),
-          content: Text(
-            'Barcode Value: $barcodeValue',
-            style: theme.textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'OK',
-                style: TextStyle(color: theme.primaryColor),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    context.push('/result/scratch', extra: barcodeValue);
   }
 
   @override

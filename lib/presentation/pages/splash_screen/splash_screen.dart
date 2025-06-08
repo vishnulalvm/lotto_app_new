@@ -45,13 +45,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       } else {
         // Navigate to login screen if not logged in
         if (mounted) {
-          context.go('/login'); // Changed from '/loginScreen' to '/login'
+          context.go('/login');
         }
       }
     } catch (e) {
       // If there's an error, navigate to login screen as fallback
       if (mounted) {
-        context.go('/login'); // Changed from '/loginScreen' to '/login'
+        context.go('/login');
       }
     }
   }
@@ -75,11 +75,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App logo
-                Icon(
-                  Icons.auto_awesome,
-                  size: 100,
-                  color: theme.primaryColor,
+                // Custom app logo from assets
+                Image.asset(
+                  'assets/icons/logo.png',
+                  width: 150,
+                  height: 150,
                 ),
                 const SizedBox(height: 24),
                 Text(

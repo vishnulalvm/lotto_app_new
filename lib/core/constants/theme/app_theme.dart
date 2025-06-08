@@ -1,4 +1,3 @@
-// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -9,11 +8,13 @@ class AppTheme {
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.black87, fontSize: 16),
           bodyMedium: TextStyle(color: Colors.black87, fontSize: 14),
-          titleLarge: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-          titleMedium: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500),
+          titleLarge: TextStyle(
+              color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+          titleMedium: TextStyle(
+              color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500),
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
+          backgroundColor: Color(0xFFFFF1F2),
           elevation: 0,
           iconTheme: IconThemeData(color: Colors.black),
           actionsIconTheme: IconThemeData(color: Colors.black),
@@ -23,7 +24,8 @@ class AppTheme {
             fontWeight: FontWeight.bold,
           ),
         ),
-        cardTheme: CardTheme(
+        // Corrected: Use CardThemeData instead of CardTheme
+        cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -42,44 +44,56 @@ class AppTheme {
         ),
       );
 
-  static ThemeData get darkTheme => ThemeData.dark().copyWith(
-    
-        primaryColor: Colors.red,
-        scaffoldBackgroundColor: Colors.grey[900],
+  static ThemeData get darkTheme => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        primaryColor:
+            const Color(0xFFFF5252), // Vibrant red (Material Red A200)
+        // Rich dark background with subtle red warmth - vibrant but comfortable
+        scaffoldBackgroundColor:
+            const Color(0xFF121212), // Material Design dark surface
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white, fontSize: 16),
-          bodyMedium: TextStyle(color: Colors.white70, fontSize: 14),
-          titleLarge: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          titleMedium: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+          bodyLarge: TextStyle(
+              color: Colors.white, fontSize: 16), // Pure white for vibrancy
+          bodyMedium:
+              TextStyle(color: Color(0xFFE0E0E0), fontSize: 14), // Light grey
+          titleLarge: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold), // Pure white
+          titleMedium: TextStyle(
+              color: Color(0xFFE0E0E0),
+              fontSize: 16,
+              fontWeight: FontWeight.w500), // Light grey
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
+          backgroundColor: Color(0xFF121212), // Same as scaffold background
           elevation: 0,
           iconTheme: IconThemeData(color: Colors.white),
           actionsIconTheme: IconThemeData(color: Colors.white),
           titleTextStyle: TextStyle(
             fontSize: 24,
-            color: Colors.red,
+            color: Color(0xFFFF5252), // Vibrant red
             fontWeight: FontWeight.bold,
           ),
         ),
-        cardTheme: CardTheme(
-          color: Colors.grey[900],
+        // Corrected: Use CardThemeData instead of CardTheme
+        cardTheme: CardThemeData(
+          color: const Color(0xFF1E1E1E), // Rich dark grey cards
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        dividerTheme: DividerThemeData(
-          color: Colors.grey[600],
-        ),  
+        dividerTheme: const DividerThemeData(
+          color: Color(0xFF424242), // Medium grey for good contrast
+        ),
         iconTheme: const IconThemeData(
-          color: Colors.black87,
+          color: Color(0xFFE0E0E0), // Light grey for icons
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.red,
+          backgroundColor: Color(0xFFFF5252), // Vibrant red
           foregroundColor: Colors.white,
         ),
       );
-      
 }
