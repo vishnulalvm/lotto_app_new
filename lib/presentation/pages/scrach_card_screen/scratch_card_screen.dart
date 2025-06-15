@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_event.dart';
@@ -30,12 +31,15 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   // Scratch progress tracking
   double scratchProgress = 0.0;
-  bool _showResult = false;
   bool _showConfetti = false;
+  bool _autoRevealTriggered = false;
   late ConfettiController _confettiController;
 
   // API result data
   TicketCheckResponseModel? _ticketResult;
+
+  // Scratcher key for auto-reveal
+  final GlobalKey<ScratcherState> _scratcherKey = GlobalKey<ScratcherState>();
 
   @override
   void initState() {
@@ -87,14 +91,27 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   void _onScratchUpdate(double progress) {
     setState(() {
       scratchProgress = progress;
-      // Reveal when 50% scratched and we have API results
-      if (progress >= 0.5 && !_showResult && _ticketResult != null) {
-        _showResult = true;
+      // Auto-reveal when 50% scratched and we have API results
+      if (progress >= 0.5 && !_autoRevealTriggered && _ticketResult != null) {
+        _autoRevealTriggered = true;
+        _autoRevealScratchCard();
+      }
+    });
+  }
+
+  void _autoRevealScratchCard() {
+    // Automatically reveal the entire scratch card
+    _scratcherKey.currentState
+        ?.reveal(duration: const Duration(milliseconds: 500));
+
+    // Show result after auto-reveal animation
+    Future.delayed(const Duration(milliseconds: 600), () {
+      setState(() {
         if (_ticketResult!.isWinner) {
           _confettiController.play();
           _showConfetti = true;
         }
-      }
+      });
     });
   }
 
@@ -107,7 +124,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         title: Text(
-          'Prize Result',
+          'prize_result'.tr(),
           style: theme.textTheme.titleLarge?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -183,7 +200,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Unable to Check Ticket',
+              'unable_to_check_ticket'.tr(),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -208,12 +225,12 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
-              child: const Text('Try Again'),
+              child: Text('try_again'.tr()),
             ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => context.go('/'),
-              child: const Text('Go Back'),
+              child: Text('go_back'.tr()),
             ),
           ],
         ),
@@ -282,15 +299,15 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         borderRadius: BorderRadius.circular(16),
         child: Container(
           color: Colors.grey[300],
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
                 Text(
-                  'Checking your ticket...',
-                  style: TextStyle(
+                  'checking_ticket'.tr(),
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -319,19 +336,16 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         ],
       ),
       child: Scratcher(
+        key: _scratcherKey,
         brushSize: 40,
         threshold: 50,
         color: Colors.grey,
+        image: Image.asset('assets/images/scrachcard.png'),
         onChange: (value) => _onScratchUpdate(value / 100),
         onThreshold: () {
-          if (!_showResult) {
-            setState(() {
-              _showResult = true;
-              if (result.isWinner) {
-                _showConfetti = true;
-                _confettiController.play();
-              }
-            });
+          if (!_autoRevealTriggered) {
+            _autoRevealTriggered = true;
+            _autoRevealScratchCard();
           }
         },
         child: ClipRRect(
@@ -361,12 +375,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                         const SizedBox(height: 8),
                         Text(
                           result.isWinner
-                              ? 'Congratulations!'
-                              : 'Better Luck Next Time!',
+                              ? 'congratulations'.tr()
+                              : 'better_luck_next_time'.tr(),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 4),
                         if (result.isWinner) ...[
@@ -383,10 +398,11 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: Colors.white,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ] else ...[
                           Text(
-                            'No Prize',
+                            'no_prize'.tr(),
                             style: theme.textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -395,13 +411,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                           const SizedBox(height: 8),
                         ],
                         Text(
-                          'Ticket: ${widget.ticketData['ticketNumber']}',
+                          '${'ticket'.tr()}: ${widget.ticketData['ticketNumber']}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
                           ),
                         ),
                         Text(
-                          'Draw: ${result.formattedLotteryInfo}',
+                          '${'draw'.tr()}: ${result.formattedLotteryInfo}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
                           ),
@@ -410,6 +426,43 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                     ),
                   ),
                 ),
+                // Scratch instruction overlay (only show when not auto-revealed)
+                if (!_autoRevealTriggered && scratchProgress < 0.1)
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.touch_app,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'scratch_to_reveal'.tr(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -515,14 +568,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
           ),
           Text(
-            'Checking your ticket...',
+            'checking_ticket'.tr(),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Please wait while we verify your lottery ticket.',
+            'please_wait_verifying'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.textTheme.bodySmall?.color,
             ),
@@ -596,7 +649,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
           ] else ...[
             Text(
-              'No Prize Won',
+              'no_prize_won'.tr(),
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[600],
@@ -608,7 +661,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
           // Ticket details
           Text(
-            'Ticket: ${widget.ticketData['ticketNumber']} • ${result.formattedLotteryInfo}',
+            '${'ticket'.tr()}: ${widget.ticketData['ticketNumber']} • ${result.formattedLotteryInfo}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.textTheme.bodySmall?.color,
             ),
@@ -630,14 +683,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.celebration_outlined),
-                  SizedBox(width: 8),
+                  const Icon(Icons.celebration_outlined),
+                  const SizedBox(width: 8),
                   Text(
-                    'Claim Prize',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'claim_prize'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -654,14 +707,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.list_alt_outlined),
-                  SizedBox(width: 8),
+                  const Icon(Icons.list_alt_outlined),
+                  const SizedBox(width: 8),
                   Text(
-                    'See Full Results',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'see_full_results'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -679,14 +732,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.list_alt_outlined),
-                  SizedBox(width: 8),
+                  const Icon(Icons.list_alt_outlined),
+                  const SizedBox(width: 8),
                   Text(
-                    'View Full Results',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'view_full_results'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -702,14 +755,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.home_outlined),
-                  SizedBox(width: 8),
+                  const Icon(Icons.home_outlined),
+                  const SizedBox(width: 8),
                   Text(
-                    'Back to Home',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'back_to_home'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -736,7 +789,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Kerala State Lotteries',
+                  'kerala_state_lotteries'.tr(),
                   style: TextStyle(
                     color: theme.textTheme.bodyMedium?.color,
                     fontWeight: FontWeight.w500,
@@ -756,40 +809,41 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Prize Claim Process'),
+          title: Text('prize_claim_process'.tr()),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Congratulations on winning ${result.formattedPrize}!'),
+              Text(
+                  '${'congratulations_winning'.tr()} ${result.formattedPrize}!'),
               const SizedBox(height: 16),
-              const Text(
-                'To claim your prize:',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                'to_claim_prize'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              const Text('• Visit the nearest District Collectorate'),
-              const Text('• Bring your winning ticket'),
-              const Text('• Carry valid ID proof'),
-              const Text('• Fill the claim form'),
+              Text('• ${'visit_district_collectorate'.tr()}'),
+              Text('• ${'bring_winning_ticket'.tr()}'),
+              Text('• ${'carry_valid_id'.tr()}'),
+              Text('• ${'fill_claim_form'.tr()}'),
               const SizedBox(height: 16),
-              const Text(
-                'For prizes above ₹10,000, bank details are required.',
-                style: TextStyle(fontStyle: FontStyle.italic),
+              Text(
+                'bank_details_required'.tr(),
+                style: const TextStyle(fontStyle: FontStyle.italic),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Got it'),
+              child: Text('got_it'.tr()),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 _launchKeralaLotteryWebsite();
               },
-              child: const Text('Visit Website'),
+              child: Text('visit_website'.tr()),
             ),
           ],
         );
@@ -799,8 +853,17 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   Future<void> _launchKeralaLotteryWebsite() async {
     final Uri url = Uri.parse('https://statelottery.kerala.gov.in/index.php');
-    if (await canLaunchUrl(url)) {
+    try {
       await launchUrl(url);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('website_launch_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
