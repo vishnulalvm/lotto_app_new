@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ClaimScreen extends StatelessWidget {
   const ClaimScreen({super.key});
@@ -43,7 +45,7 @@ class ClaimScreen extends StatelessWidget {
         onPressed: () => context.go('/'),
       ),
       title: Text(
-        'Claim Your Prize',
+        'claim_your_prize'.tr(),
         style: theme.textTheme.titleLarge?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -70,7 +72,7 @@ class ClaimScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Congratulations!',
+              'congratulations'.tr(),
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.primaryColor,
                 fontWeight: FontWeight.bold,
@@ -78,7 +80,7 @@ class ClaimScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Follow these steps to claim your lottery prize',
+              'claim_steps_description'.tr(),
               style: theme.textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),
@@ -91,28 +93,23 @@ class ClaimScreen extends StatelessWidget {
   Widget _buildClaimStepsCard(ThemeData theme) {
     final steps = [
       {
-        'title': 'Verify Your Ticket',
-        'description':
-            'Check your lottery ticket number against the official results on the Kerala Lottery website.',
+        'title': 'verify_ticket'.tr(),
+        'description': 'verify_ticket_description'.tr(),
         'icon': Icons.check_circle,
       },
       {
-        'title': 'Prize Collection Time Frame',
-        'description':
-            'Submit your winning ticket within 30 days of the draw. After 30 days, tickets expire and prizes cannot be claimed.',
+        'title': 'prize_collection_time'.tr(),
+        'description': 'prize_collection_time_description'.tr(),
         'icon': Icons.timer,
       },
       {
-        'title': 'Where to Claim',
-        'description': 'For prizes up to ₹5,000: Claim at any lottery shop\n'
-            'For prizes up to ₹1 Lakh: Claim at district lottery offices\n'
-            'For prizes above ₹1 Lakh: Claim at Directorate of State Lotteries, Thiruvananthapuram',
+        'title': 'where_to_claim'.tr(),
+        'description': 'where_to_claim_description'.tr(),
         'icon': Icons.location_on,
       },
       {
-        'title': 'Tax Deduction',
-        'description':
-            'For prizes above ₹10,000, Income Tax and Surcharge will be deducted at source as per government regulations.',
+        'title': 'tax_deduction'.tr(),
+        'description': 'tax_deduction_description'.tr(),
         'icon': Icons.account_balance,
       }
     ];
@@ -128,7 +125,7 @@ class ClaimScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Claim Process',
+              'claim_process'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -187,11 +184,11 @@ class ClaimScreen extends StatelessWidget {
 
   Widget _buildRequiredDocumentsCard(ThemeData theme) {
     final documents = [
-      'Original winning ticket',
-      'Two passport size photographs',
-      'ID proof (Aadhaar/Voter ID/Driving License)',
-      'PAN Card (for prizes above ₹10,000)',
-      'Bank account details for prize transfer',
+      'original_winning_ticket'.tr(),
+      'two_passport_photos'.tr(),
+      'id_proof'.tr(),
+      'pan_card'.tr(),
+      'bank_account_details'.tr(),
     ];
 
     return Card(
@@ -205,7 +202,7 @@ class ClaimScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Required Documents',
+              'required_documents'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -243,8 +240,18 @@ class ClaimScreen extends StatelessWidget {
           onPressed: () async {
             final url =
                 Uri.parse('https://statelottery.kerala.gov.in/index.php');
-            if (await canLaunchUrl(url)) {
+            try {
               await launchUrl(url);
+            } catch (e) {
+              debugPrint('Could not launch lottery website: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('website_launch_error'.tr()),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
           style: ElevatedButton.styleFrom(
@@ -255,15 +262,29 @@ class ClaimScreen extends StatelessWidget {
             ),
           ),
           icon: const Icon(Icons.language),
-          label: const Text('Visit Kerala Lottery Website'),
+          label: Text('visit_kerala_lottery_website'.tr(),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: Colors.white,
+              )),
         ),
         const SizedBox(height: 12),
         TextButton.icon(
-          onPressed: () => context.push('/contact'),
+          onPressed: () => _showContactSheet(context),
           icon: const Icon(Icons.contact_support),
-          label: const Text('Contact Support'),
+          label: Text('contact_support'.tr()),
         ),
       ],
+    );
+  }
+
+  // Contact Bottom Sheet Implementation
+  void _showContactSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => const ContactBottomSheet(),
     );
   }
 }
