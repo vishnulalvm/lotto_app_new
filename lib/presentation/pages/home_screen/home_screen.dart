@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isExpanded = true;
   bool _isScrollingDown = false;
 
+  @override
   void initState() {
     super.initState();
     _loadLotteryResults();
@@ -690,10 +691,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _buildDateDivider(entry.key, theme),
                     ...entry.value
                         .map((result) => _buildResultCard(result, theme))
-                        .toList(),
+                        ,
                   ],
                 );
-              }).toList(),
+              }),
             ],
           );
         }
@@ -737,8 +738,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       text,
                       style: TextStyle(
                         color: theme.colorScheme.primary,
-                        fontSize: AppResponsive.fontSize(context, 12),
-                        fontWeight: FontWeight.w600,
+                        fontSize: AppResponsive.fontSize(context, 14),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -857,8 +858,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Text(
                     result.formattedWinner,
                     style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 14),
-                      fontWeight: FontWeight.w500,
+                      fontSize: AppResponsive.fontSize(context, 16),
+                      fontWeight: FontWeight.bold,
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
@@ -911,7 +912,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
                       onPressed: () {
-                       context.go('/result-details', extra: result.uniqueId);
+                        context.go('/result-details', extra: result.uniqueId);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.brightness == Brightness.light

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,7 +27,7 @@ class ContactBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Contact Us',
+            'contact_us'.tr(),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -35,29 +36,29 @@ class ContactBottomSheet extends StatelessWidget {
           _buildContactOption(
             context,
             icon: Icons.chat_bubble_outline,
-            title: 'Chat with us',
-            onTap: () => _launchWhatsApp('Hello, I need assistance'),
+            title: 'chat_with_us'.tr(),
+            onTap: () => _launchWhatsApp('hello_assistance'.tr()),
             theme: theme,
           ),
           _buildContactOption(
             context,
             icon: Icons.phone_outlined,
-            title: 'Call us',
+            title: 'call_us'.tr(),
             onTap: () => _makePhoneCall('9876543210'),
             theme: theme,
           ),
           _buildContactOption(
             context,
             icon: Icons.feedback_outlined,
-            title: 'Send Feedback',
-            onTap: () => _launchWhatsApp('I would like to give feedback about the app'),
+            title: 'send_feedback'.tr(),
+            onTap: () => _launchWhatsApp('feedback_message'.tr()),
             theme: theme,
           ),
           _buildContactOption(
             context,
             icon: Icons.error_outline,
-            title: 'Report a Problem',
-            onTap: () => _launchWhatsApp('I would like to report a problem'),
+            title: 'report_problem'.tr(),
+            onTap: () => _launchWhatsApp('report_problem_message'.tr()),
             theme: theme,
           ),
           const SizedBox(height: 24),
@@ -86,8 +87,11 @@ class ContactBottomSheet extends StatelessWidget {
         ),
       ),
       title: Text(title),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: () {
+        Navigator.of(context).pop(); // Close bottom sheet first
+        onTap(); // Then execute the action
+      },
     );
   }
 
@@ -96,14 +100,22 @@ class ContactBottomSheet extends StatelessWidget {
       scheme: 'tel',
       path: phoneNumber,
     );
-    await launchUrl(launchUri);
+    try {
+      await launchUrl(launchUri);
+    } catch (e) {
+      debugPrint('Could not launch phone call: $e');
+    }
   }
 
   Future<void> _launchWhatsApp(String message) async {
     final Uri whatsappUri = Uri.parse(
       'whatsapp://send?phone=+919876543210&text=${Uri.encodeComponent(message)}',
     );
-    await launchUrl(whatsappUri);
+    try {
+      await launchUrl(whatsappUri);
+    } catch (e) {
+      debugPrint('Could not launch WhatsApp: $e');
+    }
   }
 }
 

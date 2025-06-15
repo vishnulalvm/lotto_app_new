@@ -15,8 +15,6 @@ class AuthApiService {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'phone_number': phoneNumber}),
       );
-      print('Response: ${response.body}');
-      print('Status Code: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return UserModel.fromJson(json.decode(response.body));
@@ -38,9 +36,7 @@ class AuthApiService {
           'phone_number': phoneNumber,
         }),
       );
-      print('Response: ${response.body}');
-      print('Status Code: ${response.statusCode}');
-
+      
       if (response.statusCode == 201 || response.statusCode == 200) {
         return UserModel.fromJson(json.decode(response.body));
       } else {

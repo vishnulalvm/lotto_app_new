@@ -1,46 +1,55 @@
 import 'package:lotto_app/data/datasource/api/auth_screen/auth_api_service.dart';
 import 'package:lotto_app/data/models/auth_screen/user_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lotto_app/data/services/user_service.dart';
 
 class AuthRepository {
   final AuthApiService apiService;
+  final UserService userService;
 
-  AuthRepository({required this.apiService});
+  AuthRepository({
+    required this.apiService,
+    required this.userService,
+  });
 
   Future<UserModel> login(String phoneNumber) async {
     final user = await apiService.login(phoneNumber);
-    await _saveUserData(user);
-    await _setLoggedIn(true); // Set login status to true
+    await userService.saveUserData(
+      phoneNumber: user.phoneNumber,
+      name: user.name,
+    );
     return user;
   }
 
   Future<UserModel> register(String name, String phoneNumber) async {
     final user = await apiService.register(name, phoneNumber);
-    await _saveUserData(user);
-    await _setLoggedIn(true); // Set login status to true
+    await userService.saveUserData(
+      phoneNumber: user.phoneNumber,
+      name: user.name,
+    );
     return user;
   }
 
-  Future<void> _saveUserData(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('phone_number', user.phoneNumber);
-    if (user.name != null) {
-      await prefs.setString('user_name', user.name!);
-    }
-  }
-
-  // Add this method to set the login status
-  Future<void> _setLoggedIn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', value);
-  }
-
-  // Optionally add a logout method
+  // Logout method using UserService
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    // You can decide whether to clear other user data or keep it
-    await prefs.remove('phone_number');
-    await prefs.remove('user_name');
+    await userService.clearUserData();
+  }
+
+  // Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    return await userService.isLoggedIn();
+  }
+
+  // Get current user data
+  Future<UserModel?> getCurrentUser() async {
+    final phoneNumber = await userService.getPhoneNumber();
+    final name = await userService.getUserName();
+
+    if (phoneNumber != null) {
+      return UserModel(
+        phoneNumber: phoneNumber,
+        name: name,
+      );
+    }
+    return null;
   }
 }

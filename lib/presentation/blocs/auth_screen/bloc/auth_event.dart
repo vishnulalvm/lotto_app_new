@@ -1,4 +1,3 @@
-// lib/presentation/bloc/auth/auth_event.dart
 abstract class AuthEvent {}
 
 class AuthLoginRequested extends AuthEvent {
@@ -11,3 +10,9 @@ class AuthRegisterRequested extends AuthEvent {
   final String phoneNumber;
   AuthRegisterRequested(this.name, this.phoneNumber);
 }
+
+class AuthLogoutRequested extends AuthEvent {}
+
+class AuthCheckStatus extends AuthEvent {}
+
+// Updated BlocProvider setup
