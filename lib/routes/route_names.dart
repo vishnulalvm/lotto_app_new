@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lotto_app/presentation/pages/lotto_point_screen/lotto_point_screen.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/scratch_card_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/presentation/pages/ad_dialog/ad_dialog.dart';
@@ -82,9 +83,11 @@ class AppRouter {
                 ),
               ),
               GoRoute(
-                path: 'result-details',
-                name: RouteNames.resultDetails,
-                builder: (context, state) => LotteryResultScreen(),
+                path: '/result-details',
+                builder: (context, state) {
+                  final uniqueId = state.extra as String?;
+                  return LotteryResultDetailsScreen(uniqueId: uniqueId ?? "");
+                },
               ),
 
               // Feature screens
@@ -104,10 +107,11 @@ class AppRouter {
                 builder: (context, state) => const LotteryNewsScreen(),
               ),
               GoRoute(
-                path: 'result/scratch',
-                builder: (context, state) => ScratchCardResultScreen(
-                  barcodeValue: state.extra as String,
-                ),
+                path: '/result/scratch',
+                builder: (context, state) {
+                  final ticketData = state.extra as Map<String, dynamic>;
+                  return ScratchCardResultScreen(ticketData: ticketData);
+                },
               ),
               GoRoute(
                 path: 'notifications',
@@ -133,6 +137,11 @@ class AppRouter {
                 path: 'settings',
                 name: RouteNames.settings,
                 builder: (context, state) => const SettingsScreen(),
+              ),
+              GoRoute(
+                path: 'lottoPoints',
+                name: RouteNames.lottoPointsScreen,
+                builder: (context, state) => const LottoPointsScreen(),
               ),
             ],
           ),

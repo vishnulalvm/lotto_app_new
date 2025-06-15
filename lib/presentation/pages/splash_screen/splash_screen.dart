@@ -9,25 +9,13 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
-    _animationController.forward();
-
+    
     // Check login status after a delay
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 1), () {
       _checkLoginStatus();
     });
   }
@@ -57,43 +45,50 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Center(
-        child: FadeTransition(
-          opacity: _animation,
-          child: ScaleTransition(
-            scale: _animation,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Custom app logo from assets
-                Image.asset(
-                  'assets/icons/logo.png',
-                  width: 150,
-                  height: 150,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'LOTTO',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Static app logo from assets
+                  Image.asset(
+                    'assets/icons/logo.png',
+                    width: 200,
+                    height: 200,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  Text(
+                    'LOTTO',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          // Company name at bottom center
+          Padding(
+            padding: const EdgeInsets.only(bottom: 40),
+            child: Text(
+              'SOLID APPS',
+              style: TextStyle(
+                
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: theme.primaryColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

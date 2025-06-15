@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lotto_app/core/utils/barcode_validator.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -14,13 +15,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool isFlashOn = false;
   DateTime selectedDate = DateTime.now();
+  String? lastScannedCode;
+  bool isProcessing = false;
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (picked != null && picked != selectedDate) {
       setState(() {
@@ -33,8 +36,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor:
-          theme.scaffoldBackgroundColor, // Instead of Color(0xFFFFF1F2)
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
@@ -50,7 +52,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             Icons.arrow_back,
             color: theme.appBarTheme.iconTheme?.color,
           ),
-          onPressed: () => context.go('/'), // Using GoRouter
+          onPressed: () => context.go('/'),
         ),
       ),
       body: Column(
@@ -63,11 +65,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 MobileScanner(
                   controller: cameraController,
                   onDetect: (capture) {
+                    if (isProcessing) return;
+                    
                     final List<Barcode> barcodes = capture.barcodes;
                     for (final barcode in barcodes) {
-                      debugPrint('Barcode found! ${barcode.rawValue}');
-                      // Handle the scanned barcode
-                      _handleScannedBarcode(barcode.rawValue ?? '');
+                      final scannedValue = barcode.rawValue ?? '';
+                      if (scannedValue.isNotEmpty && scannedValue != lastScannedCode) {
+                        _handleScannedBarcode(scannedValue);
+                        break;
+                      }
                     }
                   },
                 ),
@@ -83,30 +89,38 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   width: MediaQuery.of(context).size.width * 0.8,
                   height: 200,
                 ),
-                // Text in the center of the scanner
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.7,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Scan Barcode in Lottery for Get your Result',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
+                // Loading indicator
+                if (isProcessing)
+                  Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
                     ),
                   ),
-                ),
+                // Instruction text
+                if (!isProcessing)
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Scan Barcode in Lottery for Get your Result',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.all(20),
-            color: theme.cardTheme.color, // Instead of Colors.white
+            color: theme.cardTheme.color,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -138,7 +152,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -166,7 +180,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+              '${selectedDate.day.toString().padLeft(2, '0')}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.year}',
               style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: theme.primaryColor,
@@ -186,29 +200,26 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     required ThemeData theme,
   }) {
     return InkWell(
-      onTap: onTap,
+      onTap: isProcessing ? null : onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.primaryColor
-                  .withOpacity(0.1), // Instead of Color(0xFFFFE4E6)
+              color: theme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: isActive
-                  ? theme.primaryColor
-                  : theme.iconTheme.color, // Instead of hardcoded colors
+              color: isActive ? theme.primaryColor : theme.iconTheme.color,
               size: 24,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: theme.textTheme.bodyMedium, // Using theme text style
+            style: theme.textTheme.bodyMedium,
           ),
         ],
       ),
@@ -220,14 +231,81 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      // Process the image for barcode scanning
-      // You might want to use a different barcode scanning library for images
       debugPrint('Image picked from gallery: ${image.path}');
+      // You can implement image-based barcode scanning here
     }
   }
 
-  void _handleScannedBarcode(String barcodeValue) {
-    context.push('/result/scratch', extra: barcodeValue);
+  void _handleScannedBarcode(String barcodeValue) async {
+    if (isProcessing) return;
+
+    setState(() {
+      isProcessing = true;
+      lastScannedCode = barcodeValue;
+    });
+
+    // Validate barcode format
+    if (!BarcodeValidator.isValidLotteryTicket(barcodeValue)) {
+      setState(() {
+        isProcessing = false;
+      });
+      
+      _showValidationErrorDialog(BarcodeValidator.getValidationError(barcodeValue));
+      return;
+    }
+
+    // Format date for API
+    final formattedDate = '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+    
+    // Navigate to scratch card with ticket data
+    final ticketData = {
+      'ticketNumber': BarcodeValidator.cleanTicketNumber(barcodeValue),
+      'date': formattedDate,
+      'phoneNumber': '62389700', // You might want to get this from user input
+    };
+
+    setState(() {
+      isProcessing = false;
+    });
+
+    context.push('/result/scratch', extra: ticketData);
+  }
+
+  void _showValidationErrorDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Invalid Barcode'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(errorMessage),
+              const SizedBox(height: 16),
+              const Text(
+                'Please scan a proper lottery ticket barcode.',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Valid format: RP133796',
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

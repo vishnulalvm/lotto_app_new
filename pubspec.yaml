@@ -8,6 +8,7 @@ environment:
   sdk: ^3.6.0
 
 dependencies:
+  animated_flip_counter: ^0.3.4
   carousel_slider: ^5.0.0
   confetti: ^0.8.0
   cupertino_icons: ^1.0.8
