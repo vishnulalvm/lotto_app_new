@@ -6,7 +6,9 @@ class AppTheme {
         primaryColor: Colors.red,
         disabledColor: Colors.grey[300]!,
         scaffoldBackgroundColor: const Color(0xFFFFF1F2),
-        dialogBackgroundColor: Colors.white,
+        dialogTheme: const DialogThemeData(
+          backgroundColor: Colors.white,
+        ),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.black87, fontSize: 16),
           bodyMedium: TextStyle(color: Colors.black87, fontSize: 14),
@@ -60,7 +62,9 @@ class AppTheme {
         disabledColor: const Color(0xFF424242),
         scaffoldBackgroundColor:
             const Color(0xFF121212), // Material Design dark surface
-        dialogBackgroundColor: const Color(0xFF1E1E1E),
+        dialogTheme: const DialogThemeData(
+          backgroundColor: Color(0xFF1E1E1E),
+        ),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(
               color: Colors.white, fontSize: 16), // Pure white for vibrancy

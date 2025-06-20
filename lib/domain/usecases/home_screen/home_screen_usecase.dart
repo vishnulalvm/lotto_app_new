@@ -6,7 +6,23 @@ class HomeScreenResultsUseCase {
 
   HomeScreenResultsUseCase(this._repository);
 
-  Future<HomeScreenResultsModel> execute() async {
-    return await _repository.getHomeScreenResults();
+  /// Execute with optional force refresh
+  Future<HomeScreenResultsModel> execute({bool forceRefresh = false}) async {
+    return await _repository.getHomeScreenResults(forceRefresh: forceRefresh);
+  }
+
+  /// Get data source information
+  Future<DataSource> getDataSource() async {
+    return await _repository.getLastDataSource();
+  }
+
+  /// Clear cached data
+  Future<void> clearCache() async {
+    await _repository.clearCache();
+  }
+
+  /// Get cache information
+  Future<Map<String, dynamic>> getCacheInfo() async {
+    return await _repository.getCacheInfo();
   }
 }

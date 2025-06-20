@@ -8,8 +8,12 @@ import 'package:lotto_app/data/datasource/api/results_screen/results_screen.dart
 import 'package:lotto_app/data/datasource/api/scratch_card_screen/result_checker.dart';
 import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
+import 'package:lotto_app/data/repositories/cache/home_screen_cache_repository.dart';
 import 'package:lotto_app/data/repositories/results_screen/result_screen.dart';
 import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dart';
+import 'package:lotto_app/data/services/hive_service.dart';
+import 'package:lotto_app/data/services/connectivity_service.dart';
+import 'package:lotto_app/data/services/cache_manager.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
@@ -27,6 +31,15 @@ import 'package:lotto_app/routes/route_names.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+  
+  // Initialize Hive database
+  await HiveService.init();
+  
+  // Initialize connectivity service
+  await ConnectivityService().initialize();
+  
+  // Initialize cache manager
+  CacheManager.initialize();
 
   runApp(
     EasyLocalization(
@@ -66,10 +79,13 @@ class MyApp extends StatelessWidget {
         BlocProvider<HomeScreenResultsBloc>(
           create: (context) => HomeScreenResultsBloc(
             HomeScreenResultsUseCase(
-              (HomeScreenResultsRepository(
+              HomeScreenResultsRepository(
                 HomeScreenResultsApiService(),
-              )),
+                HomeScreenCacheRepositoryImpl(),
+                ConnectivityService(),
+              ),
             ),
+            ConnectivityService(),
           ),
         ),
         BlocProvider(

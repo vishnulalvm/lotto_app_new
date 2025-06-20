@@ -196,7 +196,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               colors: [
                 theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
                 (theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor)
-                    .withOpacity(0.8),
+                    .withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -228,7 +228,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                               color: theme.primaryColor,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                   offset: const Offset(0, 2),
                                   blurRadius: 4,
                                 ),
@@ -246,9 +246,9 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     margin: EdgeInsets.only(top: AppResponsive.spacing(context, 8)),
                     padding: AppResponsive.padding(context, horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 12)),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                     ),
                     child: AnimatedBuilder(
                       animation: _animationController,
@@ -350,8 +350,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               height: AppResponsive.width(context, 12),
               decoration: BoxDecoration(
                 color: isEarned 
-                    ? (theme.brightness == Brightness.light ? Colors.green[50] : Colors.green.withOpacity(0.2))
-                    : (theme.brightness == Brightness.light ? Colors.red[50] : Colors.red.withOpacity(0.2)),
+                    ? (theme.brightness == Brightness.light ? Colors.green[50] : Colors.green.withValues(alpha: 0.2))
+                    : (theme.brightness == Brightness.light ? Colors.red[50] : Colors.red.withValues(alpha: 0.2)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -380,7 +380,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     item['date'],
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: AppResponsive.fontSize(context, 12),
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -392,8 +392,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               padding: AppResponsive.padding(context, horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isEarned 
-                    ? (theme.brightness == Brightness.light ? Colors.green[100] : Colors.green.withOpacity(0.3))
-                    : (theme.brightness == Brightness.light ? Colors.red[100] : Colors.red.withOpacity(0.3)),
+                    ? (theme.brightness == Brightness.light ? Colors.green[100] : Colors.green.withValues(alpha: 0.3))
+                    : (theme.brightness == Brightness.light ? Colors.red[100] : Colors.red.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 20)),
               ),
               child: Text(
@@ -464,7 +464,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -513,7 +513,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                       borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
                     ),
                     disabledBackgroundColor: theme.disabledColor,
-                    disabledForegroundColor: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    disabledForegroundColor: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -548,7 +548,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       builder: (BuildContext context) {
         final theme = Theme.of(context);
         return AlertDialog(
-          backgroundColor: theme.dialogBackgroundColor,
+          backgroundColor: theme.dialogTheme.backgroundColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
           ),

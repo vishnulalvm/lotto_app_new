@@ -138,7 +138,7 @@ class _PredictScreenState extends State<PredictScreen> {
                     Icon(
                       Icons.auto_awesome,
                       size: 48,
-                      color: theme.primaryColor.withOpacity(0.5),
+                      color: theme.primaryColor.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -227,7 +227,7 @@ class _PredictScreenState extends State<PredictScreen> {
       itemBuilder: (context, index) {
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: theme.primaryColor.withOpacity(0.1),
+            backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
             child: Text(
               '${index + 1}',
               style: TextStyle(

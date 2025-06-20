@@ -189,13 +189,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     AnimatedCrossFade(
                                       firstChild: Container(
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.6),
+                                          color: Colors.white.withValues(alpha: 0.6),
                                           borderRadius:
                                               BorderRadius.circular(24),
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.black
-                                                  .withOpacity(0.03),
+                                                  .withValues(alpha: 0.03),
                                               blurRadius: 12,
                                               offset: const Offset(0, 4),
                                             ),
@@ -235,12 +235,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     // Phone number field - Always visible
                                     Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.6),
+                                        color: Colors.white.withValues(alpha: 0.6),
                                         borderRadius: BorderRadius.circular(24),
                                         boxShadow: [
                                           BoxShadow(
                                             color:
-                                                Colors.black.withOpacity(0.03),
+                                                Colors.black.withValues(alpha: 0.03),
                                             blurRadius: 12,
                                             offset: const Offset(0, 4),
                                           ),
@@ -285,11 +285,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color:
-                                          theme.primaryColor.withOpacity(0.1),
+                                          theme.primaryColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
                                         color:
-                                            theme.primaryColor.withOpacity(0.3),
+                                            theme.primaryColor.withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -319,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   boxShadow: [
                                     BoxShadow(
                                       color: theme.primaryColor
-                                          .withOpacity(isLoading ? 0.2 : 0.3),
+                                          .withValues(alpha: isLoading ? 0.2 : 0.3),
                                       blurRadius: 20,
                                       spreadRadius: 3,
                                       offset: const Offset(0, 5),
@@ -340,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             size.width > 600 ? 32 : 28),
                                         elevation: 0,
                                         disabledBackgroundColor:
-                                            theme.primaryColor.withOpacity(0.7),
+                                            theme.primaryColor.withValues(alpha: 0.7),
                                       ),
                                       child: state is AuthLoading
                                           ? SizedBox(
@@ -390,12 +390,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? theme.primaryColor.withOpacity(0.1)
+                                ? theme.primaryColor.withValues(alpha: 0.1)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                             border: isSelected
                                 ? Border.all(
-                                    color: theme.primaryColor.withOpacity(0.3),
+                                    color: theme.primaryColor.withValues(alpha: 0.3),
                                     width: 1,
                                   )
                                 : null,

@@ -51,13 +51,58 @@ class _LotteryResultDetailsScreenState
   void _initializeLotteryNumbers(LotteryResultModel result) {
     _allLotteryNumbers.clear();
 
-    for (final prize in result.getOrderedPrizes()) {
-      for (final ticketNumber in prize.ticketNumbersList) {
+    // Custom ordering: 1st prize, then consolation, then other prizes
+    final prizes = result.prizes;
+    
+    // Add 1st prize numbers first
+    final firstPrize = result.getFirstPrize();
+    if (firstPrize != null) {
+      _addPrizeNumbers(firstPrize);
+    }
+
+    // Add consolation prize numbers second
+    final consolationPrize = result.getConsolationPrize();
+    if (consolationPrize != null) {
+      _addPrizeNumbers(consolationPrize);
+    }
+
+    // Add remaining prizes (2nd to 10th)
+    final remainingPrizes = prizes.where((prize) => 
+        prize.prizeType != '1st' && prize.prizeType != 'consolation').toList();
+    
+    // Sort remaining prizes by prize type
+    remainingPrizes.sort((a, b) {
+      final prizeOrder = ['2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+      final aIndex = prizeOrder.indexOf(a.prizeType);
+      final bIndex = prizeOrder.indexOf(b.prizeType);
+      return aIndex.compareTo(bIndex);
+    });
+
+    for (final prize in remainingPrizes) {
+      _addPrizeNumbers(prize);
+    }
+  }
+
+  void _addPrizeNumbers(PrizeModel prize) {
+    // For prizes with tickets array (individual tickets with locations)
+    for (final ticket in prize.ticketsWithLocation) {
+      _allLotteryNumbers.add({
+        'number': ticket.ticketNumber,
+        'category': prize.prizeTypeFormatted,
+        'prize': prize.formattedPrizeAmount,
+        'location': ticket.location ?? '',
+      });
+    }
+
+    // For prizes with ticket_numbers string (grid format)
+    for (final ticketNumber in prize.allTicketNumbers) {
+      // Skip if already added from tickets array
+      if (!prize.ticketsWithLocation.any((t) => t.ticketNumber == ticketNumber)) {
         _allLotteryNumbers.add({
           'number': ticketNumber,
           'category': prize.prizeTypeFormatted,
           'prize': prize.formattedPrizeAmount,
-          'location': prize.placeUsed ? prize.place : '',
+          'location': '',
         });
       }
     }
@@ -66,12 +111,21 @@ class _LotteryResultDetailsScreenState
   void _onScroll() {
     if (!_scrollController.hasClients || _allLotteryNumbers.isEmpty) return;
 
-    final scrollPercentage =
-        _scrollController.offset / _scrollController.position.maxScrollExtent;
-    final newIndex = (scrollPercentage * _allLotteryNumbers.length).floor();
-    final clampedIndex = newIndex.clamp(0, _allLotteryNumbers.length - 1);
+    // Get the current scroll position
+    final scrollOffset = _scrollController.offset;
+    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    
+    // Avoid division by zero
+    if (maxScrollExtent <= 0) return;
 
-    if (clampedIndex != _highlightedIndex) {
+    // Calculate scroll percentage with smoother transition
+    final scrollPercentage = (scrollOffset / maxScrollExtent).clamp(0.0, 1.0);
+    
+    // Use a smoother calculation that accounts for the total number of items
+    final targetIndex = (scrollPercentage * (_allLotteryNumbers.length - 1)).round();
+    final clampedIndex = targetIndex.clamp(0, _allLotteryNumbers.length - 1);
+
+    if (clampedIndex != _highlightedIndex && mounted) {
       setState(() {
         _highlightedIndex = clampedIndex;
       });
@@ -168,38 +222,57 @@ class _LotteryResultDetailsScreenState
       ThemeData theme, LotteryResultModel result) {
     List<Widget> sections = [];
 
-    final orderedPrizes = result.getOrderedPrizes();
+    // Custom ordering: 1st prize, then consolation, then other prizes
+    final prizes = result.prizes;
+    
+    // Add 1st prize first
+    final firstPrize = result.getFirstPrize();
+    if (firstPrize != null) {
+      sections.add(_buildPrizeSection(theme, firstPrize));
+      sections.add(const SizedBox(height: 8));
+    }
 
-    for (final prize in orderedPrizes) {
-      if (prize.prizeType == 'consolation') {
-        sections.add(_buildConsolationSection(theme, prize));
-      } else if (prize.isSingleTicket && prize.placeUsed) {
-        sections.add(_buildSinglePrizeWithLocationSection(theme, prize));
-      } else if (prize.isSingleTicket && !prize.placeUsed) {
-        sections.add(_buildSinglePrizeSection(theme, prize));
-      } else {
-        sections.add(_buildMultiplePrizeSection(theme, prize));
-      }
+    // Add consolation prize second
+    final consolationPrize = result.getConsolationPrize();
+    if (consolationPrize != null) {
+      sections.add(_buildPrizeSection(theme, consolationPrize));
+      sections.add(const SizedBox(height: 8));
+    }
+
+    // Add remaining prizes (2nd to 10th)
+    final remainingPrizes = prizes.where((prize) => 
+        prize.prizeType != '1st' && prize.prizeType != 'consolation').toList();
+    
+    // Sort remaining prizes by prize type
+    remainingPrizes.sort((a, b) {
+      final prizeOrder = ['2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+      final aIndex = prizeOrder.indexOf(a.prizeType);
+      final bIndex = prizeOrder.indexOf(b.prizeType);
+      return aIndex.compareTo(bIndex);
+    });
+
+    for (final prize in remainingPrizes) {
+      sections.add(_buildPrizeSection(theme, prize));
       sections.add(const SizedBox(height: 8));
     }
 
     return sections;
   }
 
-  Widget _buildSinglePrizeWithLocationSection(
-      ThemeData theme, PrizeModel prize) {
-    final ticketNumber = prize.ticketNumbersList.first;
-    final isHighlighted =
-        _isHighlighted(ticketNumber, prize.prizeTypeFormatted);
+  Widget _buildPrizeSection(ThemeData theme, PrizeModel prize) {
+    if (prize.isGrid) {
+      return _buildGridPrizeSection(theme, prize);
+    } else if (prize.hasLocationInfo) {
+      return _buildPrizeWithLocationSection(theme, prize);
+    } else {
+      return _buildSinglePrizeSection(theme, prize);
+    }
+  }
 
+  Widget _buildPrizeWithLocationSection(ThemeData theme, PrizeModel prize) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: isHighlighted
-            ? BorderSide(color: theme.primaryColor, width: 2)
-            : BorderSide.none,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       child: Column(
         children: [
           Container(
@@ -221,10 +294,8 @@ class _LotteryResultDetailsScreenState
               textAlign: TextAlign.center,
             ),
           ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
+          Padding(
             padding: const EdgeInsets.all(16.0),
-            color: isHighlighted ? Colors.yellow[50] : null,
             child: Column(
               children: [
                 Text(
@@ -234,26 +305,72 @@ class _LotteryResultDetailsScreenState
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  ticketNumber,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    color: isHighlighted ? theme.primaryColor : null,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (prize.place.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    prize.place,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey[600],
+                const SizedBox(height: 16),
+                ...prize.ticketsWithLocation.map((ticket) {
+                  final isHighlighted = _isHighlighted(ticket.ticketNumber, prize.prizeTypeFormatted);
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isHighlighted ? Colors.yellow[50] : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: isHighlighted
+                            ? Border.all(color: theme.primaryColor, width: 2)
+                            : Border.all(color: Colors.grey[300]!),
+                        boxShadow: isHighlighted ? [
+                          BoxShadow(
+                            color: theme.primaryColor.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ] : null,
+                      ),
+                      child: Column(
+                        children: [
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                            style: theme.textTheme.titleLarge!.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: isHighlighted ? 28 : 24,
+                              color: isHighlighted ? theme.primaryColor : null,
+                            ),
+                            child: Text(
+                              ticket.ticketNumber,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          if (ticket.location != null && ticket.location!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  ticket.location!,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  );
+                }).toList(),
               ],
             ),
           ),
@@ -263,18 +380,11 @@ class _LotteryResultDetailsScreenState
   }
 
   Widget _buildSinglePrizeSection(ThemeData theme, PrizeModel prize) {
-    final ticketNumber = prize.ticketNumbersList.first;
-    final isHighlighted =
-        _isHighlighted(ticketNumber, prize.prizeTypeFormatted);
-
+    final ticketNumbers = prize.allTicketNumbers;
+    
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: isHighlighted
-            ? BorderSide(color: theme.primaryColor, width: 2)
-            : BorderSide.none,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       child: Column(
         children: [
           Container(
@@ -296,10 +406,8 @@ class _LotteryResultDetailsScreenState
               textAlign: TextAlign.center,
             ),
           ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
+          Padding(
             padding: const EdgeInsets.all(16.0),
-            color: isHighlighted ? Colors.yellow[50] : null,
             child: Column(
               children: [
                 Text(
@@ -310,15 +418,45 @@ class _LotteryResultDetailsScreenState
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  ticketNumber,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    color: isHighlighted ? theme.primaryColor : null,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                ...ticketNumbers.map((ticketNumber) {
+                  final isHighlighted = _isHighlighted(ticketNumber, prize.prizeTypeFormatted);
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isHighlighted ? Colors.yellow[50] : null,
+                        borderRadius: BorderRadius.circular(6),
+                        border: isHighlighted
+                            ? Border.all(color: theme.primaryColor, width: 2)
+                            : null,
+                        boxShadow: isHighlighted ? [
+                          BoxShadow(
+                            color: theme.primaryColor.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ] : null,
+                      ),
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                        style: theme.textTheme.titleLarge!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isHighlighted ? 28 : 24,
+                          color: isHighlighted ? theme.primaryColor : null,
+                        ),
+                        child: Text(
+                          ticketNumber,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ],
             ),
           ),
@@ -327,8 +465,8 @@ class _LotteryResultDetailsScreenState
     );
   }
 
-  Widget _buildMultiplePrizeSection(ThemeData theme, PrizeModel prize) {
-    final ticketNumbers = prize.ticketNumbersList;
+  Widget _buildGridPrizeSection(ThemeData theme, PrizeModel prize) {
+    final ticketNumbers = prize.allTicketNumbers;
 
     return Card(
       elevation: 0,
@@ -366,8 +504,8 @@ class _LotteryResultDetailsScreenState
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                _buildNumberGrid(
-                    ticketNumbers, theme, prize.prizeTypeFormatted),
+                // Use same design pattern for consolation as other grid prizes
+                _buildNumberGrid(ticketNumbers, theme, prize.prizeTypeFormatted),
               ],
             ),
           ),
@@ -376,130 +514,7 @@ class _LotteryResultDetailsScreenState
     );
   }
 
-  Widget _buildConsolationSection(ThemeData theme, PrizeModel prize) {
-    final ticketNumbers = prize.ticketNumbersList;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            decoration: BoxDecoration(
-              color: theme.primaryColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(4),
-              ),
-            ),
-            child: Text(
-              prize.prizeTypeFormatted,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              children: [
-                Text(
-                  prize.formattedPrizeAmount,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                _buildConsolationGrid(
-                    ticketNumbers, theme, prize.prizeTypeFormatted),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConsolationGrid(
-      List<String> numbers, ThemeData theme, String category) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Table(
-        border: TableBorder.all(
-          color: Colors.grey[300]!,
-          width: 1,
-        ),
-        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-        children: _createConsolationRows(numbers, theme, category),
-      ),
-    );
-  }
-
-  List<TableRow> _createConsolationRows(
-      List<String> numbers, ThemeData theme, String category) {
-    List<TableRow> rows = [];
-
-    for (int i = 0; i < numbers.length; i += 2) {
-      if (i + 1 < numbers.length) {
-        rows.add(
-          TableRow(
-            children: [
-              _buildConsolationCell(numbers[i], theme, category),
-              _buildConsolationCell(numbers[i + 1], theme, category),
-            ],
-          ),
-        );
-      } else {
-        rows.add(
-          TableRow(
-            children: [
-              _buildConsolationCell(numbers[i], theme, category),
-              const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: Text(''),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-
-    return rows;
-  }
-
-  Widget _buildConsolationCell(
-      String number, ThemeData theme, String category) {
-    final isHighlighted = _isHighlighted(number, category);
-
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-        decoration: BoxDecoration(
-          color: isHighlighted ? Colors.yellow[100] : null,
-          borderRadius: isHighlighted ? BorderRadius.circular(6) : null,
-        ),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 300),
-          style: theme.textTheme.bodyMedium!.copyWith(
-            color: isHighlighted ? theme.primaryColor : null,
-            fontWeight: isHighlighted ? FontWeight.bold : null,
-            fontSize: isHighlighted ? 18 : 14,
-          ),
-          child: Text(
-            number,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildNumberGrid(
       List<String> numbers, ThemeData theme, String category) {
@@ -519,11 +534,14 @@ class _LotteryResultDetailsScreenState
   List<TableRow> _createNumberRows(
       List<String> numbers, ThemeData theme, String category) {
     List<TableRow> rows = [];
+    
+    // For consolation prizes, use 2 columns; for others, use 4 columns
+    final columnsPerRow = category == 'Consolation Prize' ? 2 : 4;
 
-    for (int i = 0; i < numbers.length; i += 4) {
+    for (int i = 0; i < numbers.length; i += columnsPerRow) {
       List<Widget> cells = [];
 
-      for (int j = 0; j < 4; j++) {
+      for (int j = 0; j < columnsPerRow; j++) {
         if (i + j < numbers.length) {
           final number = numbers[i + j];
           final isHighlighted = _isHighlighted(number, category);
@@ -532,19 +550,28 @@ class _LotteryResultDetailsScreenState
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                 decoration: BoxDecoration(
-                  color: isHighlighted ? Colors.yellow[50] : null,
-                  borderRadius: isHighlighted ? BorderRadius.circular(4) : null,
+                  color: isHighlighted ? Colors.yellow[100] : null,
+                  borderRadius: isHighlighted ? BorderRadius.circular(6) : null,
+                  border: isHighlighted 
+                      ? Border.all(color: theme.primaryColor, width: 1.5)
+                      : null,
                 ),
-                child: Text(
-                  number,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOut,
+                  style: theme.textTheme.bodyMedium!.copyWith(
                     color: isHighlighted ? theme.primaryColor : null,
-                    fontWeight: isHighlighted ? FontWeight.bold : null,
+                    fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+                    fontSize: isHighlighted ? 16 : 14,
                   ),
-                  textAlign: TextAlign.center,
+                  child: Text(
+                    number,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),
@@ -651,13 +678,24 @@ class _LotteryResultDetailsScreenState
                 highlightedItem['location'].isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  highlightedItem['location'],
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      highlightedItem['location'],
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],

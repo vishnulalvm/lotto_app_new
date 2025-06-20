@@ -288,7 +288,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 5),
@@ -328,7 +328,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 5),
@@ -544,7 +544,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         color: theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 5,
             spreadRadius: 0,
             offset: const Offset(0, -3),
@@ -596,7 +596,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         color: theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 5,
             spreadRadius: 0,
             offset: const Offset(0, -3),

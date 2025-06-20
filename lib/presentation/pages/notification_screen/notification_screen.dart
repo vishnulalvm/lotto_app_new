@@ -134,12 +134,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }) {
     return Card(
       elevation: 0,
-      color: isNew ? theme.primaryColor.withOpacity(0.05) : theme.cardColor,
+      color: isNew ? theme.primaryColor.withValues(alpha: 0.05) : theme.cardColor,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: theme.dividerColor.withOpacity(0.1),
+          color: theme.dividerColor.withValues(alpha: 0.1),
         ),
       ),
       child: InkWell(
@@ -155,7 +155,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -186,7 +186,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.primaryColor.withOpacity(0.1),
+                              color: theme.primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

@@ -71,7 +71,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                Colors.black.withOpacity(0.7),
+                Colors.black.withValues(alpha: 0.7),
                 Colors.black,
               ],
             ),
@@ -144,7 +144,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
     return Container(
       height: 60,
       decoration: BoxDecoration(
-        color: theme.primaryColor.withOpacity(0.1),
+        color: theme.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

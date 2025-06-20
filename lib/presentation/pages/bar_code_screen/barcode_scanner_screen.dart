@@ -222,10 +222,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
         decoration: BoxDecoration(
-          color: theme.primaryColor.withOpacity(0.1),
+          color: theme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: theme.primaryColor.withOpacity(0.3),
+            color: theme.primaryColor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -276,8 +276,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isActive 
-                    ? theme.primaryColor.withOpacity(0.2)
-                    : theme.primaryColor.withOpacity(0.1),
+                    ? theme.primaryColor.withValues(alpha: 0.2)
+                    : theme.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 border: isActive 
                     ? Border.all(color: theme.primaryColor, width: 2)
@@ -482,9 +482,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
+                          color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.red.withOpacity(0.3)),
+                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                         ),
                         child: Text(
                           'scan_this_area'.tr(),
@@ -511,9 +511,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [

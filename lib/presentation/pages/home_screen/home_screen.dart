@@ -226,13 +226,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         onPressed: () => context.go('/notifications'),
       ),
-      title: Text(
-        'LOTTO',
-        style: TextStyle(
-          fontSize: AppResponsive.fontSize(context, 20),
-          fontWeight: FontWeight.bold,
-          color: theme.appBarTheme.titleTextStyle?.color,
-        ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'LOTTO',
+            style: TextStyle(
+              fontSize: AppResponsive.fontSize(context, 20),
+              fontWeight: FontWeight.bold,
+              color: theme.appBarTheme.titleTextStyle?.color,
+            ),
+          ),
+          // Offline indicator
+          BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+            builder: (context, state) {
+              if (state is HomeScreenResultsLoaded && state.isOffline) {
+                return Padding(
+                  padding: EdgeInsets.only(left: AppResponsive.spacing(context, 8)),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppResponsive.spacing(context, 6),
+                      vertical: AppResponsive.spacing(context, 2),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 10)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.wifi_off,
+                          size: AppResponsive.fontSize(context, 12),
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: AppResponsive.spacing(context, 4)),
+                        Text(
+                          'Offline',
+                          style: TextStyle(
+                            fontSize: AppResponsive.fontSize(context, 10),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
       ),
       actions: [
         // Beautiful Coin Button
@@ -263,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   AppResponsive.spacing(context, 18),
                 ),
                 border: Border.all(
-                  color: Color(0xFFFFE55C).withOpacity(0.5),
+                  color: Color(0xFFFFE55C).withValues(alpha: 0.5),
                   width: 1,
                 ),
               ),
@@ -284,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       color: Colors.white, // Brown color for contrast
                       shadows: [
                         Shadow(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           offset: Offset(0, 1),
                           blurRadius: 2,
                         ),
@@ -421,7 +466,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         color: theme.cardTheme.color,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: AppResponsive.spacing(context, 8),
             offset: Offset(0, AppResponsive.spacing(context, 2)),
           ),
@@ -497,18 +542,80 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 Text(
-                  'Loading lottery results...',
+                  state.isRefreshing ? 'Refreshing results...' : 'Loading lottery results...',
                   style: TextStyle(
                     color: theme.textTheme.bodyMedium?.color,
                     fontSize: AppResponsive.fontSize(context, 14),
                   ),
                 ),
+                if (state.isRefreshing) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Getting latest data from server',
+                    style: TextStyle(
+                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                      fontSize: AppResponsive.fontSize(context, 12),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
         }
 
         if (state is HomeScreenResultsError) {
+          // If we have offline data, show it with an error banner
+          if (state.hasOfflineData && state.offlineData != null) {
+            return Column(
+              children: [
+                // Error banner
+                Container(
+                  width: double.infinity,
+                  color: Colors.red.withValues(alpha: 0.1),
+                  padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: AppResponsive.fontSize(context, 20)),
+                      SizedBox(width: AppResponsive.spacing(context, 8)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Connection Error',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: AppResponsive.fontSize(context, 14),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Showing cached data',
+                              style: TextStyle(
+                                color: Colors.red.withValues(alpha: 0.8),
+                                fontSize: AppResponsive.fontSize(context, 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _loadLotteryResults,
+                        child: Text(
+                          'Retry',
+                          style: TextStyle(color: Colors.red, fontSize: AppResponsive.fontSize(context, 12)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Show cached data
+                _buildResultsList(state.offlineData!, theme, isOfflineData: true),
+              ],
+            );
+          }
+          
+          // No offline data available
           return Container(
             padding: const EdgeInsets.all(32),
             child: Column(
@@ -551,152 +658,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
 
         if (state is HomeScreenResultsLoaded) {
-          // Show filter indicator if results are filtered (BLoC handles this now)
-          Widget filterIndicator = const SizedBox.shrink();
-          if (state.isFiltered && state.filteredDate != null) {
-            filterIndicator = Container(
-              margin:
-                  AppResponsive.margin(context, horizontal: 16, vertical: 8),
-              padding:
-                  AppResponsive.padding(context, horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                borderRadius:
-                    BorderRadius.circular(AppResponsive.spacing(context, 8)),
-                border: Border.all(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.filter_list,
-                    color: theme.colorScheme.primary,
-                    size: AppResponsive.fontSize(context, 20),
-                  ),
-                  SizedBox(width: AppResponsive.spacing(context, 8)),
-                  Expanded(
-                    child: Text(
-                      'Showing results for ${_formatDateForDisplay(state.filteredDate!)}',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: AppResponsive.fontSize(context, 14),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () {
-                      context
-                          .read<HomeScreenResultsBloc>()
-                          .add(ClearDateFilterEvent());
-                    },
-                    icon: Icon(
-                      Icons.clear,
-                      size: AppResponsive.fontSize(context, 16),
-                      color: theme.colorScheme.primary,
-                    ),
-                    label: Text(
-                      'Show All',
-                      style: TextStyle(
-                        fontSize: AppResponsive.fontSize(context, 12),
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: AppResponsive.padding(context,
-                          horizontal: 8, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (state.data.results.isEmpty) {
-            return Column(
-              children: [
-                filterIndicator,
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        color:
-                            theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
-                        size: AppResponsive.fontSize(context, 48),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        state.isFiltered
-                            ? 'No lottery results found for selected date'
-                            : 'No lottery results available',
-                        style: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color,
-                          fontSize: AppResponsive.fontSize(context, 16),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (state.isFiltered) ...[
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            context
-                                .read<HomeScreenResultsBloc>()
-                                .add(ClearDateFilterEvent());
-                          },
-                          icon: const Icon(Icons.clear),
-                          label: const Text(
-                            'Show All Results',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                theme.floatingActionButtonTheme.backgroundColor,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }
-
-          // Group results by date category
-          Map<String, List<HomeScreenResultModel>> groupedResults = {};
-          for (var result in state.data.results) {
-            String dateCategory = result.formattedDate;
-            if (!groupedResults.containsKey(dateCategory)) {
-              groupedResults[dateCategory] = [];
-            }
-            groupedResults[dateCategory]!.add(result);
-          }
-
-          return Column(
-            children: [
-              filterIndicator,
-              ...groupedResults.entries.map((entry) {
-                return Column(
-                  children: [
-                    _buildDateDivider(entry.key, theme),
-                    ...entry.value
-                        .map((result) => _buildResultCard(result, theme))
-                        ,
-                  ],
-                );
-              }),
-            ],
-          );
+          return _buildResultsList(state.data, theme, state: state);
         }
 
         return Container(
@@ -704,7 +666,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Text(
             'Pull to refresh lottery results',
             style: TextStyle(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               fontSize: AppResponsive.fontSize(context, 14),
             ),
           ),
@@ -774,8 +736,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
             side: BorderSide(
               color: theme.brightness == Brightness.dark
-                  ? Colors.grey.withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.1),
+                  ? Colors.grey.withValues(alpha: 0.3)
+                  : Colors.grey.withValues(alpha: 0.1),
               width: theme.brightness == Brightness.dark ? 1.0 : 0.5,
             ),
           ),
@@ -851,7 +813,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       fontSize: AppResponsive.fontSize(context, 13),
                       fontWeight: FontWeight.w500,
                       color:
-                          theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                     ),
                   ),
                   SizedBox(height: AppResponsive.spacing(context, 4)),
@@ -979,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -1017,6 +979,154 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           color: theme.textTheme.bodyMedium?.color,
         ),
       ),
+    );
+  }
+
+  Widget _buildResultsList(
+    HomeScreenResultsModel data, 
+    ThemeData theme, {
+    HomeScreenResultsLoaded? state,
+    bool isOfflineData = false,
+  }) {
+    // Build indicators
+    List<Widget> indicators = [];
+    
+    
+    // Filter indicator
+    if (state != null && state.isFiltered && state.filteredDate != null) {
+      indicators.add(
+        Container(
+          margin: AppResponsive.margin(context, horizontal: 16, vertical: 8),
+          padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.filter_list,
+                color: theme.colorScheme.primary,
+                size: AppResponsive.fontSize(context, 20),
+              ),
+              SizedBox(width: AppResponsive.spacing(context, 8)),
+              Expanded(
+                child: Text(
+                  'Showing results for ${_formatDateForDisplay(state.filteredDate!)}',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontSize: AppResponsive.fontSize(context, 14),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  context.read<HomeScreenResultsBloc>().add(ClearDateFilterEvent());
+                },
+                icon: Icon(
+                  Icons.clear,
+                  size: AppResponsive.fontSize(context, 16),
+                  color: theme.colorScheme.primary,
+                ),
+                label: Text(
+                  'Show All',
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 12),
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // No results case
+    if (data.results.isEmpty) {
+      return Column(
+        children: [
+          ...indicators,
+          Container(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.inbox_outlined,
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                  size: AppResponsive.fontSize(context, 48),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  (state?.isFiltered == true)
+                      ? 'No lottery results found for selected date'
+                      : 'No lottery results available',
+                  style: TextStyle(
+                    color: theme.textTheme.bodyMedium?.color,
+                    fontSize: AppResponsive.fontSize(context, 16),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (state?.isFiltered == true) ...[
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<HomeScreenResultsBloc>().add(ClearDateFilterEvent());
+                    },
+                    icon: const Icon(Icons.clear),
+                    label: const Text(
+                      'Show All Results',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.floatingActionButtonTheme.backgroundColor,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Group results by date category
+    Map<String, List<HomeScreenResultModel>> groupedResults = {};
+    for (var result in data.results) {
+      String dateCategory = result.formattedDate;
+      if (!groupedResults.containsKey(dateCategory)) {
+        groupedResults[dateCategory] = [];
+      }
+      groupedResults[dateCategory]!.add(result);
+    }
+
+    return Column(
+      children: [
+        ...indicators,
+        ...groupedResults.entries.map((entry) {
+          return Column(
+            children: [
+              _buildDateDivider(entry.key, theme),
+              ...entry.value.map((result) => _buildResultCard(result, theme)),
+            ],
+          );
+        }),
+      ],
     );
   }
 

@@ -428,8 +428,8 @@ class SettingsScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.cardColor,
             border: Border(
-              top: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
-              bottom: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+              top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
+              bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
             ),
           ),
           child: Column(children: children),
@@ -469,7 +469,7 @@ class SettingsScreen extends StatelessWidget {
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor:
-            isDestructive ? Colors.red.withOpacity(0.1) : theme.cardColor,
+            isDestructive ? Colors.red.withValues(alpha: 0.1) : theme.cardColor,
         leading: isLoading
             ? SizedBox(
                 width: 24,

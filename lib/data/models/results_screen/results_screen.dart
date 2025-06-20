@@ -117,25 +117,30 @@ class LotteryResultModel {
 class PrizeModel {
   final String prizeType;
   final double prizeAmount;
-  final String ticketNumbers;
   final bool placeUsed;
-  final String place;
+  final bool isGrid;
+  final String? ticketNumbers; // For grid-based prizes
+  final List<TicketModel> tickets; // For individual ticket prizes
 
   PrizeModel({
     required this.prizeType,
     required this.prizeAmount,
-    required this.ticketNumbers,
     required this.placeUsed,
-    required this.place,
+    required this.isGrid,
+    this.ticketNumbers,
+    required this.tickets,
   });
 
   factory PrizeModel.fromJson(Map<String, dynamic> json) {
     return PrizeModel(
       prizeType: json['prize_type'] ?? '',
       prizeAmount: double.tryParse(json['prize_amount']?.toString() ?? '0') ?? 0.0,
-      ticketNumbers: json['ticket_numbers'] ?? '',
       placeUsed: json['place_used'] ?? false,
-      place: json['place'] ?? '',
+      isGrid: json['is_grid'] ?? false,
+      ticketNumbers: json['ticket_numbers'], // Can be null
+      tickets: (json['tickets'] as List<dynamic>?)
+          ?.map((item) => TicketModel.fromJson(item))
+          .toList() ?? [],
     );
   }
 
@@ -182,12 +187,62 @@ class PrizeModel {
     }
   }
 
-  List<String> get ticketNumbersList {
-    return ticketNumbers
-        .split(' ')
-        .where((ticket) => ticket.trim().isNotEmpty)
-        .toList();
+  // Get all ticket numbers as a list (works for both formats)
+  List<String> get allTicketNumbers {
+    List<String> allNumbers = [];
+    
+    // Add tickets from tickets array
+    for (var ticket in tickets) {
+      allNumbers.add(ticket.ticketNumber);
+    }
+    
+    // Add tickets from ticket_numbers string
+    if (ticketNumbers != null && ticketNumbers!.isNotEmpty) {
+      allNumbers.addAll(
+        ticketNumbers!
+            .split(' ')
+            .where((ticket) => ticket.trim().isNotEmpty)
+            .toList()
+      );
+    }
+    
+    return allNumbers;
   }
 
-  bool get isSingleTicket => ticketNumbersList.length == 1;
+  // Get ticket numbers with locations (only for tickets array)
+  List<TicketModel> get ticketsWithLocation => tickets;
+
+  // Check if this prize has location information
+  bool get hasLocationInfo => tickets.isNotEmpty && placeUsed;
+
+  // Check if this is a single ticket prize
+  bool get isSingleTicket => allTicketNumbers.length == 1;
+
+  // For backward compatibility - returns the old format
+  @deprecated
+  List<String> get ticketNumbersList => allTicketNumbers;
+}
+
+class TicketModel {
+  final String ticketNumber;
+  final String? location;
+
+  TicketModel({
+    required this.ticketNumber,
+    this.location,
+  });
+
+  factory TicketModel.fromJson(Map<String, dynamic> json) {
+    return TicketModel(
+      ticketNumber: json['ticket_number'] ?? '',
+      location: json['location'],
+    );
+  }
+
+  String get displayText {
+    if (location != null && location!.isNotEmpty) {
+      return '$ticketNumber ($location)';
+    }
+    return ticketNumber;
+  }
 }
