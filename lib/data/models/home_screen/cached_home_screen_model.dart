@@ -20,12 +20,20 @@ class CachedHomeScreenModel extends HiveObject {
   @HiveField(4)
   final int cacheExpiryHours;
 
+  @HiveField(5)
+  final int totalPoints;
+
+  @HiveField(6)
+  final CachedUpdatesModel updates;
+
   CachedHomeScreenModel({
     required this.status,
     required this.count,
     required this.results,
     required this.cacheTime,
     this.cacheExpiryHours = 24,
+    required this.totalPoints,
+    required this.updates,
   });
 
   /// Convert from API model to cached model
@@ -38,6 +46,8 @@ class CachedHomeScreenModel extends HiveObject {
             .map((result) => CachedHomeScreenResultModel.fromApiModel(result))
             .toList(),
         cacheTime: DateTime.now(),
+        totalPoints: apiModel.totalPoints,
+        updates: CachedUpdatesModel.fromApiModel(apiModel.updates),
       );
     } catch (e) {
       print('Error converting API model to cached model: $e');
@@ -51,6 +61,8 @@ class CachedHomeScreenModel extends HiveObject {
       status: status,
       count: count,
       results: results.map((result) => result.toApiModel()).toList(),
+      totalPoints: totalPoints,
+      updates: updates.toApiModel(),
     );
   }
 
@@ -94,10 +106,13 @@ class CachedHomeScreenResultModel extends HiveObject {
   final CachedFirstPrizeModel firstPrize;
 
   @HiveField(7)
-  final CachedConsolationPrizesModel consolationPrizes;
+  final CachedConsolationPrizesModel? consolationPrizes;
 
   @HiveField(8)
   final bool isPublished;
+
+  @HiveField(9)
+  final bool isBumper;
 
   CachedHomeScreenResultModel({
     required this.date,
@@ -107,8 +122,9 @@ class CachedHomeScreenResultModel extends HiveObject {
     required this.lotteryCode,
     required this.drawNumber,
     required this.firstPrize,
-    required this.consolationPrizes,
+    this.consolationPrizes,
     required this.isPublished,
+    required this.isBumper,
   });
 
   /// Convert from API model to cached model
@@ -122,8 +138,11 @@ class CachedHomeScreenResultModel extends HiveObject {
         lotteryCode: apiModel.lotteryCode,
         drawNumber: apiModel.drawNumber,
         firstPrize: CachedFirstPrizeModel.fromApiModel(apiModel.firstPrize),
-        consolationPrizes: CachedConsolationPrizesModel.fromApiModel(apiModel.consolationPrizes),
+        consolationPrizes: apiModel.consolationPrizes != null 
+            ? CachedConsolationPrizesModel.fromApiModel(apiModel.consolationPrizes!)
+            : null,
         isPublished: apiModel.isPublished,
+        isBumper: apiModel.isBumper,
       );
     } catch (e) {
       print('Error converting result model for ${apiModel.lotteryName}: $e');
@@ -141,8 +160,9 @@ class CachedHomeScreenResultModel extends HiveObject {
       lotteryCode: lotteryCode,
       drawNumber: drawNumber,
       firstPrize: firstPrize.toApiModel(),
-      consolationPrizes: consolationPrizes.toApiModel(),
+      consolationPrizes: consolationPrizes?.toApiModel(),
       isPublished: isPublished,
+      isBumper: isBumper,
     );
   }
 }
@@ -211,4 +231,43 @@ class CachedConsolationPrizesModel extends HiveObject {
       ticketNumbers: ticketNumbers,
     );
   }
+}
+
+@HiveType(typeId: 4)
+class CachedUpdatesModel extends HiveObject {
+  @HiveField(0)
+  final String image1;
+
+  @HiveField(1)
+  final String image2;
+
+  @HiveField(2)
+  final String image3;
+
+  CachedUpdatesModel({
+    required this.image1,
+    required this.image2,
+    required this.image3,
+  });
+
+  /// Convert from API model to cached model
+  factory CachedUpdatesModel.fromApiModel(UpdatesModel apiModel) {
+    return CachedUpdatesModel(
+      image1: apiModel.image1,
+      image2: apiModel.image2,
+      image3: apiModel.image3,
+    );
+  }
+
+  /// Convert back to API model
+  UpdatesModel toApiModel() {
+    return UpdatesModel(
+      image1: image1,
+      image2: image2,
+      image3: image3,
+    );
+  }
+
+  /// Get all image URLs as a list
+  List<String> get allImages => [image1, image2, image3].where((url) => url.isNotEmpty).toList();
 }

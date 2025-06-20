@@ -29,11 +29,28 @@ class HiveService {
       if (!Hive.isAdapterRegistered(3)) {
         Hive.registerAdapter(CachedConsolationPrizesModelAdapter());
       }
+      if (!Hive.isAdapterRegistered(4)) {
+        Hive.registerAdapter(CachedUpdatesModelAdapter());
+      }
       
-      // Open boxes with error handling
-      _homeScreenBox = await Hive.openBox<CachedHomeScreenModel>(_homeScreenBoxName);
-      _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
-      _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
+      // Try to open boxes with error handling for schema changes
+      try {
+        _homeScreenBox = await Hive.openBox<CachedHomeScreenModel>(_homeScreenBoxName);
+        _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
+        _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
+      } catch (e) {
+        print('Cache schema mismatch detected, clearing old cache: $e');
+        // Clear existing boxes if there's a schema mismatch
+        await Hive.deleteBoxFromDisk(_homeScreenBoxName);
+        await Hive.deleteBoxFromDisk(_userPreferencesBoxName);
+        await Hive.deleteBoxFromDisk(_appMetadataBoxName);
+        
+        // Reopen boxes with fresh schema
+        _homeScreenBox = await Hive.openBox<CachedHomeScreenModel>(_homeScreenBoxName);
+        _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
+        _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
+        print('Cache cleared and reinitialized due to schema changes');
+      }
       
       print('Hive initialization completed successfully');
       print('Home screen box opened: ${_homeScreenBox.isOpen}');

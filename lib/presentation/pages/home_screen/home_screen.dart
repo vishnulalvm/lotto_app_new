@@ -19,13 +19,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final List<String> carouselImages = [
-    'assets/images/five.jpeg',
-    'assets/images/four.jpeg',
-    'assets/images/seven.jpeg',
-    'assets/images/six.jpeg',
-    'assets/images/tree.jpeg',
-  ];
 
   late ScrollController _scrollController;
   late AnimationController _fabAnimationController;
@@ -154,6 +147,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'Dec'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  // Helper method to format points numbers (e.g., 1250 -> "1.25K", 1000000 -> "1M")
+  String _formatPoints(int points) {
+    if (points < 1000) {
+      return points.toString();
+    } else if (points < 1000000) {
+      double thousands = points / 1000;
+      if (thousands == thousands.roundToDouble()) {
+        return '${thousands.round()}K';
+      } else {
+        return '${thousands.toStringAsFixed(1)}K';
+      }
+    } else {
+      double millions = points / 1000000;
+      if (millions == millions.roundToDouble()) {
+        return '${millions.round()}M';
+      } else {
+        return '${millions.toStringAsFixed(1)}M';
+      }
+    }
   }
 
   @override
@@ -321,20 +335,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     size: AppResponsive.fontSize(context, 14),
                   ),
                   SizedBox(width: AppResponsive.spacing(context, 4)),
-                  Text(
-                    '1,250', // Replace with your actual coin count variable
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 10),
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white, // Brown color for contrast
-                      shadows: [
-                        Shadow(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          offset: Offset(0, 1),
-                          blurRadius: 2,
+                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                    builder: (context, state) {
+                      String pointsText = '0';
+                      if (state is HomeScreenResultsLoaded) {
+                        pointsText = _formatPoints(state.data.totalPoints);
+                      }
+                      return Text(
+                        pointsText,
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 10),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -410,41 +432,93 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCarousel() {
-    return Padding(
-      padding: AppResponsive.padding(context, horizontal: 16, vertical: 8),
-      child: CarouselSlider(
-        options: CarouselOptions(
-          height: AppResponsive.height(
-              context, AppResponsive.isMobile(context) ? 15 : 20),
-          autoPlay: true,
-          enlargeCenterPage: true,
-          viewportFraction: AppResponsive.isMobile(context) ? 0.85 : 0.7,
-        ),
-        items: carouselImages.map((image) {
-          return Builder(
-            builder: (BuildContext context) {
-              return Container(
-                width: AppResponsive.width(context, 100),
-                margin: AppResponsive.margin(context, horizontal: 0),
-                decoration: BoxDecoration(
-                  color: Colors.pink[100],
-                  borderRadius:
-                      BorderRadius.circular(AppResponsive.spacing(context, 8)),
-                ),
-                child: ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(AppResponsive.spacing(context, 8)),
-                  child: Image.asset(
-                    image,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+    return BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+      builder: (context, state) {
+        List<String> carouselImages = [];
+        
+        // Get images from API response or fallback to default
+        if (state is HomeScreenResultsLoaded) {
+          carouselImages = state.data.updates.allImages;
+        }
+        
+        // Fallback to default images if no images from API
+        if (carouselImages.isEmpty) {
+          carouselImages = [
+            'assets/images/five.jpeg',
+            'assets/images/four.jpeg',
+            'assets/images/seven.jpeg',
+            'assets/images/six.jpeg',
+            'assets/images/tree.jpeg',
+          ];
+        }
+        
+        return Padding(
+          padding: AppResponsive.padding(context, horizontal: 16, vertical: 8),
+          child: CarouselSlider(
+            options: CarouselOptions(
+              height: AppResponsive.height(
+                  context, AppResponsive.isMobile(context) ? 15 : 20),
+              autoPlay: true,
+              enlargeCenterPage: true,
+              viewportFraction: AppResponsive.isMobile(context) ? 0.85 : 0.7,
+            ),
+            items: carouselImages.map((imageUrl) {
+              return Builder(
+                builder: (BuildContext context) {
+                  return Container(
+                    width: AppResponsive.width(context, 100),
+                    margin: AppResponsive.margin(context, horizontal: 0),
+                    decoration: BoxDecoration(
+                      color: Colors.pink[100],
+                      borderRadius:
+                          BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                    ),
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                      child: _buildCarouselImage(imageUrl),
+                    ),
+                  );
+                },
               );
-            },
-          );
-        }).toList(),
-      ),
+            }).toList(),
+          ),
+        );
+      },
     );
+  }
+  
+  Widget _buildCarouselImage(String imageUrl) {
+    // Check if it's a URL or local asset
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to a default asset image on network error
+          return Image.asset(
+            'assets/images/five.jpeg',
+            fit: BoxFit.cover,
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+      );
+    } else {
+      // Local asset image
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.cover,
+      );
+    }
   }
 
   Widget _buildNavigationIcons(ThemeData theme) {

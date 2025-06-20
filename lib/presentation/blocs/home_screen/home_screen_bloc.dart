@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
@@ -12,10 +11,10 @@ class HomeScreenResultsBloc
     extends Bloc<HomeScreenResultsEvent, HomeScreenResultsState> {
   final HomeScreenResultsUseCase _useCase;
   final ConnectivityService _connectivityService;
-  
+
   // Cache all results to avoid repeated API calls when filtering
   HomeScreenResultsModel? _cachedResults;
-  
+
   // Connectivity subscription
   StreamSubscription<bool>? _connectivitySubscription;
 
@@ -29,7 +28,7 @@ class HomeScreenResultsBloc
     on<ClearDateFilterEvent>(_onClearDateFilter);
     on<ConnectivityChangedEvent>(_onConnectivityChanged);
     on<ClearCacheEvent>(_onClearCache);
-    
+
     // Listen to connectivity changes
     _connectivitySubscription = _connectivityService.connectionStream.listen(
       (isOnline) => add(ConnectivityChangedEvent(isOnline)),
@@ -48,14 +47,14 @@ class HomeScreenResultsBloc
   ) async {
     try {
       emit(HomeScreenResultsLoading());
-      
+
       final result = await _useCase.execute(forceRefresh: event.forceRefresh);
       _cachedResults = result;
-      
+
       // Get additional metadata
       final dataSource = await _useCase.getDataSource();
       final cacheInfo = await _useCase.getCacheInfo();
-      
+
       emit(HomeScreenResultsLoaded(
         result,
         isFiltered: false,
@@ -79,14 +78,14 @@ class HomeScreenResultsBloc
       } else {
         emit(HomeScreenResultsLoading());
       }
-      
+
       final result = await _useCase.execute(forceRefresh: true);
       _cachedResults = result;
-      
+
       // Get additional metadata
       final dataSource = await _useCase.getDataSource();
       final cacheInfo = await _useCase.getCacheInfo();
-      
+
       emit(HomeScreenResultsLoaded(
         result,
         isFiltered: false,
@@ -111,12 +110,13 @@ class HomeScreenResultsBloc
       }
 
       // Filter results by the selected date
-      final filteredResults = _filterResultsByDate(_cachedResults!, event.selectedDate);
-      
+      final filteredResults =
+          _filterResultsByDate(_cachedResults!, event.selectedDate);
+
       // Get metadata
       final dataSource = await _useCase.getDataSource();
       final cacheInfo = await _useCase.getCacheInfo();
-      
+
       emit(HomeScreenResultsLoaded(
         filteredResults,
         filteredDate: event.selectedDate,
@@ -165,10 +165,10 @@ class HomeScreenResultsBloc
   ) async {
     if (state is HomeScreenResultsLoaded) {
       final currentState = state as HomeScreenResultsLoaded;
-      
+
       // Update the offline status in current state
       emit(currentState.copyWith(isOffline: !event.isOnline));
-      
+
       // If we just came back online and have stale data, refresh
       if (event.isOnline && currentState.dataSource == DataSource.cache) {
         add(RefreshLotteryResultsEvent());
@@ -184,7 +184,7 @@ class HomeScreenResultsBloc
     try {
       await _useCase.clearCache();
       _cachedResults = null;
-      
+
       // Reload data
       add(LoadLotteryResultsEvent(forceRefresh: true));
     } catch (e) {
@@ -199,7 +199,7 @@ class HomeScreenResultsBloc
     String? context,
   }) async {
     final message = context != null ? '$context: $error' : error.toString();
-    
+
     // Try to get offline data if available
     try {
       final cachedData = await _useCase.execute();
@@ -214,7 +214,7 @@ class HomeScreenResultsBloc
     } catch (_) {
       // Ignore cache errors
     }
-    
+
     emit(HomeScreenResultsError(message));
   }
 
@@ -228,12 +228,13 @@ class HomeScreenResultsBloc
       try {
         // Use the existing dateTime getter from HomeScreenResultModel
         final resultDate = result.dateTime;
-        
+
         // Compare only the date part (year, month, day)
         return _isSameDay(resultDate, selectedDate);
       } catch (e) {
         // Log the error for debugging
-        print('Error parsing date for result ${result.id}: ${result.date} - Error: $e');
+        print(
+            'Error parsing date for result ${result.id}: ${result.date} - Error: $e');
         // If date parsing fails, exclude this result from filtered results
         return false;
       }
@@ -244,6 +245,8 @@ class HomeScreenResultsBloc
       status: allResults.status,
       count: filteredResults.length,
       results: filteredResults,
+      totalPoints: allResults.totalPoints,
+      updates: allResults.updates,
     );
   }
 
@@ -251,9 +254,9 @@ class HomeScreenResultsBloc
 
   // Helper method to compare dates ignoring time
   bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year && 
-           date1.month == date2.month && 
-           date1.day == date2.day;
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
   // Debug method to print all available dates (useful for testing)
@@ -263,7 +266,8 @@ class HomeScreenResultsBloc
       for (var result in _cachedResults!.results) {
         try {
           final date = result.dateTime;
-          print('- ${result.lotteryName}: ${date.toString()} (${result.formattedDate})');
+          print(
+              '- ${result.lotteryName}: ${date.toString()} (${result.formattedDate})');
         } catch (e) {
           print('- ${result.lotteryName}: Error parsing date ${result.date}');
         }

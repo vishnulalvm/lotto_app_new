@@ -1,11 +1,15 @@
 class HomeScreenResultsModel {
   final String status;
   final int count;
+  final int totalPoints;
+  final UpdatesModel updates;
   final List<HomeScreenResultModel> results;
 
   HomeScreenResultsModel({
     required this.status,
     required this.count,
+    required this.totalPoints,
+    required this.updates,
     required this.results,
   });
 
@@ -13,11 +17,36 @@ class HomeScreenResultsModel {
     return HomeScreenResultsModel(
       status: json['status'] ?? '',
       count: json['count'] ?? 0,
+      totalPoints: json['total_points'] ?? 0,
+      updates: UpdatesModel.fromJson(json['updates'] ?? {}),
       results: (json['results'] as List<dynamic>?)
           ?.map((item) => HomeScreenResultModel.fromJson(item))
           .toList() ?? [],
     );
   }
+}
+
+class UpdatesModel {
+  final String image1;
+  final String image2;
+  final String image3;
+
+  UpdatesModel({
+    required this.image1,
+    required this.image2,
+    required this.image3,
+  });
+
+  factory UpdatesModel.fromJson(Map<String, dynamic> json) {
+    return UpdatesModel(
+      image1: json['image1'] ?? '',
+      image2: json['image2'] ?? '',
+      image3: json['image3'] ?? '',
+    );
+  }
+
+  // Helper method to get all image URLs as a list
+  List<String> get allImages => [image1, image2, image3].where((url) => url.isNotEmpty).toList();
 }
 
 class HomeScreenResultModel {
@@ -28,8 +57,9 @@ class HomeScreenResultModel {
   final String lotteryCode;
   final String drawNumber;
   final FirstPrizeModel firstPrize;
-  final ConsolationPrizesModel consolationPrizes;
+  final ConsolationPrizesModel? consolationPrizes; // Made nullable
   final bool isPublished;
+  final bool isBumper; // New field
 
   HomeScreenResultModel({
     required this.date,
@@ -39,8 +69,9 @@ class HomeScreenResultModel {
     required this.lotteryCode,
     required this.drawNumber,
     required this.firstPrize,
-    required this.consolationPrizes,
+    this.consolationPrizes, // Nullable
     required this.isPublished,
+    required this.isBumper,
   });
 
   factory HomeScreenResultModel.fromJson(Map<String, dynamic> json) {
@@ -52,8 +83,11 @@ class HomeScreenResultModel {
       lotteryCode: json['lottery_code'] ?? '',
       drawNumber: json['draw_number'] ?? '',
       firstPrize: FirstPrizeModel.fromJson(json['first_prize'] ?? {}),
-      consolationPrizes: ConsolationPrizesModel.fromJson(json['consolation_prizes'] ?? {}),
+      consolationPrizes: json['consolation_prizes'] != null 
+          ? ConsolationPrizesModel.fromJson(json['consolation_prizes'])
+          : null,
       isPublished: json['is_published'] ?? false,
+      isBumper: json['is_bumper'] ?? false,
     );
   }
 
@@ -68,10 +102,17 @@ class HomeScreenResultModel {
   String get formattedWinner => '${firstPrize.ticketNumber} (${firstPrize.place})';
   
   List<String> get consolationTicketsList {
-    return consolationPrizes.ticketNumbers.split(' ').where((ticket) => ticket.isNotEmpty).toList();
+    if (consolationPrizes == null) return [];
+    return consolationPrizes!.ticketNumbers.split(' ').where((ticket) => ticket.isNotEmpty).toList();
   }
   
-  String get formattedConsolationPrize => 'Consolation Prize ${consolationPrizes.amount.toInt()}/-';
+  String get formattedConsolationPrize {
+    if (consolationPrizes == null) return 'No Consolation Prize';
+    return 'Consolation Prize ${consolationPrizes!.amount.toInt()}/-';
+  }
+  
+  // New helper method for bumper status
+  String get lotteryTypeLabel => isBumper ? 'BUMPER' : 'REGULAR';
   
   // Date formatting helpers
   DateTime get dateTime => DateTime.parse(date);
@@ -97,6 +138,9 @@ class HomeScreenResultModel {
     final resultDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
     return resultDate == today;
   }
+
+  // Helper method to check if consolation prizes exist
+  bool get hasConsolationPrizes => consolationPrizes != null;
 }
 
 class FirstPrizeModel {
