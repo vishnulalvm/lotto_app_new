@@ -22,31 +22,37 @@ class TicketCheckResponseModel {
   final String message;
   final bool wonPrize;
   final bool resultPublished;
+  final bool isPreviousResult;
+
+  // Common fields
   final String? ticketNumber;
   final String? last4Digits;
   final String? requestedDate;
   final String? lotteryName;
-  final bool isPreviousResult;
-  
-  // Prize details (only when won_prize is true and result_published is true)
+
+  // Prize details (Case 1: won_prize=true, result_published=true, isPrevious_result=false)
   final PrizeDetails? prizeDetails;
-  
-  // Lottery info (when won_prize is false)
+  final int? totalPrizes;
+  final double? totalPrizeAmount;
+
+  // Lottery info (Case 2: won_prize=false, result_published=true, isPrevious_result=false)
   final LotteryInfo? lotteryInfo;
-  
-  // Latest result (when result_published is false)
+
+  // Latest result (Case 3 & 4: result_published=false, isPrevious_result=true)
   final LatestResult? latestResult;
 
   TicketCheckResponseModel({
     required this.message,
     required this.wonPrize,
     required this.resultPublished,
+    required this.isPreviousResult,
     this.ticketNumber,
     this.last4Digits,
     this.requestedDate,
     this.lotteryName,
-    this.isPreviousResult = false,
     this.prizeDetails,
+    this.totalPrizes,
+    this.totalPrizeAmount,
     this.lotteryInfo,
     this.latestResult,
   });
@@ -56,64 +62,201 @@ class TicketCheckResponseModel {
       message: json['message'] ?? '',
       wonPrize: json['won_prize'] ?? false,
       resultPublished: json['result_published'] ?? false,
+      isPreviousResult: json['isPrevious_result'] ?? false,
       ticketNumber: json['ticket_number'],
       last4Digits: json['last_4_digits'],
       requestedDate: json['requested_date'],
       lotteryName: json['lottery_name'],
-      isPreviousResult: json['isPrevious_result'] ?? false,
-      prizeDetails: json['prize_details'] != null 
-          ? PrizeDetails.fromJson(json['prize_details']) 
+      prizeDetails: json['prize_details'] != null
+          ? PrizeDetails.fromJson(json['prize_details'])
           : null,
-      lotteryInfo: json['lottery_info'] != null 
-          ? LotteryInfo.fromJson(json['lottery_info']) 
+      totalPrizes: json['total_prizes'],
+      totalPrizeAmount: json['total_prize_amount']?.toDouble(),
+      lotteryInfo: json['lottery_info'] != null
+          ? LotteryInfo.fromJson(json['lottery_info'])
           : null,
-      latestResult: json['latest_result'] != null 
-          ? LatestResult.fromJson(json['latest_result']) 
+      latestResult: json['latest_result'] != null
+          ? LatestResult.fromJson(json['latest_result'])
           : null,
     );
   }
 
+  // Response type identification helpers
+  ResponseType get responseType {
+    if (resultPublished && wonPrize && !isPreviousResult) {
+      return ResponseType.currentWinner; // Case 1
+    } else if (resultPublished && !wonPrize && !isPreviousResult) {
+      return ResponseType.currentLoser; // Case 2
+    } else if (!resultPublished && wonPrize && isPreviousResult) {
+      return ResponseType.previousWinner; // Case 3
+    } else if (!resultPublished && !wonPrize && isPreviousResult) {
+      return ResponseType.previousLoser; // Case 4
+    }
+    return ResponseType.unknown;
+  }
+
   // Helper methods for UI display
   String get formattedPrize {
-    if (prizeDetails != null) {
-      return '₹${prizeDetails!.prizeAmount.toInt().toString()}/-';
-    } else if (latestResult?.prizeDetails != null) {
-      return '₹${latestResult!.prizeDetails!.prizeAmount.toInt().toString()}/-';
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        if (prizeDetails != null) {
+          return '₹${_formatNumber(prizeDetails!.prizeAmount)}/-';
+        }
+        break;
+      case ResponseType.previousWinner:
+        if (latestResult?.prizeDetails != null) {
+          return '₹${_formatNumber(latestResult!.prizeDetails!.prizeAmount)}/-';
+        }
+        break;
+      case ResponseType.currentLoser:
+      case ResponseType.previousLoser:
+      case ResponseType.unknown:
+        return '₹0/-';
     }
     return '₹0/-';
   }
-  
+
   String get formattedLotteryInfo {
-    if (prizeDetails != null) {
-      return '${prizeDetails!.lotteryName} ${prizeDetails!.lotteryCode}-${prizeDetails!.drawNumber}';
-    } else if (lotteryInfo != null) {
-      return '${lotteryInfo!.name} ${lotteryInfo!.code}-${lotteryInfo!.drawNumber}';
-    } else if (latestResult != null) {
-      return '$lotteryName ${latestResult!.drawNumber}';
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        if (prizeDetails != null) {
+          return '${prizeDetails!.lotteryName} ${prizeDetails!.drawNumber}';
+        }
+        break;
+      case ResponseType.currentLoser:
+        if (lotteryInfo != null) {
+          return '${lotteryInfo!.name} ${lotteryInfo!.drawNumber}';
+        }
+        break;
+      case ResponseType.previousWinner:
+      case ResponseType.previousLoser:
+        if (latestResult != null && lotteryName != null) {
+          return '$lotteryName ${latestResult!.drawNumber}';
+        }
+        break;
+      case ResponseType.unknown:
+        break;
     }
     return '';
   }
-  
+
+  String get lotteryCode {
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        return prizeDetails?.lotteryCode ?? '';
+      case ResponseType.currentLoser:
+        return lotteryInfo?.code ?? '';
+      case ResponseType.previousWinner:
+      case ResponseType.previousLoser:
+        // For previous results, code might not be available in the response
+        return '';
+      case ResponseType.unknown:
+        return '';
+    }
+  }
+
   bool get isWinner => wonPrize;
-  
-  String get displayTicketNumber => ticketNumber ?? '';
-  
-  String get prizeType => prizeDetails?.prizeType ?? latestResult?.prizeDetails?.prizeType ?? '';
-  
-  String get matchType => prizeDetails?.matchType ?? latestResult?.prizeDetails?.matchType ?? '';
-  
-  String get place => prizeDetails?.place ?? '';
-  
-  String get drawDate {
-    if (prizeDetails != null) {
-      return prizeDetails!.date;
-    } else if (lotteryInfo != null) {
-      return lotteryInfo!.date;
-    } else if (latestResult != null) {
-      return latestResult!.date;
-    }
-    return '';
+
+  String get displayTicketNumber {
+    return ticketNumber ?? prizeDetails?.yourTicketNumber ?? '';
   }
+
+  String get prizeType {
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        return prizeDetails?.prizeType ?? '';
+      case ResponseType.previousWinner:
+        return latestResult?.prizeDetails?.prizeType ?? '';
+      case ResponseType.currentLoser:
+      case ResponseType.previousLoser:
+      case ResponseType.unknown:
+        return '';
+    }
+  }
+
+  String get matchType {
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        return prizeDetails?.matchType ?? '';
+      case ResponseType.previousWinner:
+        return latestResult?.prizeDetails?.matchType ?? '';
+      case ResponseType.currentLoser:
+      case ResponseType.previousLoser:
+      case ResponseType.unknown:
+        return '';
+    }
+  }
+
+  String get place {
+    return prizeDetails?.place ?? '';
+  }
+
+  String get drawDate {
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        return prizeDetails?.date ?? '';
+      case ResponseType.currentLoser:
+        return lotteryInfo?.date ?? '';
+      case ResponseType.previousWinner:
+      case ResponseType.previousLoser:
+        return latestResult?.date ?? '';
+      case ResponseType.unknown:
+        return '';
+    }
+  }
+
+  String get winningTicketNumber {
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        return prizeDetails?.winningTicketNumber ?? '';
+      case ResponseType.previousWinner:
+        return latestResult?.prizeDetails?.winningTicketNumber ?? '';
+      case ResponseType.currentLoser:
+      case ResponseType.previousLoser:
+      case ResponseType.unknown:
+        return '';
+    }
+  }
+
+  String get uniqueId {
+    switch (responseType) {
+      case ResponseType.currentWinner:
+        return prizeDetails?.uniqueId ?? '';
+      case ResponseType.currentLoser:
+        return lotteryInfo?.uniqueId ?? '';
+      case ResponseType.previousWinner:
+      case ResponseType.previousLoser:
+        return latestResult?.uniqueId ?? '';
+      case ResponseType.unknown:
+        return '';
+    }
+  }
+
+  // Helper method to format numbers with commas
+  String _formatNumber(double number) {
+    String numStr = number.toInt().toString();
+    String result = '';
+    int counter = 0;
+
+    for (int i = numStr.length - 1; i >= 0; i--) {
+      if (counter == 3) {
+        result = ',$result';
+        counter = 0;
+      }
+      result = numStr[i] + result;
+      counter++;
+    }
+
+    return result;
+  }
+}
+
+enum ResponseType {
+  currentWinner, // won_prize=true, result_published=true, isPrevious_result=false
+  currentLoser, // won_prize=false, result_published=true, isPrevious_result=false
+  previousWinner, // won_prize=true, result_published=false, isPrevious_result=true
+  previousLoser, // won_prize=false, result_published=false, isPrevious_result=true
+  unknown,
 }
 
 class PrizeDetails {
@@ -207,8 +350,8 @@ class LatestResult {
       drawNumber: json['draw_number'] ?? '',
       uniqueId: json['unique_id'] ?? '',
       totalPrizeAmount: json['total_prize_amount']?.toDouble(),
-      prizeDetails: json['prize_details'] != null 
-          ? LatestPrizeDetails.fromJson(json['prize_details']) 
+      prizeDetails: json['prize_details'] != null
+          ? LatestPrizeDetails.fromJson(json['prize_details'])
           : null,
     );
   }

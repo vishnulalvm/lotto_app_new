@@ -7,8 +7,8 @@ import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_event.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_state.dart';
+import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/scratch_card_bottom_sheet.dart';
 import 'package:scratcher/widgets.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:confetti/confetti.dart';
 
 class ScratchCardResultScreen extends StatefulWidget {
@@ -72,7 +72,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   void _checkTicketWithAPI() {
     final ticketNumber = widget.ticketData['ticketNumber'] as String;
     final date = widget.ticketData['date'] as String;
-    // final phoneNumber = widget.ticketData['phoneNumber'] as String;
 
     context.read<TicketCheckBloc>().add(CheckTicketEvent(
           ticketNumber: ticketNumber,
@@ -115,20 +114,18 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     });
   }
 
-  // Determine if we should show scratch card based on result type
+  // Enhanced method to determine if we should show scratch card based on response type
   bool _shouldShowScratchCard(TicketCheckResponseModel result) {
-    // Don't show scratch card if:
-    // 1. Result not published AND not previous result (no data available)
-    // 2. Result not published AND previous result AND not winner (no prize in previous)
-    if (!result.resultPublished) {
-      if (!result.isPreviousResult) {
-        return false; // No current result available
-      }
-      if (result.isPreviousResult && !result.wonPrize) {
-        return false; // Previous result exists but no prize
-      }
+    switch (result.responseType) {
+      case ResponseType.currentWinner:
+      case ResponseType.currentLoser:
+      case ResponseType.previousWinner:
+        return true; // Show scratch card for these cases
+      case ResponseType.previousLoser:
+        return false; // Don't show scratch card - no prize and no current result
+      case ResponseType.unknown:
+        return false;
     }
-    return true; // Show scratch card in all other cases
   }
 
   @override
@@ -256,25 +253,29 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   Widget _buildSuccessState(ThemeData theme, TicketCheckResponseModel result) {
     final shouldShowScratch = _shouldShowScratchCard(result);
-    
+
     return Stack(
       children: [
         Column(
           children: [
-            // Result status banner for previous results
-            if (result.isPreviousResult) _buildPreviousResultBanner(theme, result),
-            
+            // Enhanced status banner that explains the result type
+            _buildResultTypeBanner(theme, result),
+
             Expanded(
               child: Center(
                 child: ScaleTransition(
                   scale: _animation,
-                  child: shouldShowScratch 
+                  child: shouldShowScratch
                       ? _buildScratchCard(theme, result)
                       : _buildNoResultCard(theme, result),
                 ),
               ),
             ),
-            _buildBottomSheet(theme, result),
+            ScratchCardBottomSheet(
+              result: result,
+              ticketData: widget.ticketData,
+              onCheckAgain: _checkTicketWithAPI,
+            ),
           ],
         ),
 
@@ -303,44 +304,106 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     );
   }
 
-  Widget _buildPreviousResultBanner(ThemeData theme, TicketCheckResponseModel result) {
-    final latestDate = result.latestResult?.date ?? result.drawDate;
-    
+  // Enhanced banner that explains different result types
+  Widget _buildResultTypeBanner(ThemeData theme, TicketCheckResponseModel result) {
+    Color bannerColor;
+    Color iconColor;
+    IconData bannerIcon;
+    String title;
+    String subtitle;
+
+    switch (result.responseType) {
+      case ResponseType.currentWinner:
+        bannerColor = Colors.green[50]!;
+        iconColor = Colors.green[600]!;
+        bannerIcon = Icons.celebration;
+        title = 'current_draw_result'.tr();
+        subtitle = 'result_published_you_won'.tr();
+        break;
+      case ResponseType.currentLoser:
+        bannerColor = Colors.orange[50]!;
+        iconColor = Colors.orange[600]!;
+        bannerIcon = Icons.info_outline;
+        title = 'current_draw_result'.tr();
+        subtitle = 'result_published_no_prize'.tr();
+        break;
+      case ResponseType.previousWinner:
+        bannerColor = Colors.blue[50]!;
+        iconColor = Colors.blue[600]!;
+        bannerIcon = Icons.history;
+        title = 'previous_draw_winner'.tr();
+        subtitle = 'current_result_pending_won_previous'.tr();
+        break;
+      case ResponseType.previousLoser:
+        bannerColor = Colors.grey[50]!;
+        iconColor = Colors.grey[600]!;
+        bannerIcon = Icons.schedule;
+        title = 'result_not_available'.tr();
+        subtitle = 'no_current_result_no_previous_prize'.tr();
+        break;
+      case ResponseType.unknown:
+        bannerColor = Colors.grey[50]!;
+        iconColor = Colors.grey[600]!;
+        bannerIcon = Icons.help_outline;
+        title = 'unknown_result'.tr();
+        subtitle = 'unable_to_determine_result_type'.tr();
+        break;
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        border: Border.all(color: Colors.blue[200]!),
-        borderRadius: BorderRadius.circular(8),
+        color: bannerColor,
+        border: Border.all(color: iconColor.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: Colors.blue[600],
-            size: 20,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              bannerIcon,
+              color: iconColor,
+              size: 20,
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'checking_previous_result'.tr(),
+                  title,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue[800],
+                    color: iconColor,
                   ),
                 ),
-                if (latestDate.isNotEmpty)
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: iconColor.withOpacity(0.8),
+                  ),
+                ),
+                // Show relevant dates
+                if (result.responseType == ResponseType.previousWinner ||
+                    result.responseType == ResponseType.previousLoser) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    '${'latest_available_date'.tr()}: ${_formatDate(latestDate)}',
+                    '${'requested_date'.tr()}: ${_formatDate(result.requestedDate ?? '')} • ${'latest_result'.tr()}: ${_formatDate(result.drawDate)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.blue[700],
+                      color: iconColor.withOpacity(0.7),
+                      fontSize: 11,
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -384,7 +447,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'no_result_available'.tr(),
+                    result.responseType == ResponseType.previousLoser
+                        ? 'no_prize_available'.tr()
+                        : 'no_result_available'.tr(),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[700],
@@ -393,7 +458,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'result_not_published_yet'.tr(),
+                    result.responseType == ResponseType.previousLoser
+                        ? 'no_current_result_no_previous_win'.tr()
+                        : 'result_not_published_yet'.tr(),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -409,6 +476,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   if (widget.ticketData['date'] != null)
                     Text(
                       '${'requested_date'.tr()}: ${_formatDate(widget.ticketData['date'])}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  if (result.drawDate.isNotEmpty && result.responseType == ResponseType.previousLoser)
+                    Text(
+                      '${'latest_available'.tr()}: ${_formatDate(result.drawDate)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -463,6 +537,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   }
 
   Widget _buildScratchCard(ThemeData theme, TicketCheckResponseModel result) {
+    // Enhanced color scheme based on result type
+    Color cardColor;
+    if (result.responseType == ResponseType.previousWinner) {
+      cardColor = Colors.blue[500]!; // Different color for previous wins
+    } else {
+      cardColor = result.isWinner ? Colors.green[500]! : Colors.red[500]!;
+    }
+
     return Container(
       width: 300,
       height: 300,
@@ -494,12 +576,12 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
-              color: result.isWinner ? Colors.green[500] : Colors.red[500],
+              color: cardColor,
             ),
             child: Stack(
               children: [
                 // Background pattern
-                _buildBackgroundIcons(result.isWinner),
+                _buildBackgroundIcons(result.isWinner, result.responseType),
                 // Result content
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -509,16 +591,16 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                       children: [
                         Icon(
                           result.isWinner
-                              ? Icons.emoji_events
+                              ? (result.responseType == ResponseType.previousWinner 
+                                  ? Icons.history_edu 
+                                  : Icons.emoji_events)
                               : Icons.sentiment_dissatisfied,
                           color: Colors.white,
                           size: 40,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          result.isWinner
-                              ? 'congratulations'.tr()
-                              : 'better_luck_next_time'.tr(),
+                          _getScratchCardTitle(result),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -542,6 +624,17 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                             ),
                             textAlign: TextAlign.center,
                           ),
+                          if (result.responseType == ResponseType.previousWinner) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'previous_draw_win'.tr(),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ] else ...[
                           Text(
                             'no_prize'.tr(),
@@ -553,7 +646,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                           const SizedBox(height: 8),
                         ],
                         Text(
-                          '${'ticket'.tr()}: ${widget.ticketData['ticketNumber']}',
+                          '${'ticket'.tr()}: ${result.displayTicketNumber}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
                           ),
@@ -613,8 +706,27 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     );
   }
 
-  Widget _buildBackgroundIcons(bool isWinner) {
-    final iconColor = isWinner ? Colors.green[300] : Colors.red[300];
+  String _getScratchCardTitle(TicketCheckResponseModel result) {
+    switch (result.responseType) {
+      case ResponseType.currentWinner:
+        return 'congratulations'.tr();
+      case ResponseType.currentLoser:
+        return 'better_luck_next_time'.tr();
+      case ResponseType.previousWinner:
+        return 'previous_winner'.tr();
+      case ResponseType.previousLoser:
+      case ResponseType.unknown:
+        return 'better_luck_next_time'.tr();
+    }
+  }
+
+  Widget _buildBackgroundIcons(bool isWinner, ResponseType responseType) {
+    Color? iconColor;
+    if (responseType == ResponseType.previousWinner) {
+      iconColor = Colors.blue[300];
+    } else {
+      iconColor = isWinner ? Colors.green[300] : Colors.red[300];
+    }
 
     return Stack(
       children: [
@@ -624,7 +736,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           left: 30,
           child: Icon(
             isWinner
-                ? Icons.emoji_events_outlined
+                ? (responseType == ResponseType.previousWinner 
+                    ? Icons.history_outlined 
+                    : Icons.emoji_events_outlined)
                 : Icons.sentiment_dissatisfied_outlined,
             color: iconColor,
             size: 40,
@@ -731,369 +845,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     );
   }
 
-  Widget _buildBottomSheet(ThemeData theme, TicketCheckResponseModel result) {
-    final shouldShowScratch = _shouldShowScratchCard(result);
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 5,
-            spreadRadius: 0,
-            offset: const Offset(0, -3),
-          ),
-        ],
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag indicator
-          Container(
-            height: 4,
-            width: 40,
-            margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-
-          // Result message
-          Text(
-            result.message,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-
-          // Different content based on result type
-          if (shouldShowScratch) ...[
-            // Show prize info for scratch card results
-            if (result.isWinner) ...[
-              Text(
-                result.formattedPrize,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                result.matchType,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: Colors.green[700],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ] else ...[
-              Text(
-                'no_prize_won'.tr(),
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ] else ...[
-            // Show info for no result case
-            Text(
-              'check_back_later'.tr(),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: Colors.blue[700],
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-
-          const SizedBox(height: 8),
-
-          // Ticket details
-          Text(
-            '${'ticket'.tr()}: ${widget.ticketData['ticketNumber']} • ${result.formattedLotteryInfo}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 24),
-
-          // Action buttons based on result
-          if (shouldShowScratch && result.isWinner) ...[
-            // Winner buttons
-            ElevatedButton(
-              onPressed: () => _launchClaimProcess(result),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[600],
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.celebration_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'claim_prize'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => _navigateToResultDetails(result),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.primaryColor,
-                minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: theme.primaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.list_alt_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'see_full_results'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ] else if (shouldShowScratch && !result.isWinner) ...[
-            // Non-winner buttons
-            ElevatedButton(
-              onPressed: () => _navigateToResultDetails(result),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.list_alt_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'view_full_results'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => context.go('/'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.primaryColor,
-                minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: theme.primaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.home_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'back_to_home'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            // No result available buttons
-            ElevatedButton(
-              onPressed: () => context.go('/'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.home_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'back_to_home'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => _checkTicketWithAPI(),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.primaryColor,
-                minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: theme.primaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.refresh_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'check_again'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 16),
-
-          // Divider
-          Divider(color: Colors.grey[300]),
-
-          const SizedBox(height: 12),
-
-          // Kerala Lottery Logo and text
-          GestureDetector(
-            onTap: _launchKeralaLotteryWebsite,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.verified,
-                  size: 18,
-                  color: theme.primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'kerala_state_lotteries'.tr(),
-                  style: TextStyle(
-                    color: theme.textTheme.bodyMedium?.color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToResultDetails(TicketCheckResponseModel result) {
-    // Navigate with appropriate unique ID
-    String? uniqueId;
-    if (result.prizeDetails != null) {
-      uniqueId = result.prizeDetails!.uniqueId;
-    } else if (result.lotteryInfo != null) {
-      uniqueId = result.lotteryInfo!.uniqueId;
-    } else if (result.latestResult != null) {
-      uniqueId = result.latestResult!.uniqueId;
-    }
-    
-    if (uniqueId != null && uniqueId.isNotEmpty) {
-      context.go('/result-details', extra: uniqueId);
-    } else {
-      // Fallback to home if no unique ID available
-      context.go('/');
-    }
-  }
-
   String _formatDate(String dateString) {
+    if (dateString.isEmpty) return '';
     try {
       final date = DateTime.parse(dateString);
       return DateFormat('MMM dd, yyyy').format(date);
     } catch (e) {
       return dateString; // Return original if parsing fails
-    }
-  }
-
-  void _launchClaimProcess(TicketCheckResponseModel result) {
-    // Show claim process information
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('prize_claim_process'.tr()),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  '${'congratulations_winning'.tr()} ${result.formattedPrize}!'),
-              const SizedBox(height: 16),
-              Text(
-                'to_claim_prize'.tr(),
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              Text('• ${'visit_district_collectorate'.tr()}'),
-              Text('• ${'bring_winning_ticket'.tr()}'),
-              Text('• ${'carry_valid_id'.tr()}'),
-              Text('• ${'fill_claim_form'.tr()}'),
-              const SizedBox(height: 16),
-              Text(
-                'bank_details_required'.tr(),
-                style: const TextStyle(fontStyle: FontStyle.italic),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('got_it'.tr()),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _launchKeralaLotteryWebsite();
-              },
-              child: Text('visit_website'.tr()),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _launchKeralaLotteryWebsite() async {
-    final Uri url = Uri.parse('https://statelottery.kerala.gov.in/index.php');
-    try {
-      await launchUrl(url);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('website_launch_error'.tr()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 }

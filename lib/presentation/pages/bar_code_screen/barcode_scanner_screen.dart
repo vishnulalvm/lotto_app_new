@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/barcode_validator.dart';
+import 'package:lotto_app/presentation/pages/bar_code_screen/widgets/validation_error_dialog.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -12,12 +13,44 @@ class BarcodeScannerScreen extends StatefulWidget {
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
+    with WidgetsBindingObserver {
   MobileScannerController cameraController = MobileScannerController();
   bool isFlashOn = false;
   DateTime selectedDate = DateTime.now();
   String? lastScannedCode;
   bool isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Add observer to detect app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle changes
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // Resume camera when app comes back to foreground
+        if (mounted) {
+          cameraController.start();
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        // Stop camera when app goes to background
+        cameraController.stop();
+        break;
+      case AppLifecycleState.detached:
+        break;
+      case AppLifecycleState.hidden:
+        // Stop camera when app is hidden
+        cameraController.stop();
+        break;
+    }
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -36,10 +69,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         lastScannedCode = null;
         isProcessing = false;
       });
-      
+
       // Restart the scanner to enable scanning again with new date
       await _restartScanner();
-      
+
       // Show feedback to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -73,6 +106,34 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
   }
 
+  Future<void> _stopCameraAndNavigate(String route, {Object? extra}) async {
+    try {
+      // Stop the camera before navigation
+      await cameraController.stop();
+
+      // Add a small delay to ensure camera is properly stopped
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (mounted) {
+        if (extra != null) {
+          context.push(route, extra: extra);
+        } else {
+          context.push(route);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error stopping camera before navigation: $e');
+      // Navigate anyway even if camera stop fails
+      if (mounted) {
+        if (extra != null) {
+          context.push(route, extra: extra);
+        } else {
+          context.push(route);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -93,7 +154,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             Icons.arrow_back,
             color: theme.appBarTheme.iconTheme?.color,
           ),
-          onPressed: () => context.go('/'),
+          onPressed: () async {
+            // Stop camera before going back
+            await cameraController.stop();
+            if (mounted) {
+              context.go('/');
+            }
+          },
         ),
       ),
       body: Column(
@@ -107,11 +174,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   controller: cameraController,
                   onDetect: (capture) {
                     if (isProcessing) return;
-                    
+
                     final List<Barcode> barcodes = capture.barcodes;
                     for (final barcode in barcodes) {
                       final scannedValue = barcode.rawValue ?? '';
-                      if (scannedValue.isNotEmpty && scannedValue != lastScannedCode) {
+                      if (scannedValue.isNotEmpty &&
+                          scannedValue != lastScannedCode) {
                         _handleScannedBarcode(scannedValue);
                         break;
                       }
@@ -157,7 +225,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                     bottom: 100,
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.8,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(8),
@@ -277,11 +346,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isActive 
+                color: isActive
                     ? theme.primaryColor.withValues(alpha: 0.2)
                     : theme.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: isActive 
+                border: isActive
                     ? Border.all(color: theme.primaryColor, width: 2)
                     : null,
               ),
@@ -311,27 +380,20 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
       if (image != null) {
         debugPrint('Image picked from gallery: ${image.path}');
-        
+
         // Show processing state
         setState(() {
           isProcessing = true;
         });
-        
-        // Simulate processing time
-        await Future.delayed(const Duration(seconds: 1));
-        
-        setState(() {
-          isProcessing = false;
-        });
-        
-        // Show info dialog
-        _showGalleryInfoDialog();
+
+        // Scan barcode from the picked image
+        await _scanBarcodeFromImage(image.path);
       }
     } catch (e) {
       setState(() {
         isProcessing = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -343,23 +405,76 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
   }
 
-  void _showGalleryInfoDialog() {
+  Future<void> _scanBarcodeFromImage(String imagePath) async {
+    try {
+      // Use MobileScanner to analyze the image
+      final BarcodeCapture? barcodeCapture =
+          await cameraController.analyzeImage(imagePath);
+
+      setState(() {
+        isProcessing = false;
+      });
+
+      if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
+        // Process the first detected barcode
+        final barcode = barcodeCapture.barcodes.first;
+        final scannedValue = barcode.rawValue ?? '';
+
+        if (scannedValue.isNotEmpty) {
+          // Handle the scanned barcode same as camera scan
+          _handleScannedBarcode(scannedValue);
+        } else {
+          _showNoBarcodeFoundDialog();
+        }
+      } else {
+        // No barcode found in the image
+        _showNoBarcodeFoundDialog();
+      }
+    } catch (e) {
+      setState(() {
+        isProcessing = false;
+      });
+
+      debugPrint('Error scanning barcode from image: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('image_scan_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showNoBarcodeFoundDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('gallery_scan'.tr()),
-          content: Text('gallery_scan_info'.tr()),
+          title: Text('no_barcode_found'.tr()),
+          content: Text('no_barcode_found_message'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('ok'.tr()),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Allow user to pick another image
+                _pickImageFromGallery();
+              },
+              child: Text('try_again'.tr()),
             ),
           ],
         );
       },
     );
   }
+
+// Remove the old _showGalleryInfoDialog method as it's no longer needed
 
   void _handleScannedBarcode(String barcodeValue) async {
     if (isProcessing) return;
@@ -383,14 +498,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         isProcessing = false;
         // Don't reset lastScannedCode here so user can change date and try again
       });
-      
-      _showValidationErrorDialog(BarcodeValidator.getValidationError(barcodeValue));
+
+      _showValidationErrorDialog(
+          BarcodeValidator.getValidationError(barcodeValue));
       return;
     }
 
     // Format date for API
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
-    
+
     // Navigate to scratch card with ticket data
     final ticketData = {
       'ticketNumber': BarcodeValidator.cleanTicketNumber(barcodeValue),
@@ -402,162 +518,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       isProcessing = false;
     });
 
-    if (mounted) {
-      context.push('/result/scratch', extra: ticketData);
-    }
+    // Use the new method to stop camera and navigate
+    await _stopCameraAndNavigate('/result/scratch', extra: ticketData);
   }
 
   void _showValidationErrorDialog(String errorMessage) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('invalid_barcode'.tr()),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(errorMessage),
-                const SizedBox(height: 16),
-                Text(
-                  'scan_proper_ticket'.tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 12),
-                // Barcode example image with red border
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        'barcode_example'.tr(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.red,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.grey[50],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.asset(
-                            'assets/images/lottery_barcode.png',
-                            height: 80,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 80,
-                                width: 200,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.qr_code,
-                                      size: 40,
-                                      color: Colors.grey[400],
-                                    ),
-                                    Text(
-                                      'Barcode Example',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          'scan_this_area'.tr(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.red[700],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${'valid_format'.tr()}: RP133796',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.orange,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'change_date_to_rescan'.tr(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('ok'.tr()),
-            ),
-          ],
-        );
-      },
-    );
+    ValidationErrorDialog.show(context, errorMessage);
   }
 
   @override
   void dispose() {
+    // Remove the observer
+    WidgetsBinding.instance.removeObserver(this);
+    // Stop and dispose the camera controller
     cameraController.dispose();
     super.dispose();
   }
