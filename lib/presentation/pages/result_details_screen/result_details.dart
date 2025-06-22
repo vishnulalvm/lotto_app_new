@@ -314,7 +314,7 @@ class _LotteryResultDetailsScreenState
             child: Text(
               prize.prizeTypeFormatted,
               style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
+                color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -342,15 +342,15 @@ class _LotteryResultDetailsScreenState
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color:
-                          isHighlighted ? Colors.yellow[50] : Colors.grey[50],
+                          isHighlighted ? theme.colorScheme.primaryContainer : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(8),
                       border: isHighlighted
                           ? Border.all(color: theme.primaryColor, width: 2)
-                          : Border.all(color: Colors.grey[300]!),
+                          : Border.all(color: theme.colorScheme.outline),
                       boxShadow: isHighlighted
                           ? [
                               BoxShadow(
-                                color: theme.primaryColor.withOpacity(0.2),
+                                color: theme.primaryColor.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               )
@@ -381,13 +381,13 @@ class _LotteryResultDetailsScreenState
                               Icon(
                                 Icons.location_on,
                                 size: 16,
-                                color: Colors.grey[600],
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 ticket.location!,
                                 style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.w500,
                                 ),
                                 textAlign: TextAlign.center,
@@ -429,7 +429,7 @@ class _LotteryResultDetailsScreenState
             child: Text(
               prize.prizeTypeFormatted,
               style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
+                color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -485,24 +485,24 @@ class _LotteryResultDetailsScreenState
                 padding:
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isHighlighted ? Colors.yellow[50] : Colors.grey[50],
+                  color: isHighlighted ? Colors.yellow[50] : theme.colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color:
-                        isHighlighted ? theme.primaryColor : Colors.grey[300]!,
+                        isHighlighted ? theme.primaryColor : theme.colorScheme.outline,
                     width: isHighlighted ? 2 : 1,
                   ),
                   boxShadow: isHighlighted
                       ? [
                           BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.15),
+                            color: theme.primaryColor.withValues(alpha: 0.15),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
                         ]
                       : [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
                             blurRadius: 2,
                             offset: const Offset(0, 1),
                           )
@@ -514,7 +514,7 @@ class _LotteryResultDetailsScreenState
                   style: theme.textTheme.titleLarge!.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: isHighlighted ? 24 : 18,
-                    color: isHighlighted ? theme.primaryColor : Colors.black87,
+                    color: isHighlighted ? theme.primaryColor : theme.colorScheme.onSurface,
                     letterSpacing: 0.5,
                   ),
                   child: Text(
@@ -541,23 +541,23 @@ class _LotteryResultDetailsScreenState
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
-        color: isHighlighted ? Colors.yellow[50] : Colors.grey[50],
+        color: isHighlighted ? Colors.yellow[50] : theme.colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isHighlighted ? theme.primaryColor : Colors.grey[300]!,
+          color: isHighlighted ? theme.primaryColor : theme.colorScheme.outline,
           width: isHighlighted ? 3 : 1,
         ),
         boxShadow: isHighlighted
             ? [
                 BoxShadow(
-                  color: theme.primaryColor.withOpacity(0.2),
+                  color: theme.primaryColor.withValues(alpha: 0.2),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: theme.colorScheme.shadow.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 )
@@ -569,7 +569,7 @@ class _LotteryResultDetailsScreenState
         style: theme.textTheme.displaySmall!.copyWith(
           fontWeight: FontWeight.bold,
           fontSize: isHighlighted ? 26 : 24,
-          color: isHighlighted ? theme.primaryColor : Colors.black87,
+          color: isHighlighted ? theme.primaryColor : theme.colorScheme.onSurface,
           letterSpacing: 1.5,
         ),
         child: Text(
@@ -602,7 +602,7 @@ class _LotteryResultDetailsScreenState
             child: Text(
               prize.prizeTypeFormatted,
               style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
+                color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -658,24 +658,24 @@ class _LotteryResultDetailsScreenState
                 padding:
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isHighlighted ? Colors.yellow[50] : Colors.grey[50],
+                  color: isHighlighted ? Colors.yellow[50] : theme.colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color:
-                        isHighlighted ? theme.primaryColor : Colors.grey[300]!,
+                        isHighlighted ? theme.primaryColor : theme.colorScheme.outline,
                     width: isHighlighted ? 2 : 1,
                   ),
                   boxShadow: isHighlighted
                       ? [
                           BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.15),
+                            color: theme.primaryColor.withValues(alpha: 0.15),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
                         ]
                       : [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
                             blurRadius: 2,
                             offset: const Offset(0, 1),
                           )
@@ -685,7 +685,7 @@ class _LotteryResultDetailsScreenState
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeInOut,
                   style: theme.textTheme.titleMedium!.copyWith(
-                    color: isHighlighted ? theme.primaryColor : Colors.black87,
+                    color: isHighlighted ? theme.primaryColor : theme.colorScheme.onSurface,
                     fontWeight:
                         isHighlighted ? FontWeight.bold : FontWeight.w600,
                     fontSize: isHighlighted ? 20 : 18,
@@ -727,17 +727,17 @@ class _LotteryResultDetailsScreenState
                 padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                 decoration: BoxDecoration(
-                  color: isHighlighted ? Colors.yellow[50] : Colors.grey[50],
+                  color: isHighlighted ? Colors.yellow[50] : theme.colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color:
-                        isHighlighted ? theme.primaryColor : Colors.grey[300]!,
+                        isHighlighted ? theme.primaryColor : theme.colorScheme.outline,
                     width: isHighlighted ? 2 : 1,
                   ),
                   boxShadow: isHighlighted
                       ? [
                           BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.1),
+                            color: theme.primaryColor.withValues(alpha: 0.1),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           )
@@ -748,7 +748,7 @@ class _LotteryResultDetailsScreenState
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeInOut,
                   style: theme.textTheme.bodyMedium!.copyWith(
-                    color: isHighlighted ? theme.primaryColor : Colors.black87,
+                    color: isHighlighted ? theme.primaryColor : theme.colorScheme.onSurface,
                     fontWeight:
                         isHighlighted ? FontWeight.bold : FontWeight.w700,
                     fontSize: isHighlighted ? 20 : 18,
@@ -774,7 +774,7 @@ class _LotteryResultDetailsScreenState
         children: [
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              Icon(Icons.calendar_today, size: 18, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
               const SizedBox(width: 4),
               Text(
                 result.formattedDate,
@@ -786,7 +786,7 @@ class _LotteryResultDetailsScreenState
           ),
           Row(
             children: [
-              const Icon(Icons.tag, size: 18, color: Colors.grey),
+              Icon(Icons.tag, size: 18, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
               const SizedBox(width: 4),
               Text(
                 result.formattedDrawNumber,
@@ -825,7 +825,7 @@ class _LotteryResultDetailsScreenState
               child: Text(
                 highlightedItem['category'],
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white,
+                  color: theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -844,7 +844,7 @@ class _LotteryResultDetailsScreenState
               highlightedItem['prize'],
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Colors.green[700],
+                color: theme.colorScheme.secondary,
                 fontSize: 18,
               ),
             ),
@@ -858,13 +858,13 @@ class _LotteryResultDetailsScreenState
                     Icon(
                       Icons.location_on,
                       size: 14,
-                      color: Colors.grey[600],
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: 2),
                     Text(
                       highlightedItem['location'],
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -908,7 +908,10 @@ class _LotteryResultDetailsScreenState
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Visit Official Website'),
+              child: Text(
+                'Visit Official Website',
+                style: TextStyle(color: theme.colorScheme.onPrimary),
+              ),
             ),
           ],
         ),
@@ -985,7 +988,7 @@ class _LotteryResultDetailsScreenState
             Icon(
               Icons.error_outline,
               size: 64,
-              color: Colors.red[400],
+              color: theme.colorScheme.error,
             ),
             const SizedBox(height: 16),
             Text(
@@ -998,7 +1001,7 @@ class _LotteryResultDetailsScreenState
             Text(
               message,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               textAlign: TextAlign.center,
             ),
@@ -1029,7 +1032,7 @@ class _LotteryResultDetailsScreenState
             Icon(
               Icons.description_outlined,
               size: 64,
-              color: Colors.grey[400],
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -1042,7 +1045,7 @@ class _LotteryResultDetailsScreenState
             Text(
               'Please select a lottery result to view details.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               textAlign: TextAlign.center,
             ),

@@ -31,13 +31,13 @@ import 'package:lotto_app/routes/route_names.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
-  
+
   // Initialize Hive database
   await HiveService.init();
-  
+
   // Initialize connectivity service
   await ConnectivityService().initialize();
-  
+
   // Initialize cache manager
   CacheManager.initialize();
 

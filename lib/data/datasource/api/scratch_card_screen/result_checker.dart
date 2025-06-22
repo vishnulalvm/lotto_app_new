@@ -13,7 +13,7 @@ class TicketCheckApiService {
   }) async {
     try {
       final request = TicketCheckRequestModel(
-        ticketNumber: ticketNumber,
+        ticketNumber: "DS782804",
         phoneNumber: phoneNumber,
         date: date,
       );

@@ -219,7 +219,7 @@ class PrizeModel {
   bool get isSingleTicket => allTicketNumbers.length == 1;
 
   // For backward compatibility - returns the old format
-  @deprecated
+  @Deprecated('Use allTicketNumbers instead')
   List<String> get ticketNumbersList => allTicketNumbers;
 }
 

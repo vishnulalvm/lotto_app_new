@@ -76,7 +76,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
     context.read<TicketCheckBloc>().add(CheckTicketEvent(
           ticketNumber: ticketNumber,
-          phoneNumber: "8138946412",
+          phoneNumber: "+918138946412",
           date: date,
         ));
   }
@@ -113,6 +113,22 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         }
       });
     });
+  }
+
+  // Determine if we should show scratch card based on result type
+  bool _shouldShowScratchCard(TicketCheckResponseModel result) {
+    // Don't show scratch card if:
+    // 1. Result not published AND not previous result (no data available)
+    // 2. Result not published AND previous result AND not winner (no prize in previous)
+    if (!result.resultPublished) {
+      if (!result.isPreviousResult) {
+        return false; // No current result available
+      }
+      if (result.isPreviousResult && !result.wonPrize) {
+        return false; // Previous result exists but no prize
+      }
+    }
+    return true; // Show scratch card in all other cases
   }
 
   @override
@@ -239,15 +255,22 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   }
 
   Widget _buildSuccessState(ThemeData theme, TicketCheckResponseModel result) {
+    final shouldShowScratch = _shouldShowScratchCard(result);
+    
     return Stack(
       children: [
         Column(
           children: [
+            // Result status banner for previous results
+            if (result.isPreviousResult) _buildPreviousResultBanner(theme, result),
+            
             Expanded(
               child: Center(
                 child: ScaleTransition(
                   scale: _animation,
-                  child: _buildScratchCard(theme, result),
+                  child: shouldShowScratch 
+                      ? _buildScratchCard(theme, result)
+                      : _buildNoResultCard(theme, result),
                 ),
               ),
             ),
@@ -256,7 +279,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         ),
 
         // Confetti overlay
-        if (_showConfetti && result.isWinner)
+        if (_showConfetti && result.isWinner && shouldShowScratch)
           Align(
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
@@ -277,6 +300,125 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildPreviousResultBanner(ThemeData theme, TicketCheckResponseModel result) {
+    final latestDate = result.latestResult?.date ?? result.drawDate;
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        border: Border.all(color: Colors.blue[200]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: Colors.blue[600],
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'checking_previous_result'.tr(),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue[800],
+                  ),
+                ),
+                if (latestDate.isNotEmpty)
+                  Text(
+                    '${'latest_available_date'.tr()}: ${_formatDate(latestDate)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.blue[700],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultCard(ThemeData theme, TicketCheckResponseModel result) {
+    return Container(
+      width: 300,
+      height: 300,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.schedule,
+                    color: Colors.grey[500],
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'no_result_available'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'result_not_published_yet'.tr(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '${'ticket'.tr()}: ${widget.ticketData['ticketNumber']}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  if (widget.ticketData['date'] != null)
+                    Text(
+                      '${'requested_date'.tr()}: ${_formatDate(widget.ticketData['date'])}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -394,7 +536,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            result.matchedWith,
+                            result.matchType,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: Colors.white,
                             ),
@@ -590,6 +732,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   }
 
   Widget _buildBottomSheet(ThemeData theme, TicketCheckResponseModel result) {
+    final shouldShowScratch = _shouldShowScratchCard(result);
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
@@ -630,30 +774,43 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           ),
           const SizedBox(height: 6),
 
-          // Prize amount or no prize message
-          if (result.isWinner) ...[
-            Text(
-              result.formattedPrize,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.green[600],
+          // Different content based on result type
+          if (shouldShowScratch) ...[
+            // Show prize info for scratch card results
+            if (result.isWinner) ...[
+              Text(
+                result.formattedPrize,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[600],
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
+              const SizedBox(height: 4),
+              Text(
+                result.matchType,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: Colors.green[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ] else ...[
+              Text(
+                'no_prize_won'.tr(),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ] else ...[
+            // Show info for no result case
             Text(
-              result.matchedWith,
+              'check_back_later'.tr(),
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: Colors.green[700],
+                color: Colors.blue[700],
                 fontWeight: FontWeight.w600,
               ),
-            ),
-          ] else ...[
-            Text(
-              'no_prize_won'.tr(),
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
+              textAlign: TextAlign.center,
             ),
           ],
 
@@ -671,7 +828,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           const SizedBox(height: 24),
 
           // Action buttons based on result
-          if (result.isWinner) ...[
+          if (shouldShowScratch && result.isWinner) ...[
             // Winner buttons
             ElevatedButton(
               onPressed: () => _launchClaimProcess(result),
@@ -697,8 +854,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () =>
-                  context.go('/result-details', extra: result.uniqueId),
+              onPressed: () => _navigateToResultDetails(result),
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
@@ -719,11 +875,10 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 ],
               ),
             ),
-          ] else ...[
+          ] else if (shouldShowScratch && !result.isWinner) ...[
             // Non-winner buttons
             ElevatedButton(
-              onPressed: () =>
-                  context.go('/result-details', extra: result.uniqueId),
+              onPressed: () => _navigateToResultDetails(result),
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
@@ -767,6 +922,53 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 ],
               ),
             ),
+          ] else ...[
+            // No result available buttons
+            ElevatedButton(
+              onPressed: () => context.go('/'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.home_outlined),
+                  const SizedBox(width: 8),
+                  Text(
+                    'back_to_home'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => _checkTicketWithAPI(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.primaryColor,
+                minimumSize: const Size(double.infinity, 48),
+                side: BorderSide(color: theme.primaryColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.refresh_outlined),
+                  const SizedBox(width: 8),
+                  Text(
+                    'check_again'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
           ],
 
           const SizedBox(height: 16),
@@ -801,6 +1003,34 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         ],
       ),
     );
+  }
+
+  void _navigateToResultDetails(TicketCheckResponseModel result) {
+    // Navigate with appropriate unique ID
+    String? uniqueId;
+    if (result.prizeDetails != null) {
+      uniqueId = result.prizeDetails!.uniqueId;
+    } else if (result.lotteryInfo != null) {
+      uniqueId = result.lotteryInfo!.uniqueId;
+    } else if (result.latestResult != null) {
+      uniqueId = result.latestResult!.uniqueId;
+    }
+    
+    if (uniqueId != null && uniqueId.isNotEmpty) {
+      context.go('/result-details', extra: uniqueId);
+    } else {
+      // Fallback to home if no unique ID available
+      context.go('/');
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (e) {
+      return dateString; // Return original if parsing fails
+    }
   }
 
   void _launchClaimProcess(TicketCheckResponseModel result) {

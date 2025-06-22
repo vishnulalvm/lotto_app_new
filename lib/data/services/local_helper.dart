@@ -41,6 +41,7 @@ class LocaleHelper {
   }
 
   static bool isRTL(BuildContext context) {
+    // ignore: unrelated_type_equality_checks
     return Directionality.of(context) == TextDirection.RTL;
   }
 

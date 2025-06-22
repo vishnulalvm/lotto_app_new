@@ -41,13 +41,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       await _restartScanner();
       
       // Show feedback to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('date_updated_scanner_ready'.tr()),
-          backgroundColor: Theme.of(context).primaryColor,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('date_updated_scanner_ready'.tr()),
+            backgroundColor: Theme.of(context).primaryColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -330,12 +332,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         isProcessing = false;
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('gallery_error'.tr()),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('gallery_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -398,7 +402,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       isProcessing = false;
     });
 
-    context.push('/result/scratch', extra: ticketData);
+    if (mounted) {
+      context.push('/result/scratch', extra: ticketData);
+    }
   }
 
   void _showValidationErrorDialog(String errorMessage) {

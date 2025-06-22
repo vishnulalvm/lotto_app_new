@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController phoneController = TextEditingController();
   bool isLoading = false;
   bool isSignUp = true; // Default to sign up mode
+  String? phoneErrorText; // For showing validation errors
 
   // Language data
   final List<Map<String, dynamic>> languages = [
@@ -34,7 +36,56 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Mobile number validation function
+  String _validateAndFormatPhoneNumber(String input) {
+    // Remove spaces and other characters but keep + and digits
+    String cleaned = input.replaceAll(RegExp(r'[^\d+]'), '');
+
+    // Only remove 91 if it's preceded by + (i.e., +91 prefix)
+    if (cleaned.startsWith('+91')) {
+      cleaned = cleaned.substring(3); // Remove +91
+    }
+
+    // Remove any remaining + signs
+    String digitsOnly = cleaned.replaceAll('+', '');
+
+    return digitsOnly;
+  }
+
+  bool _isValidPhoneNumber(String phoneNumber) {
+    String cleanNumber = _validateAndFormatPhoneNumber(phoneNumber);
+    return cleanNumber.length == 10 &&
+        RegExp(r'^[6-9]\d{9}$').hasMatch(cleanNumber);
+  }
+
+  void _onPhoneNumberChanged(String value) {
+    setState(() {
+      phoneErrorText = null; // Clear error when user types
+    });
+
+    // Format the phone number and update the controller
+    String formattedNumber = _validateAndFormatPhoneNumber(value);
+
+    // Limit to 10 digits maximum
+    if (formattedNumber.length > 10) {
+      formattedNumber = formattedNumber.substring(0, 10);
+    }
+
+    // Only update if the formatted number is different to avoid cursor issues
+    if (formattedNumber != phoneController.text) {
+      phoneController.value = TextEditingValue(
+        text: formattedNumber,
+        selection: TextSelection.collapsed(offset: formattedNumber.length),
+      );
+    }
+  }
+
   void _handleAuth() {
+    // Clear previous errors
+    setState(() {
+      phoneErrorText = null;
+    });
+
     if (isSignUp) {
       if (nameController.text.isEmpty || phoneController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -42,10 +93,18 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
+
+      if (!_isValidPhoneNumber(phoneController.text)) {
+        setState(() {
+          phoneErrorText = 'Please enter a valid 10-digit mobile number';
+        });
+        return;
+      }
+
       context.read<AuthBloc>().add(
             AuthRegisterRequested(
               nameController.text,
-              phoneController.text,
+              _validateAndFormatPhoneNumber(phoneController.text),
             ),
           );
     } else {
@@ -55,8 +114,17 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
+
+      if (!_isValidPhoneNumber(phoneController.text)) {
+        setState(() {
+          phoneErrorText = 'Please enter a valid 10-digit mobile number';
+        });
+        return;
+      }
+
       context.read<AuthBloc>().add(
-            AuthLoginRequested(phoneController.text),
+            AuthLoginRequested(
+                _validateAndFormatPhoneNumber(phoneController.text)),
           );
     }
   }
@@ -64,6 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _toggleAuthMode() {
     setState(() {
       isSignUp = !isSignUp;
+      phoneErrorText = null; // Clear error when toggling modes
     });
   }
 
@@ -76,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final currentLocale = context.locale;
+    final isDark = theme.brightness == Brightness.dark;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -83,19 +153,20 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 backgroundColor: theme.primaryColor,
-                duration: const Duration(seconds: 1),
+                duration: const Duration(milliseconds: 300),
                 content: Text(state.message)),
           );
           context.go('/'); // Navigate to home page
         } else if (state is AuthFailure) {
+ 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('auth_error'.tr())),
           );
         }
       },
       child: Scaffold(
-          backgroundColor:
-              const Color(0xFFFFF1F2), // Keeping the light pink background
+          // Use theme scaffold background instead of hardcoded color
+          backgroundColor: theme.scaffoldBackgroundColor,
           body: SafeArea(
             child: Column(
               children: [
@@ -139,20 +210,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 size.width > 600 ? 80 : 72,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 2,
-                                            color: Colors.black87,
+                                            // Use theme text color instead of hardcoded
+                                            color: theme
+                                                .textTheme.titleLarge?.color,
                                           ),
                                         ),
                                         Positioned(
                                           right: 10,
                                           bottom: 4,
                                           child: Text(
-                                            'tagline'.tr(),
+                                            'Be Lucky',
                                             style: TextStyle(
                                               fontSize:
                                                   size.width > 600 ? 16 : 16,
                                               fontWeight: FontWeight.w500,
                                               letterSpacing: 0.3,
-                                              color: Colors.red,
+                                              color: theme.primaryColor,
                                             ),
                                           ),
                                         ),
@@ -174,7 +247,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(
                                   fontSize: size.width > 600 ? 18 : 16,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
+                                  // Use theme text color
+                                  color: theme.textTheme.bodyMedium?.color,
                                 ),
                               ),
                               SizedBox(height: size.height * 0.025),
@@ -189,13 +263,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     AnimatedCrossFade(
                                       firstChild: Container(
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.6),
+                                          // Use card theme color for input fields
+                                          color: theme.cardTheme.color,
                                           borderRadius:
                                               BorderRadius.circular(24),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black
-                                                  .withValues(alpha: 0.03),
+                                              color: isDark
+                                                  ? Colors.black
+                                                      .withValues(alpha: 0.3)
+                                                  : Colors.black
+                                                      .withValues(alpha: 0.03),
                                               blurRadius: 12,
                                               offset: const Offset(0, 4),
                                             ),
@@ -206,14 +284,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                         child: TextField(
                                           controller: nameController,
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w500,
+                                            // Use theme text color
+                                            color: theme
+                                                .textTheme.bodyLarge?.color,
                                           ),
                                           decoration: InputDecoration(
                                             hintText: 'name_or_username'.tr(),
-                                            hintStyle: const TextStyle(
-                                              color: Colors.black38,
+                                            hintStyle: TextStyle(
+                                              // Use theme hint color
+                                              color: theme
+                                                  .textTheme.bodySmall?.color,
                                               fontWeight: FontWeight.w400,
                                             ),
                                             border: InputBorder.none,
@@ -233,41 +316,99 @@ class _LoginScreenState extends State<LoginScreen> {
                                           const Duration(milliseconds: 300),
                                     ),
                                     // Phone number field - Always visible
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.6),
-                                        borderRadius: BorderRadius.circular(24),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                Colors.black.withValues(alpha: 0.03),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            // Use card theme color
+                                            color: theme.cardTheme.color,
+                                            borderRadius:
+                                                BorderRadius.circular(24),
+                                            border: phoneErrorText != null
+                                                ? Border.all(
+                                                    color: Colors.red, width: 1)
+                                                : null,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: isDark
+                                                    ? Colors.black
+                                                        .withValues(alpha: 0.3)
+                                                    : Colors.black.withValues(
+                                                        alpha: 0.03),
+                                                blurRadius: 12,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
-                                      child: TextField(
-                                        controller: phoneController,
-                                        textAlign: TextAlign.center,
-                                        keyboardType: TextInputType.phone,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
+                                          child: TextField(
+                                            controller: phoneController,
+                                            textAlign: TextAlign.center,
+                                            keyboardType: TextInputType.phone,
+                                            maxLength: 10,
+                                            onChanged: _onPhoneNumberChanged,
+                                            inputFormatters: [
+                                              // Custom formatter that handles +91 removal
+                                              TextInputFormatter.withFunction(
+                                                  (oldValue, newValue) {
+                                                String formatted =
+                                                    _validateAndFormatPhoneNumber(
+                                                        newValue.text);
+                                                if (formatted.length > 10) {
+                                                  formatted = formatted
+                                                      .substring(0, 10);
+                                                }
+                                                return TextEditingValue(
+                                                  text: formatted,
+                                                  selection:
+                                                      TextSelection.collapsed(
+                                                          offset:
+                                                              formatted.length),
+                                                );
+                                              }),
+                                            ],
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              // Use theme text color
+                                              color: theme
+                                                  .textTheme.bodyLarge?.color,
+                                            ),
+                                            decoration: InputDecoration(
+                                              hintText: 'mobile_number'.tr(),
+                                              hintStyle: TextStyle(
+                                                // Use theme hint color
+                                                color: theme
+                                                    .textTheme.bodySmall?.color,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                              border: InputBorder.none,
+                                              counterText:
+                                                  '', // Hide character counter
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 16,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                        decoration: InputDecoration(
-                                          hintText: 'mobile_number'.tr(),
-                                          hintStyle: const TextStyle(
-                                            color: Colors.black38,
-                                            fontWeight: FontWeight.w400,
+                                        // Error text
+                                        if (phoneErrorText != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 20, top: 8),
+                                            child: Text(
+                                              phoneErrorText!,
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
                                           ),
-                                          border: InputBorder.none,
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -284,12 +425,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          theme.primaryColor.withValues(alpha: 0.1),
+                                      color: theme.primaryColor
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color:
-                                            theme.primaryColor.withValues(alpha: 0.3),
+                                        color: theme.primaryColor
+                                            .withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -318,8 +459,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: theme.primaryColor
-                                          .withValues(alpha: isLoading ? 0.2 : 0.3),
+                                      color: theme.primaryColor.withValues(
+                                          alpha: isLoading ? 0.2 : 0.3),
                                       blurRadius: 20,
                                       spreadRadius: 3,
                                       offset: const Offset(0, 5),
@@ -339,8 +480,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         padding: EdgeInsets.all(
                                             size.width > 600 ? 32 : 28),
                                         elevation: 0,
-                                        disabledBackgroundColor:
-                                            theme.primaryColor.withValues(alpha: 0.7),
+                                        disabledBackgroundColor: theme
+                                            .primaryColor
+                                            .withValues(alpha: 0.7),
                                       ),
                                       child: state is AuthLoading
                                           ? SizedBox(
@@ -395,7 +537,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(16),
                             border: isSelected
                                 ? Border.all(
-                                    color: theme.primaryColor.withValues(alpha: 0.3),
+                                    color: theme.primaryColor
+                                        .withValues(alpha: 0.3),
                                     width: 1,
                                   )
                                 : null,
@@ -409,7 +552,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : FontWeight.w400,
                               color: isSelected
                                   ? theme.primaryColor
-                                  : Colors.black54,
+                                  : theme.textTheme.bodyMedium?.color,
                             ),
                           ),
                         ),

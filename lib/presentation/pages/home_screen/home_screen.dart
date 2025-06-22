@@ -124,9 +124,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Show loading feedback
 
       // Let the BLoC handle the filtering
-      context
-          .read<HomeScreenResultsBloc>()
-          .add(LoadLotteryResultsByDateEvent(selectedDate));
+      if (mounted) {
+        context
+            .read<HomeScreenResultsBloc>()
+            .add(LoadLotteryResultsByDateEvent(selectedDate));
+      }
     }
   }
 
@@ -227,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  AppBar _buildAppBar(ThemeData theme) {
+ AppBar _buildAppBar(ThemeData theme) {
     return AppBar(
       centerTitle: true,
       backgroundColor: theme.appBarTheme.backgroundColor,
@@ -240,58 +242,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         onPressed: () => context.go('/notifications'),
       ),
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
+      title: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+        builder: (context, state) {
+          // Show offline indicator when offline
+          if (state is HomeScreenResultsLoaded && state.isOffline) {
+            return Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppResponsive.spacing(context, 10),
+                vertical: AppResponsive.spacing(context, 6),
+              ),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 20)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.wifi_off,
+                    size: AppResponsive.fontSize(context, 16),
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: AppResponsive.spacing(context, 8)),
+                  Text(
+                    'Offline',
+                    style: TextStyle(
+                      fontSize: AppResponsive.fontSize(context, 16),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          // Show app title when online
+          return Text(
             'LOTTO',
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 20),
               fontWeight: FontWeight.bold,
               color: theme.appBarTheme.titleTextStyle?.color,
             ),
-          ),
-          // Offline indicator
-          BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-            builder: (context, state) {
-              if (state is HomeScreenResultsLoaded && state.isOffline) {
-                return Padding(
-                  padding: EdgeInsets.only(left: AppResponsive.spacing(context, 8)),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppResponsive.spacing(context, 6),
-                      vertical: AppResponsive.spacing(context, 2),
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 10)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.wifi_off,
-                          size: AppResponsive.fontSize(context, 12),
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: AppResponsive.spacing(context, 4)),
-                        Text(
-                          'Offline',
-                          style: TextStyle(
-                            fontSize: AppResponsive.fontSize(context, 10),
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
+          );
+        },
       ),
       actions: [
         // Beautiful Coin Button

@@ -131,7 +131,7 @@ class ClaimScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ...steps.map((step) => _buildStepItem(step, theme)).toList(),
+            ...steps.map((step) => _buildStepItem(step, theme)),
           ],
         ),
       ),
