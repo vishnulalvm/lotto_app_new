@@ -4,13 +4,13 @@ import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 class DynamicPrizeSectionsWidget extends StatefulWidget {
   final LotteryResultModel result;
   final List<Map<String, dynamic>> allLotteryNumbers;
-  final int highlightedIndex;
+  final String highlightedTicketNumber; // Changed from int highlightedIndex
 
   const DynamicPrizeSectionsWidget({
     super.key,
     required this.result,
     required this.allLotteryNumbers,
-    required this.highlightedIndex,
+    required this.highlightedTicketNumber, // Updated parameter
   });
 
   @override
@@ -114,7 +114,7 @@ class _DynamicPrizeSectionsWidgetState
                     category: prize.prizeTypeFormatted,
                     location: ticket.location,
                     allLotteryNumbers: widget.allLotteryNumbers,
-                    highlightedIndex: widget.highlightedIndex,
+                    highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                     theme: theme,
                     variant: TicketVariant.withLocation,
                   );
@@ -153,7 +153,7 @@ class _DynamicPrizeSectionsWidgetState
                     ticketNumber: ticketNumbers.first,
                     category: prize.prizeTypeFormatted,
                     allLotteryNumbers: widget.allLotteryNumbers,
-                    highlightedIndex: widget.highlightedIndex,
+                    highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                     theme: theme,
                     variant: TicketVariant.singleLarge,
                   ),
@@ -183,7 +183,7 @@ class _DynamicPrizeSectionsWidgetState
                 ticketNumber: ticketNumber,
                 category: category,
                 allLotteryNumbers: widget.allLotteryNumbers,
-                highlightedIndex: widget.highlightedIndex,
+                highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                 theme: theme,
                 variant: TicketVariant.twoColumn,
               ),
@@ -244,7 +244,7 @@ class _DynamicPrizeSectionsWidgetState
                 ticketNumber: number,
                 category: category,
                 allLotteryNumbers: widget.allLotteryNumbers,
-                highlightedIndex: widget.highlightedIndex,
+                highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                 theme: theme,
                 variant: TicketVariant.consolationGrid,
               ),
@@ -273,7 +273,7 @@ class _DynamicPrizeSectionsWidgetState
                 ticketNumber: number,
                 category: category,
                 allLotteryNumbers: widget.allLotteryNumbers,
-                highlightedIndex: widget.highlightedIndex,
+                highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                 theme: theme,
                 variant: TicketVariant.standardGrid,
               ),
@@ -334,7 +334,7 @@ class _HighlightedTicketWidget extends StatefulWidget {
   final String category;
   final String? location;
   final List<Map<String, dynamic>> allLotteryNumbers;
-  final int highlightedIndex;
+  final String highlightedTicketNumber; // Changed from int highlightedIndex
   final ThemeData theme;
   final TicketVariant variant;
 
@@ -344,7 +344,7 @@ class _HighlightedTicketWidget extends StatefulWidget {
     required this.category,
     this.location,
     required this.allLotteryNumbers,
-    required this.highlightedIndex,
+    required this.highlightedTicketNumber, // Updated parameter
     required this.theme,
     required this.variant,
   });
@@ -385,8 +385,8 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
   void didUpdateWidget(_HighlightedTicketWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Update highlight status when highlightedIndex changes
-    if (widget.highlightedIndex != oldWidget.highlightedIndex) {
+    // Update highlight status when highlightedTicketNumber changes
+    if (widget.highlightedTicketNumber != oldWidget.highlightedTicketNumber) {
       _updateHighlightStatus();
     }
   }
@@ -405,14 +405,15 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
   }
 
   bool _checkIfHighlighted() {
-    if (widget.highlightedIndex < 0 || 
-        widget.highlightedIndex >= widget.allLotteryNumbers.length) {
+    // Return false if no search query
+    if (widget.highlightedTicketNumber.isEmpty) {
       return false;
     }
 
-    final highlightedItem = widget.allLotteryNumbers[widget.highlightedIndex];
-    return highlightedItem['number'] == widget.ticketNumber &&
-        highlightedItem['category'] == widget.category;
+    // Check if this ticket number matches the search query
+    // Support both exact match and partial match for better UX
+    return widget.ticketNumber.toLowerCase().contains(
+        widget.highlightedTicketNumber.toLowerCase());
   }
 
   @override

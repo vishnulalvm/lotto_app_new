@@ -1,11 +1,15 @@
+// Updated LotteryResultDetailsScreen with PDF sharing functionality
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
+import 'package:lotto_app/data/services/pdf_service.dart';
+import 'package:lotto_app/data/services/save_results.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_state.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/dynamic_prize_sections_widget.dart';
+import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_bar.dart';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
   final String? uniqueId;
@@ -27,106 +31,60 @@ class _LotteryResultDetailsScreenState
   // Store all lottery numbers with their categories
   final List<Map<String, dynamic>> _allLotteryNumbers = [];
 
-  // Track the currently highlighted index
-  int _highlightedIndex = -1;
+  // Add search functionality
+  String _searchQuery = '';
+  List<Map<String, dynamic>> _filteredLotteryNumbers = [];
 
-  // Global keys for each ticket widget to track their positions
-  final List<GlobalKey> _ticketKeys = [];
+  // Minimum search length
+  static const int _minSearchLength = 4;
 
-  // Timer for throttling scroll updates
-  bool _isScrollUpdatePending = false;
+  // PDF generation state
+  bool _isGeneratingPdf = false;
+  // Save state tracking
+  bool _isSaved = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Add scroll listener for dynamic highlighting
-    _scrollController.addListener(_onScroll);
+    // Initialize saved results service
+    _initializeSavedResultsService();
 
     // Load lottery result details if uniqueId is provided
     if (widget.uniqueId != null) {
       context.read<LotteryResultDetailsBloc>().add(
             LoadLotteryResultDetailsEvent(widget.uniqueId!),
           );
+
+      // Check if result is already saved
+      _checkIfSaved();
+    }
+  }
+
+  Future<void> _initializeSavedResultsService() async {
+    try {
+      await SavedResultsService.init();
+    } catch (e) {
+      print('Error initializing SavedResultsService: $e');
+    }
+  }
+
+  void _checkIfSaved() {
+    if (widget.uniqueId != null) {
+      setState(() {
+        _isSaved = SavedResultsService.isResultSaved(widget.uniqueId!);
+      });
     }
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_isScrollUpdatePending) return;
-
-    _isScrollUpdatePending = true;
-
-    // Throttle updates to improve performance
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateHighlightedIndex();
-        _isScrollUpdatePending = false;
-      }
-    });
-  }
-
-  void _updateHighlightedIndex() {
-    if (_allLotteryNumbers.isEmpty || _ticketKeys.isEmpty) return;
-
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // Define the "focus area" - center third of the screen
-    final focusAreaTop = screenHeight * 0.33;
-    final focusAreaBottom = screenHeight * 0.67;
-    final focusAreaCenter = screenHeight * 0.5;
-
-    int bestIndex = -1;
-    double bestDistance = double.infinity;
-
-    // Check each ticket's position relative to the focus area
-    for (int i = 0; i < _ticketKeys.length; i++) {
-      final key = _ticketKeys[i];
-      final context = key.currentContext;
-
-      if (context == null) continue;
-
-      try {
-        final RenderBox renderBox = context.findRenderObject() as RenderBox;
-        final position = renderBox.localToGlobal(Offset.zero);
-        final size = renderBox.size;
-
-        // Calculate the center of the widget
-        final widgetCenter = position.dy + (size.height / 2);
-
-        // Check if widget is in the focus area
-        if (widgetCenter >= focusAreaTop && widgetCenter <= focusAreaBottom) {
-          // Calculate distance from the center of focus area
-          final distanceFromCenter = (widgetCenter - focusAreaCenter).abs();
-
-          if (distanceFromCenter < bestDistance) {
-            bestDistance = distanceFromCenter;
-            bestIndex = i;
-          }
-        }
-      } catch (e) {
-        // Handle cases where RenderBox is not available
-        continue;
-      }
-    }
-
-    // Update highlighted index if it changed
-    if (bestIndex != _highlightedIndex) {
-      setState(() {
-        _highlightedIndex = bestIndex;
-      });
-    }
-  }
-
   void _initializeLotteryNumbers(LotteryResultModel result) {
     _allLotteryNumbers.clear();
-    _ticketKeys.clear();
 
     // Custom ordering: 1st prize, then consolation, then other prizes
     final prizes = result.prizes;
@@ -171,13 +129,8 @@ class _LotteryResultDetailsScreenState
       _addPrizeNumbers(prize);
     }
 
-    // Create GlobalKeys for each lottery number
-    for (int i = 0; i < _allLotteryNumbers.length; i++) {
-      _ticketKeys.add(GlobalKey());
-    }
-
-    // Reset highlighted index
-    _highlightedIndex = -1;
+    // Initialize filtered list
+    _filteredLotteryNumbers = List.from(_allLotteryNumbers);
   }
 
   void _addPrizeNumbers(PrizeModel prize) {
@@ -206,20 +159,217 @@ class _LotteryResultDetailsScreenState
     }
   }
 
-  // Method to scroll to a specific lottery number
-  void _scrollToNumber(int index) {
-    if (index < 0 || index >= _ticketKeys.length) return;
+  // Updated method to handle search functionality with minimum length
+  void _performSearch(String query) {
+    setState(() {
+      _searchQuery = query.trim();
 
-    final key = _ticketKeys[index];
-    final context = key.currentContext;
+      // Only perform search if query is empty or meets minimum length
+      if (_searchQuery.isEmpty) {
+        _filteredLotteryNumbers = List.from(_allLotteryNumbers);
+      } else if (_searchQuery.length >= _minSearchLength) {
+        _filteredLotteryNumbers = _allLotteryNumbers.where((item) {
+          final ticketNumber = item['number'].toString().toLowerCase();
+          final searchLower = _searchQuery.toLowerCase();
+          return ticketNumber.contains(searchLower);
+        }).toList();
+      } else {
+        // If query is less than minimum length, show all numbers
+        _filteredLotteryNumbers = List.from(_allLotteryNumbers);
+      }
+    });
+  }
 
-    if (context != null) {
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-        alignment: 0.5, // Center the item on screen
-      );
+  Future<void> _toggleSaveResult(LotteryResultModel result) async {
+    try {
+      if (_isSaved) {
+        // Remove from saved
+        final success =
+            await SavedResultsService.removeSavedResult(result.uniqueId);
+        if (success) {
+          setState(() {
+            _isSaved = false;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.bookmark_remove, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Removed from saved results'),
+                  ],
+                ),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      } else {
+        // Save result
+        final success = await SavedResultsService.saveLotteryResult(result);
+        if (success) {
+          setState(() {
+            _isSaved = true;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.bookmark_added, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Saved to your collection'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+                action: SnackBarAction(
+                  label: 'View',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    // Navigate to saved results screen
+                    context.go('/saved-results');
+                  },
+                ),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Failed to save result'),
+                  ],
+                ),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text('Error: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  // Add method to clear search
+  void _clearSearch() {
+    setState(() {
+      _searchQuery = '';
+      _filteredLotteryNumbers = List.from(_allLotteryNumbers);
+    });
+  }
+
+  // Helper method to check if search is active
+  bool get _isSearchActive =>
+      _searchQuery.isNotEmpty && _searchQuery.length >= _minSearchLength;
+
+  // PDF sharing functionality
+  Future<void> _shareResultAsPdf(LotteryResultModel result) async {
+    if (_isGeneratingPdf) return;
+
+    setState(() {
+      _isGeneratingPdf = true;
+    });
+
+    try {
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text('Generating PDF...'),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Theme.of(context).primaryColor,
+          ),
+        );
+      }
+
+      // Generate and share PDF
+      await PdfService.generateAndShareLotteryResult(result);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('PDF generated successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print(e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Failed to generate PDF: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _shareResultAsPdf(result),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+        });
+      }
     }
   }
 
@@ -230,69 +380,46 @@ class _LotteryResultDetailsScreenState
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(theme, context),
-      body: BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
-        builder: (context, state) {
-          if (state is LotteryResultDetailsLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (state is LotteryResultDetailsError) {
-            return _buildErrorWidget(theme, state.message);
-          } else if (state is LotteryResultDetailsLoaded) {
-            // Initialize lottery numbers
-            _initializeLotteryNumbers(state.data.result);
+      body: Stack(
+        children: [
+          BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+            builder: (context, state) {
+              if (state is LotteryResultDetailsLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (state is LotteryResultDetailsError) {
+                return _buildErrorWidget(theme, state.message);
+              } else if (state is LotteryResultDetailsLoaded) {
+                // Initialize lottery numbers
+                _initializeLotteryNumbers(state.data.result);
 
-            return _buildLoadedContent(theme, state.data.result);
-          } else {
-            return _buildInitialWidget(theme);
-          }
-        },
-      ),
-      // Optional: Add floating action button to show current position
-      floatingActionButton: _allLotteryNumbers.isNotEmpty &&
-              _highlightedIndex >= 0
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                // Show a dialog with current position info
-                _showPositionDialog();
-              },
-              icon: const Icon(Icons.my_location),
-              label:
-                  Text('${_highlightedIndex + 1}/${_allLotteryNumbers.length}'),
-              backgroundColor: theme.primaryColor.withValues(alpha: 0.9),
-            )
-          : null,
-    );
-  }
-
-  void _showPositionDialog() {
-    if (_highlightedIndex < 0 || _highlightedIndex >= _allLotteryNumbers.length)
-      return;
-
-    final currentNumber = _allLotteryNumbers[_highlightedIndex];
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Current Position'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Number: ${currentNumber['number']}'),
-            Text('Category: ${currentNumber['category']}'),
-            Text('Prize: ${currentNumber['prize']}'),
-            if (currentNumber['location']?.isNotEmpty == true)
-              Text('Location: ${currentNumber['location']}'),
-            const SizedBox(height: 16),
-            Text(
-                'Position: ${_highlightedIndex + 1} of ${_allLotteryNumbers.length}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+                return _buildLoadedContent(theme, state.data.result);
+              } else {
+                return _buildInitialWidget(theme);
+              }
+            },
+          ),
+          // Add FloatingSearchBar only when data is loaded
+          BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+            builder: (context, state) {
+              if (state is LotteryResultDetailsLoaded &&
+                  _allLotteryNumbers.isNotEmpty) {
+                return FloatingSearchBar(
+                  hintText: 'Eg. PV409930,',
+                  onChanged: (query) {
+                    // Implement real-time search
+                    _performSearch(query);
+                  },
+                  onSubmitted: (query) {
+                    // Implement search on submit
+                    _performSearch(query);
+                  },
+                  bottomPadding: 20.0,
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
         ],
       ),
@@ -318,12 +445,19 @@ class _LotteryResultDetailsScreenState
             children: [
               _buildHeaderSection(theme, result),
               const SizedBox(height: 6),
-              // Updated to use dynamic highlighting
+              // Show search results info if searching
+              if (_isSearchActive) _buildSearchResultsInfo(theme),
+              // Show search instruction if query is too short
+              if (_searchQuery.isNotEmpty && !_isSearchActive)
+                _buildSearchInstructionInfo(theme),
+              const SizedBox(height: 6),
               DynamicPrizeSectionsWidget(
                 key: ValueKey('prize_sections_${result.uniqueId}'),
-                highlightedIndex: _highlightedIndex,
                 result: result,
-                allLotteryNumbers: _allLotteryNumbers,
+                allLotteryNumbers: _isSearchActive
+                    ? _filteredLotteryNumbers
+                    : _allLotteryNumbers,
+                highlightedTicketNumber: _isSearchActive ? _searchQuery : '',
               ),
               const SizedBox(height: 6),
               _buildContactSection(theme),
@@ -331,6 +465,91 @@ class _LotteryResultDetailsScreenState
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResultsInfo(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: theme.primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.primaryColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.search,
+            size: 16,
+            color: theme.primaryColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Found ${_filteredLotteryNumbers.length} result${_filteredLotteryNumbers.length != 1 ? 's' : ''} for "$_searchQuery"',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.primaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              _clearSearch();
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: theme.primaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchInstructionInfo(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Enter at least $_minSearchLength digits to search (${_searchQuery.length}/$_minSearchLength)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -460,45 +679,61 @@ class _LotteryResultDetailsScreenState
         },
       ),
       actions: [
-        // Optional: Add action to jump to specific position
-        if (_allLotteryNumbers.isNotEmpty)
-          PopupMenuButton<int>(
-            icon: Icon(Icons.more_vert,
-                color: theme.appBarTheme.actionsIconTheme?.color),
-            onSelected: (index) => _scrollToNumber(index),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 0,
-                child: Row(
-                  children: [
-                    Icon(Icons.looks_one),
-                    SizedBox(width: 8),
-                    Text('Go to First Prize'),
-                  ],
-                ),
-              ),
-              if (_allLotteryNumbers.length > 1)
-                PopupMenuItem(
-                  value: _allLotteryNumbers.length - 1,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.last_page),
-                      SizedBox(width: 8),
-                      Text('Go to Last Number'),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        IconButton(
-          icon: Icon(Icons.share,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          onPressed: () {},
+        // Updated Share Button with PDF generation
+        BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+          builder: (context, state) {
+            if (state is LotteryResultDetailsLoaded) {
+              return IconButton(
+                icon: _isGeneratingPdf
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            theme.appBarTheme.actionsIconTheme?.color ??
+                                theme.primaryColor,
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        Icons.share,
+                        color: theme.appBarTheme.actionsIconTheme?.color,
+                      ),
+                onPressed: _isGeneratingPdf
+                    ? null
+                    : () => _shareResultAsPdf(state.data.result),
+                tooltip: 'Share as PDF',
+              );
+            }
+            return IconButton(
+              icon: Icon(Icons.share,
+                  color: theme.appBarTheme.actionsIconTheme?.color),
+              onPressed: null, // Disabled when no data
+            );
+          },
         ),
-        IconButton(
-          icon: Icon(Icons.bookmark_outline,
-              color: theme.appBarTheme.actionsIconTheme?.color),
-          onPressed: () {},
+        // Updated Save/Bookmark Button
+        BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+          builder: (context, state) {
+            if (state is LotteryResultDetailsLoaded) {
+              return IconButton(
+                icon: Icon(
+                  _isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                  color: _isSaved
+                      ? theme.primaryColor
+                      : theme.appBarTheme.actionsIconTheme?.color,
+                ),
+                onPressed: () => _toggleSaveResult(state.data.result),
+                tooltip: _isSaved ? 'Remove from saved' : 'Save result',
+              );
+            }
+            return IconButton(
+              icon: Icon(Icons.bookmark_outline,
+                  color: theme.appBarTheme.actionsIconTheme?.color),
+              onPressed: null, // Disabled when no data
+            );
+          },
         ),
       ],
     );

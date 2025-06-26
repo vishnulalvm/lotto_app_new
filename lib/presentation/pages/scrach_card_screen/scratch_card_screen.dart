@@ -356,7 +356,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: bannerColor,
-        border: Border.all(color: iconColor.withOpacity(0.3)),
+        border: Border.all(color: iconColor.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -364,7 +364,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -389,7 +389,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 Text(
                   subtitle,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: iconColor.withOpacity(0.8),
+                    color: iconColor.withValues(alpha: 0.8),
                   ),
                 ),
                 // Show relevant dates
@@ -399,7 +399,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   Text(
                     '${'requested_date'.tr()}: ${_formatDate(result.requestedDate ?? '')} • ${'latest_result'.tr()}: ${_formatDate(result.drawDate)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: iconColor.withOpacity(0.7),
+                      color: iconColor.withValues(alpha: 0.7),
                       fontSize: 11,
                     ),
                   ),
@@ -629,7 +629,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                             Text(
                               'previous_draw_win'.tr(),
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 fontStyle: FontStyle.italic,
                               ),
                               textAlign: TextAlign.center,

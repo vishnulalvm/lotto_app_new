@@ -234,14 +234,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       centerTitle: true,
       backgroundColor: theme.appBarTheme.backgroundColor,
       elevation: theme.appBarTheme.elevation,
-      leading: IconButton(
-        icon: Icon(
-          Icons.notifications,
-          color: theme.appBarTheme.actionsIconTheme?.color,
-          size: AppResponsive.fontSize(context, 24),
-        ),
-        onPressed: () => context.go('/notifications'),
-      ),
+      // leading: IconButton(
+      //   icon: Icon(
+      //     Icons.notifications,
+      //     color: theme.appBarTheme.actionsIconTheme?.color,
+      //     size: AppResponsive.fontSize(context, 24),
+      //   ),
+      //   onPressed: () => context.go('/notifications'),
+      // ),
       title: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
         builder: (context, state) {
           // Show offline indicator when offline
@@ -281,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return Text(
             'LOTTO',
             style: TextStyle(
-              fontSize: AppResponsive.fontSize(context, 20),
+              fontSize: AppResponsive.fontSize(context, 22),
               fontWeight: FontWeight.bold,
               color: theme.appBarTheme.titleTextStyle?.color,
             ),
