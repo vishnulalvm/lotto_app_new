@@ -1,7 +1,9 @@
 // Updated LotteryResultDetailsScreen with PDF sharing functionality
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 import 'package:lotto_app/data/services/pdf_service.dart';
 import 'package:lotto_app/data/services/save_results.dart';
@@ -373,6 +375,153 @@ class _LotteryResultDetailsScreenState
     }
   }
 
+  // Method to format lottery result as text
+  String _formatLotteryResultText(LotteryResultModel result) {
+    final buffer = StringBuffer();
+    
+    // Header
+    buffer.writeln('KERALA STATE LOTTERIES - RESULT');
+    buffer.writeln('${result.lotteryName.toUpperCase()} LOTTERY NO: ${result.drawNumber}');
+    buffer.writeln('DRAW HELD ON: ${result.formattedDate}');
+    buffer.writeln('=' * 50);
+    buffer.writeln();
+    
+    // Prizes in order
+    final prizes = result.prizes;
+    
+    // First prize
+    final firstPrize = result.getFirstPrize();
+    if (firstPrize != null) {
+      buffer.writeln('${firstPrize.prizeTypeFormatted} Rs : ${firstPrize.formattedPrizeAmount}/-');
+      for (final ticket in firstPrize.ticketsWithLocation) {
+        buffer.writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+      }
+      buffer.writeln();
+    }
+    
+    // Consolation prize
+    final consolationPrize = result.getConsolationPrize();
+    if (consolationPrize != null) {
+      buffer.writeln('${consolationPrize.prizeTypeFormatted} Rs : ${consolationPrize.formattedPrizeAmount}/-');
+      final numbers = consolationPrize.allTicketNumbers.join(', ');
+      buffer.writeln('  $numbers');
+      buffer.writeln();
+    }
+    
+    // Remaining prizes (2nd to 10th)
+    final remainingPrizes = prizes
+        .where((prize) => prize.prizeType != '1st' && prize.prizeType != 'consolation')
+        .toList();
+    
+    // Sort remaining prizes
+    remainingPrizes.sort((a, b) {
+      final prizeOrder = ['2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+      final aIndex = prizeOrder.indexOf(a.prizeType);
+      final bIndex = prizeOrder.indexOf(b.prizeType);
+      return aIndex.compareTo(bIndex);
+    });
+    
+    buffer.writeln('FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS:');
+    buffer.writeln();
+    
+    for (final prize in remainingPrizes) {
+      buffer.writeln('${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
+      final numbers = prize.allTicketNumbers.join(', ');
+      buffer.writeln('  $numbers');
+      buffer.writeln();
+    }
+    
+    // Footer
+    buffer.writeln('=' * 50);
+    buffer.writeln('The prize winners are advised to verify the winning numbers');
+    buffer.writeln('with the results published in the Kerala Government Gazette');
+    buffer.writeln('and surrender the winning tickets within 90 days.');
+    buffer.writeln();
+    buffer.writeln('Contact: 0471-2305230');
+    buffer.writeln('Email: cru.dir.lotteries@kerala.gov.in');
+    buffer.writeln('Visit: www.Lottoapp.app');
+    
+    return buffer.toString();
+  }
+
+  // Method to copy result text and show share options
+  Future<void> _copyAndShareResult(LotteryResultModel result) async {
+    try {
+      final resultText = _formatLotteryResultText(result);
+      
+      // Copy to clipboard
+      await Clipboard.setData(ClipboardData(text: resultText));
+      
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Result copied to clipboard'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'Share',
+              textColor: Colors.white,
+              onPressed: () => _shareResultText(result),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text('Failed to copy: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to share result text
+  Future<void> _shareResultText(LotteryResultModel result) async {
+    try {
+      final resultText = _formatLotteryResultText(result);
+      final subject = 'Kerala Lottery Result: ${result.lotteryName} - Draw ${result.drawNumber}';
+      
+      await Share.share(
+        resultText,
+        subject: subject,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text('Failed to share: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -679,6 +828,26 @@ class _LotteryResultDetailsScreenState
         },
       ),
       actions: [
+        // Copy Button
+        BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+          builder: (context, state) {
+            if (state is LotteryResultDetailsLoaded) {
+              return IconButton(
+                icon: Icon(
+                  Icons.content_copy,
+                  color: theme.appBarTheme.actionsIconTheme?.color,
+                ),
+                onPressed: () => _copyAndShareResult(state.data.result),
+                tooltip: 'Copy result',
+              );
+            }
+            return IconButton(
+              icon: Icon(Icons.content_copy,
+                  color: theme.appBarTheme.actionsIconTheme?.color),
+              onPressed: null, // Disabled when no data
+            );
+          },
+        ),
         // Updated Share Button with PDF generation
         BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
           builder: (context, state) {

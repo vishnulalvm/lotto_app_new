@@ -36,14 +36,15 @@ class PdfService {
         final regularFontData =
             await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
         final boldFontData =
-            await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
+            await rootBundle.load('assets/fonts/NotoSans_Condensed-Bold.ttf');
+
         _notoSansRegular = pw.Font.ttf(regularFontData);
         _notoSansBold = pw.Font.ttf(boldFontData);
         print('Custom fonts loaded successfully.');
       } catch (e) {
         print('Failed to load custom fonts, using library default: $e');
-        _notoSansRegular = null;
-        _notoSansBold = null;
+        _notoSansRegular = pw.Font.helvetica();
+        _notoSansBold = pw.Font.helveticaBold();
       }
     }
   }
@@ -59,13 +60,14 @@ class PdfService {
     PdfColor? color,
   }) {
     final isBold = fontWeight == pw.FontWeight.bold;
-    pw.Font? selectedFont = isBold ? _notoSansBold : _notoSansRegular;
-    selectedFont ??= _notoSansRegular; // Fallback if bold isn't loaded
+    pw.Font baseFont = isBold
+        ? (_notoSansBold ?? pw.Font.helveticaBold())
+        : (_notoSansRegular ?? pw.Font.helvetica());
 
     return pw.TextStyle(
-      font: selectedFont,
-      fontSize:
-          fontSize ?? 10, // Default to a smaller font size for minimalist look
+      font: baseFont,
+      fontFallback: [_notoSansRegular ?? pw.Font.helvetica()],
+      fontSize: fontSize ?? 10,
       fontWeight: fontWeight ?? pw.FontWeight.normal,
       color: color ?? PdfColors.black,
     );
@@ -109,38 +111,87 @@ class PdfService {
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.symmetric(vertical: 30, horizontal: 25),
+        // 1️⃣ Move margin & format into PageTheme
+        pageTheme: pw.PageTheme(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.symmetric(vertical: 30, horizontal: 25),
+
+          // 2️⃣ Draw the watermark on every page
+          buildBackground: (pw.Context context) {
+            return pw.Center(
+              child: pw.Opacity(
+                opacity: 0.08,
+                child: pw.Text(
+                  'LOTTO',
+                  style: pw.TextStyle(
+                    font: _notoSansBold, // your loaded bold font
+                    fontFallback: [_notoSansRegular!], // ensures ₹ renders
+                    fontSize: 100,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey400,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
         header: (pw.Context context) => _buildMinimalHeader(result),
         footer: (pw.Context context) =>
             _buildMinimalFooter(context.pageNumber, context.pagesCount),
+
         build: (pw.Context context) {
-          // **FIX:** Build a single flat list of widgets to allow page breaks anywhere.
-          final List<pw.Widget> widgets = [];
+          final List<pw.Widget> contentWidgets = [];
 
           // --- High Tier Prizes ---
-          widgets.addAll(
-              highTierPrizes.map((prize) => _buildHighTierPrize(prize)));
+          contentWidgets.addAll(
+            highTierPrizes.map((prize) => _buildHighTierPrize(prize)),
+          );
 
           // --- Consolation Prize ---
           if (consolationPrize != null) {
-            widgets.add(_buildConsolationPrize(consolationPrize));
+            contentWidgets.add(_buildConsolationPrize(consolationPrize));
           }
 
-          widgets.add(pw.SizedBox(height: 15));
-          widgets.add(pw.Text(
-            'FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS',
-            style: _safeTextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
-            textAlign: pw.TextAlign.center,
-          ));
-          widgets.add(pw.SizedBox(height: 10));
+          contentWidgets.add(pw.SizedBox(height: 15));
+          contentWidgets.add(
+            pw.Text(
+              'FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS',
+              style: _safeTextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 11,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          );
+          contentWidgets.add(pw.SizedBox(height: 10));
 
           // --- Lower Tier Prizes ---
-          // Use `expand` to flatten the list of lists into a single list
-          widgets.addAll(lowerTierPrizes
-              .expand((prize) => _buildLowerTierPrizeWidgets(prize)));
+          contentWidgets.addAll(
+            lowerTierPrizes
+                .expand((prize) => _buildLowerTierPrizeWidgets(prize)),
+          );
 
-          return widgets;
+          // --- Tappable Link at bottom ---
+          contentWidgets.add(pw.SizedBox(height: 20));
+          contentWidgets.add(
+            pw.Center(
+              child: pw.UrlLink(
+                destination: 'https://www.lottoapp.app',
+                child: pw.Text(
+                  'Visit www.Lottoapp.app',
+                  style: pw.TextStyle(
+                    font: _notoSansRegular, // your loaded regular font
+                    fontSize: 12,
+                    decoration: pw.TextDecoration.underline,
+                    color: PdfColors.blue,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          return contentWidgets;
         },
       ),
     );
@@ -222,9 +273,8 @@ class PdfService {
 
   /// **NEW:** Returns a flat list of widgets for a single prize category.
 
-  /// Replace your lower-tier builder with this, choosing `columns = 8` (or any count).
   static List<pw.Widget> _buildLowerTierPrizeWidgets(PrizeModel prize) {
-    const int columns = 8; // ← increase this to fit more per row
+    const int columns = 10; // ← increased to 10 columns
     final widgets = <pw.Widget>[];
 
     // Prize header
