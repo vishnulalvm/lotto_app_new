@@ -10,9 +10,64 @@ import 'package:lotto_app/presentation/blocs/color_theme/theme_bloc.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_event.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
+import 'package:lotto_app/presentation/pages/settings_screen/widgets/disclaimer_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  void _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch $url');
+    }
+  }
+
+  void _checkForUpdate() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+
+    // Replace with your actual latest version
+    const latestVersion = '1.0.9';
+
+    if (currentVersion != latestVersion) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Update Available'),
+          content: Text('A newer version ($latestVersion) is available.'),
+          actions: [
+            TextButton(
+              child: const Text('Later'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Update Now'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                launchUrl(
+                  Uri.parse(
+                    'https://play.google.com/store/apps/details?id=com.example.lotto_app',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You are using the latest version')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,9 +157,26 @@ class SettingsScreen extends StatelessWidget {
                     'about'.tr(),
                     [
                       _buildListTile(
-                          'terms_of_use'.tr(), Icons.description_outlined),
+                        'terms_of_use'.tr(),
+                        Icons.description_outlined,
+                        onTap: () => _launchUrl(
+                            'https://lotto-app-f3440.web.app/terms-conditions.html'),
+                      ),
                       _buildListTile(
-                          'privacy_policy'.tr(), Icons.privacy_tip_outlined),
+                        'privacy_policy'.tr(),
+                        Icons.privacy_tip_outlined,
+                        onTap: () => _launchUrl(
+                            'https://lotto-app-f3440.web.app/privacy-policy.html'),
+                      ),
+                      _buildListTile(
+                        'disclaimer'.tr(),
+                        Icons.warning_amber_outlined,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const DisclaimerScreen()),
+                        ),
+                      ),
                       _buildListTile(
                         'check_for_updates'.tr(),
                         Icons.update,
@@ -112,6 +184,7 @@ class SettingsScreen extends StatelessWidget {
                           '1.0.8(39)',
                           style: TextStyle(color: Colors.grey),
                         ),
+                        onTap: _checkForUpdate,
                       ),
                     ],
                     theme,
@@ -429,7 +502,8 @@ class SettingsScreen extends StatelessWidget {
             color: theme.cardColor,
             border: Border(
               top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-              bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
+              bottom:
+                  BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
             ),
           ),
           child: Column(children: children),

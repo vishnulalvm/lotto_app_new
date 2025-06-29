@@ -23,6 +23,7 @@ dependencies:
   http: ^1.4.0
   image_picker: ^1.1.2
   mobile_scanner: ^6.0.2
+  package_info_plus: ^8.3.0
   path_provider: ^2.1.4
   pdf: ^3.11.3
   scratcher: ^2.5.0
