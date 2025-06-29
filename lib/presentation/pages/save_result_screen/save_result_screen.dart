@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/data/models/results_screen/save_result.dart';
 import 'package:lotto_app/data/services/save_results.dart';
 
@@ -44,7 +45,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading saved results: $e'),
+            content: Text('${'error_loading_saved_results'.tr()}$e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -91,8 +92,8 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.isFavorite
-                ? 'Added to favorites'
-                : 'Removed from favorites'),
+                ? 'added_to_favorites'.tr()
+                : 'removed_from_favorites'.tr()),
             duration: const Duration(seconds: 1),
           ),
         );
@@ -108,16 +109,16 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${result.title} removed from saved'),
+            content: Text('${result.title}${'removed_from_saved_suffix'.tr()}'),
             action: SnackBarAction(
-              label: 'Undo',
+              label: 'undo'.tr(),
               onPressed: () async {
                 // Re-save the result (you might want to store the original LotteryResultModel)
                 // For now, just show a message
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                        'Cannot undo - please save from the original result'),
+                        'cannot_undo_message'.tr()),
                   ),
                 );
               },
@@ -152,7 +153,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'Saved Results',
+        'saved_results'.tr(),
         style: theme.appBarTheme.titleTextStyle,
       ),
       actions: [
@@ -195,7 +196,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
                       ? Icons.favorite
                       : Icons.favorite_border),
                   const SizedBox(width: 8),
-                  Text(_showFavoritesOnly ? 'Show All' : 'Favorites Only'),
+                  Text(_showFavoritesOnly ? 'show_all'.tr() : 'favorites_only'.tr()),
                 ],
               ),
             ),
@@ -203,10 +204,10 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
             PopupMenuItem(
               value: 'clear_all',
               child: Row(
-                children: const [
+                children: [
                   Icon(Icons.clear_all, color: Colors.red),
                   SizedBox(width: 8),
-                  Text('Clear All', style: TextStyle(color: Colors.red)),
+                  Text('clear_all'.tr(), style: TextStyle(color: Colors.red)),
                 ],
               ),
             ),
@@ -244,12 +245,12 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Saved Results',
+            'no_saved_results'.tr(),
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           Text(
-            'Your saved lottery results will appear here',
+            'saved_results_description'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
@@ -258,7 +259,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go('/'),
-            child: const Text('Browse Results'),
+            child: Text('browse_results'.tr()),
           ),
         ],
       ),
@@ -277,14 +278,14 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Results Found',
+            'no_results_found'.tr(),
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           Text(
             _showFavoritesOnly
-                ? 'No favorite results found'
-                : 'No results match your search',
+                ? 'no_favorite_results'.tr()
+                : 'no_search_match'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
@@ -299,7 +300,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
               });
               _applyFilters();
             },
-            child: const Text('Clear Filters'),
+            child: Text('clear_filters'.tr()),
           ),
         ],
       ),
@@ -321,8 +322,8 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
                 Expanded(
                   child: Text(
                     _showFavoritesOnly
-                        ? 'Showing ${filteredResults.length} favorite result${filteredResults.length != 1 ? 's' : ''}'
-                        : 'Showing ${filteredResults.length} result${filteredResults.length != 1 ? 's' : ''} for "$_searchQuery"',
+                        ? '${'showing_prefix'.tr()}${filteredResults.length}${'favorite_result_singular'.tr()}${filteredResults.length != 1 ? 's' : ''}'
+                        : '${'showing_prefix'.tr()}${filteredResults.length} result${filteredResults.length != 1 ? 's' : ''} for "$_searchQuery"',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.primaryColor,
                     ),
@@ -336,7 +337,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
                     });
                     _applyFilters();
                   },
-                  child: Text('Clear',
+                  child: Text('clear'.tr(),
                       style: TextStyle(color: theme.primaryColor)),
                 ),
               ],

@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
@@ -101,9 +102,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      helpText: 'Select date to filter results',
-      cancelText: 'Cancel',
-      confirmText: 'Filter',
+      helpText: 'select_date_filter_results'.tr(),
+      cancelText: 'cancel'.tr(),
+      confirmText: 'filter'.tr(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -134,19 +135,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Helper method to format date for display
   String _formatDateForDisplay(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+    final months = [
+      'month_jan'.tr(),
+      'month_feb'.tr(),
+      'month_mar'.tr(),
+      'month_apr'.tr(),
+      'month_may'.tr(),
+      'month_jun'.tr(),
+      'month_jul'.tr(),
+      'month_aug'.tr(),
+      'month_sep'.tr(),
+      'month_oct'.tr(),
+      'month_nov'.tr(),
+      'month_dec'.tr()
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -192,10 +193,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             if (state is HomeScreenResultsError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error: ${state.message}'),
+                  content: Text('${'error_prefix'.tr()}${state.message}'),
                   backgroundColor: Colors.red,
                   action: SnackBarAction(
-                    label: 'Retry',
+                    label: 'retry'.tr(),
                     textColor: Colors.white,
                     onPressed: _loadLotteryResults,
                   ),
@@ -265,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   SizedBox(width: AppResponsive.spacing(context, 8)),
                   Text(
-                    'Offline',
+                    'offline'.tr(),
                     style: TextStyle(
                       fontSize: AppResponsive.fontSize(context, 16),
                       color: Colors.white,
@@ -279,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           // Show app title when online
           return Text(
-            'LOTTO',
+            'lotto_app_title'.tr(),
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 22),
               fontWeight: FontWeight.bold,
@@ -520,13 +521,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final List<Map<String, dynamic>> navItems = [
       {
         'icon': Icons.qr_code_scanner,
-        'label': 'Scanner',
+        'label': 'scanner'.tr(),
         'route': '/barcode_scanner_screen'
       },
-      {'icon': Icons.emoji_events, 'label': 'Claim', 'route': '/claim'},
-      {'icon': Icons.games_outlined, 'label': 'Predict', 'route': '/Predict'},
-      {'icon': Icons.newspaper, 'label': 'News', 'route': '/news_screen'},
-      {'icon': Icons.bookmark, 'label': 'Saved', 'route': '/saved-results'},
+      {'icon': Icons.emoji_events, 'label': 'claim'.tr(), 'route': '/claim'},
+      {'icon': Icons.games_outlined, 'label': 'predict'.tr(), 'route': '/Predict'},
+      {'icon': Icons.newspaper, 'label': 'news'.tr(), 'route': '/news_screen'},
+      {'icon': Icons.bookmark, 'label': 'saved'.tr(), 'route': '/saved-results'},
     ];
 
     return Container(
@@ -611,7 +612,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 Text(
-                  state.isRefreshing ? 'Refreshing results...' : 'Loading lottery results...',
+                  state.isRefreshing ? 'refreshing_results'.tr() : 'loading_lottery_results'.tr(),
                   style: TextStyle(
                     color: theme.textTheme.bodyMedium?.color,
                     fontSize: AppResponsive.fontSize(context, 14),
@@ -620,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 if (state.isRefreshing) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Getting latest data from server',
+                    'getting_latest_data'.tr(),
                     style: TextStyle(
                       color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                       fontSize: AppResponsive.fontSize(context, 12),
@@ -651,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Connection Error',
+                              'connection_error'.tr(),
                               style: TextStyle(
                                 color: Colors.red,
                                 fontSize: AppResponsive.fontSize(context, 14),
@@ -659,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                             ),
                             Text(
-                              'Showing cached data',
+                              'showing_cached_data'.tr(),
                               style: TextStyle(
                                 color: Colors.red.withValues(alpha: 0.8),
                                 fontSize: AppResponsive.fontSize(context, 12),
@@ -671,7 +672,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       TextButton(
                         onPressed: _loadLotteryResults,
                         child: Text(
-                          'Retry',
+                          'retry'.tr(),
                           style: TextStyle(color: Colors.red, fontSize: AppResponsive.fontSize(context, 12)),
                         ),
                       ),
@@ -696,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Failed to load results',
+                  'failed_load_results'.tr(),
                   style: TextStyle(
                     color: theme.textTheme.titleLarge?.color,
                     fontSize: AppResponsive.fontSize(context, 18),
@@ -716,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ElevatedButton.icon(
                   onPressed: _loadLotteryResults,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Try Again'),
+                  label: Text('try_again'.tr()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                   ),
@@ -733,7 +734,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return Container(
           padding: const EdgeInsets.all(32),
           child: Text(
-            'Pull to refresh lottery results',
+            'pull_refresh_lottery_results'.tr(),
             style: TextStyle(
               color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               fontSize: AppResponsive.fontSize(context, 14),
@@ -877,7 +878,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                   // Winner section
                   Text(
-                    'First Prize Winner:',
+                    'first_prize_winner'.tr(),
                     style: TextStyle(
                       fontSize: AppResponsive.fontSize(context, 13),
                       fontWeight: FontWeight.w500,
@@ -971,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'See More',
+                            'see_more'.tr(),
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 12),
                               fontWeight: FontWeight.w600,
@@ -1017,7 +1018,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
               child: Text(
-                'NEW',
+                'new_badge'.tr(),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: AppResponsive.fontSize(context, 10),
@@ -1085,7 +1086,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               SizedBox(width: AppResponsive.spacing(context, 8)),
               Expanded(
                 child: Text(
-                  'Showing results for ${_formatDateForDisplay(state.filteredDate!)}',
+                  '${'showing_results_for'.tr()}${_formatDateForDisplay(state.filteredDate!)}',
                   style: TextStyle(
                     color: theme.colorScheme.primary,
                     fontSize: AppResponsive.fontSize(context, 14),
@@ -1103,7 +1104,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: theme.colorScheme.primary,
                 ),
                 label: Text(
-                  'Show All',
+                  'show_all'.tr(),
                   style: TextStyle(
                     fontSize: AppResponsive.fontSize(context, 12),
                     color: theme.colorScheme.primary,
@@ -1139,8 +1140,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const SizedBox(height: 16),
                 Text(
                   (state?.isFiltered == true)
-                      ? 'No lottery results found for selected date'
-                      : 'No lottery results available',
+                      ? 'no_results_selected_date'.tr()
+                      : 'no_results_available'.tr(),
                   style: TextStyle(
                     color: theme.textTheme.bodyMedium?.color,
                     fontSize: AppResponsive.fontSize(context, 16),
@@ -1154,8 +1155,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       context.read<HomeScreenResultsBloc>().add(ClearDateFilterEvent());
                     },
                     icon: const Icon(Icons.clear),
-                    label: const Text(
-                      'Show All Results',
+                    label: Text(
+                      'show_all_results'.tr(),
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 14,

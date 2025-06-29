@@ -155,7 +155,7 @@ class _DynamicPrizeSectionsWidgetState
                   () {
                     final keyId = '${prize.prizeTypeFormatted}_${ticketNumbers.first}';
                     final globalKey = widget.ticketGlobalKeys[keyId];
-                    return _HighlightedTicketWidget(
+                      return _HighlightedTicketWidget(
                       key: globalKey ?? ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
                       ticketNumber: ticketNumbers.first,
                       category: prize.prizeTypeFormatted,

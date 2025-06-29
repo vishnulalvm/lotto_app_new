@@ -48,6 +48,7 @@ class _LotteryResultDetailsScreenState
   // Auto-scroll functionality
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
   bool _isAutoScrolling = false;
+  String _lastSearchQuery = '';
 
   @override
   void initState() {
@@ -169,6 +170,7 @@ class _LotteryResultDetailsScreenState
   void _performSearch(String query) {
     setState(() {
       _searchQuery = query.trim();
+      _lastSearchQuery = _searchQuery;
 
       // Only perform search if query is empty or meets minimum length
       if (_searchQuery.isEmpty) {
@@ -181,9 +183,18 @@ class _LotteryResultDetailsScreenState
           return ticketNumber.contains(searchLower);
         }).toList();
         
-        // Generate GlobalKeys for matched tickets and trigger auto-scroll
+        // Generate GlobalKeys for matched tickets
         _generateTicketKeys();
-        _triggerAutoScroll();
+        
+        // Schedule auto-scroll after widget rebuild completes
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Add additional delay to ensure widgets are fully built with new keys
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (mounted && _searchQuery == _lastSearchQuery && _filteredLotteryNumbers.isNotEmpty) {
+              _triggerAutoScroll();
+            }
+          });
+        });
       } else {
         // If query is less than minimum length, show all numbers
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
@@ -212,10 +223,7 @@ class _LotteryResultDetailsScreenState
   // Trigger auto-scroll to first match
   void _triggerAutoScroll() {
     if (_filteredLotteryNumbers.isNotEmpty && !_isAutoScrolling) {
-      // Use post-frame callback to ensure widgets are built
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToFirstMatch();
-      });
+      _scrollToFirstMatch();
     }
   }
 
@@ -228,10 +236,26 @@ class _LotteryResultDetailsScreenState
     try {
       _isAutoScrolling = true;
       
-      // Get the first match
-      final firstMatch = _filteredLotteryNumbers.first;
-      final ticketNumber = firstMatch['number'].toString();
-      final category = firstMatch['category'].toString();
+      // Find the best match based on search query or use first match
+      Map<String, dynamic>? targetMatch;
+      
+      if (_searchQuery.isNotEmpty && _searchQuery.length >= _minSearchLength) {
+        // Try to find the most relevant match for the search query
+        targetMatch = _filteredLotteryNumbers.firstWhere(
+          (item) {
+            final ticketNumber = item['number'].toString().toLowerCase();
+            final searchLower = _searchQuery.toLowerCase();
+            return ticketNumber.contains(searchLower);
+          },
+          orElse: () => _filteredLotteryNumbers.first,
+        );
+      } else {
+        // Use first match if no specific search query
+        targetMatch = _filteredLotteryNumbers.first;
+      }
+      
+      final ticketNumber = targetMatch['number'].toString();
+      final category = targetMatch['category'].toString();
       final keyId = '${category}_$ticketNumber';
       
       final globalKey = _ticketGlobalKeys[keyId];
@@ -239,9 +263,9 @@ class _LotteryResultDetailsScreenState
         // Scroll to the widget with smooth animation
         Scrollable.ensureVisible(
           globalKey!.currentContext!,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          alignment: 0.3, // Position slightly above center for better visibility
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+          alignment: 0.2,
           alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
         ).then((_) {
           // Reset auto-scrolling flag after animation completes
@@ -252,16 +276,18 @@ class _LotteryResultDetailsScreenState
           }
         });
       } else {
-        // If context is not available yet, try again after a short delay
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
+        // If context is not available yet, try again after a longer delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && _searchQuery == _lastSearchQuery) {
+            setState(() {
+              _isAutoScrolling = false;
+            });
             _scrollToFirstMatch();
           }
         });
       }
     } catch (e) {
       // Handle any scrolling errors gracefully
-      print('Auto-scroll error: $e');
       if (mounted) {
         setState(() {
           _isAutoScrolling = false;
@@ -269,6 +295,7 @@ class _LotteryResultDetailsScreenState
       }
     }
   }
+
 
   Future<void> _toggleSaveResult(LotteryResultModel result) async {
     try {

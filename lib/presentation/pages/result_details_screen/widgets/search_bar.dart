@@ -121,7 +121,8 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
               onChanged: widget.onChanged,
               onSubmitted: (value) {
                 widget.onSubmitted?.call(value);
-                _collapseSearchBar();
+                // Don't collapse search bar on submit to keep search active
+                // _collapseSearchBar();
               },
             ),
           ),
@@ -175,7 +176,11 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
   void _collapseSearchBar() {
     setState(() {
       _isExpanded = false;
-      _controller.clear(); // Clear search when collapsed
+      // Don't clear search when collapsed to maintain search state
+      // _controller.clear(); // Clear search when collapsed
     });
+    
+    // Call onChanged with empty string to clear search results
+    widget.onChanged?.call('');
   }
 }

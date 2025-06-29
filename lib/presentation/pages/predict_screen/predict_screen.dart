@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-
+import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 
 class PredictScreen extends StatefulWidget {
@@ -48,7 +48,7 @@ class _PredictScreenState extends State<PredictScreen> {
         backgroundColor: theme.floatingActionButtonTheme.backgroundColor,
         foregroundColor: theme.floatingActionButtonTheme.foregroundColor,
         icon: const Icon(Icons.auto_awesome),
-        label: const Text('Generate Numbers'),
+        label: Text('generate_numbers'.tr()),
       ),
     );
   }
@@ -62,7 +62,7 @@ class _PredictScreenState extends State<PredictScreen> {
         onPressed: () => context.go('/'),
       ),
       title: Text(
-        'Predict Numbers',
+        'predict_numbers'.tr(),
         style: theme.textTheme.titleLarge?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -83,7 +83,7 @@ class _PredictScreenState extends State<PredictScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Select Lottery Type',
+              'select_lottery_type'.tr(),
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
@@ -127,7 +127,7 @@ class _PredictScreenState extends State<PredictScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Predicted Numbers',
+              'predicted_numbers'.tr(),
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 24),
@@ -142,7 +142,7 @@ class _PredictScreenState extends State<PredictScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Tap generate to get your lucky numbers',
+                      'tap_generate_lucky_numbers'.tr(),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -200,7 +200,7 @@ class _PredictScreenState extends State<PredictScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hot Numbers',
+              'hot_numbers'.tr(),
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 16),

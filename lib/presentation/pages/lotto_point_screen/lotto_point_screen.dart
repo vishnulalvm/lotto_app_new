@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 
 class LottoPointsScreen extends StatefulWidget {
@@ -26,35 +27,35 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       'points': 50,
       'date': '2024-06-08',
       'type': 'earned',
-      'description': 'Ticket purchase bonus'
+      'description': 'ticket_purchase_bonus'.tr()
     },
     {
       'lottery': 'Win Win 520',
       'points': 25,
       'date': '2024-06-07',
       'type': 'earned',
-      'description': 'Daily login bonus'
+      'description': 'daily_login_bonus'.tr()
     },
     {
       'lottery': 'Karunya Plus KN 520',
       'points': 100,
       'date': '2024-06-06',
       'type': 'earned',
-      'description': 'Referral bonus'
+      'description': 'referral_bonus'.tr()
     },
     {
       'lottery': 'Nirmal NR 385',
       'points': 75,
       'date': '2024-06-05',
       'type': 'earned',
-      'description': 'Prediction bonus'
+      'description': 'prediction_bonus'.tr()
     },
     {
       'lottery': 'Pournami RN 645',
       'points': 30,
       'date': '2024-06-03',
       'type': 'earned',
-      'description': 'News reading bonus'
+      'description': 'news_reading_bonus'.tr()
     },
   ];
 
@@ -182,7 +183,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
-        'Lotto Points',
+        'lotto_points'.tr(),
         style: theme.appBarTheme.titleTextStyle?.copyWith(
           fontSize: AppResponsive.fontSize(context, 20),
         ),
@@ -266,7 +267,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                               ),
                               SizedBox(width: AppResponsive.spacing(context, 4)),
                               Text(
-                                '+$_lastAddedPoints points added',
+                                '+$_lastAddedPoints${'points'.tr()} added',
                                 style: TextStyle(
                                   fontSize: AppResponsive.fontSize(context, 12),
                                   fontWeight: FontWeight.w600,
@@ -297,14 +298,14 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           fontSize: AppResponsive.fontSize(context, 14),
           fontWeight: FontWeight.w400,
         ),
-        tabs: const [
+        tabs: [
           Tab(
             icon: Icon(Icons.history),
-            text: 'History',
+            text: 'points_history'.tr(),
           ),
           Tab(
             icon: Icon(Icons.redeem),
-            text: 'Redeem',
+            text: 'redeem_points'.tr(),
           ),
         ],
       ),
@@ -487,7 +488,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               
               // Price
               Text(
-                'Price: ${item['price']}',
+                '${'price'.tr()}${item['price']}',
                 style: TextStyle(
                   fontSize: AppResponsive.fontSize(context, 13),
                   fontWeight: FontWeight.w600,
@@ -525,7 +526,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                       ),
                       SizedBox(width: AppResponsive.spacing(context, 6)),
                       Text(
-                        '${item['points']} Points',
+                        '${item['points']}${'points'.tr()}',
                         style: TextStyle(
                           fontSize: AppResponsive.fontSize(context, 14),
                           fontWeight: FontWeight.bold,
@@ -561,7 +562,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
               SizedBox(width: AppResponsive.spacing(context, 8)),
               Text(
-                'Coming Soon',
+                'coming_soon'.tr(),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontSize: AppResponsive.fontSize(context, 18),
                 ),
@@ -569,7 +570,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             ],
           ),
           content: Text(
-            'This feature is currently under development. Stay tuned for updates!',
+            'feature_under_development'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: AppResponsive.fontSize(context, 14),
             ),
@@ -581,7 +582,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 foregroundColor: theme.primaryColor,
               ),
               child: Text(
-                'OK',
+                'ok'.tr(),
                 style: TextStyle(
                   fontSize: AppResponsive.fontSize(context, 14),
                   fontWeight: FontWeight.w600,
