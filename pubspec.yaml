@@ -44,9 +44,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/icons/new.png" # Use your foreground image as the default/legacy icon
-  min_sdk_android: 21
-  adaptive_icon_foreground: "assets/icons/new.png" # Updated to your new path
+  image_path: "assets/icons/new_logo.png" # Use your foreground image as the default/legacy icon
+  adaptive_icon_foreground: "assets/icons/logo_foreground.png" # Updated to your new path
+  adaptive_icon_background: "#1E1E1E" # Updated to your new path
   # remove_alpha_ios: true # Not needed if ios: false
 
 flutter:
