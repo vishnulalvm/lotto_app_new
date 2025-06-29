@@ -49,7 +49,6 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/icons/new.png" # Updated to your new path
   # remove_alpha_ios: true # Not needed if ios: false
 
-
 flutter:
   uses-material-design: true
 

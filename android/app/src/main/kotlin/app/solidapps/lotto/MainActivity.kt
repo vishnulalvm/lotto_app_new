@@ -1,4 +1,4 @@
-package com.collapps.lotto_app
+package app.solidapps.lotto
 
 import io.flutter.embedding.android.FlutterActivity
 
