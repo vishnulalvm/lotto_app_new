@@ -5,12 +5,14 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
   final LotteryResultModel result;
   final List<Map<String, dynamic>> allLotteryNumbers;
   final String highlightedTicketNumber; // Changed from int highlightedIndex
+  final Map<String, GlobalKey> ticketGlobalKeys; // Add GlobalKeys for auto-scroll
 
   const DynamicPrizeSectionsWidget({
     super.key,
     required this.result,
     required this.allLotteryNumbers,
     required this.highlightedTicketNumber, // Updated parameter
+    required this.ticketGlobalKeys, // Add GlobalKeys parameter
   });
 
   @override
@@ -108,8 +110,10 @@ class _DynamicPrizeSectionsWidgetState
                 _buildPrizeAmount(theme, prize.formattedPrizeAmount),
                 const SizedBox(height: 10),
                 ...prize.ticketsWithLocation.map((ticket) {
+                  final keyId = '${prize.prizeTypeFormatted}_${ticket.ticketNumber}';
+                  final globalKey = widget.ticketGlobalKeys[keyId];
                   return _HighlightedTicketWidget(
-                    key: ValueKey('${prize.prizeType}_${ticket.ticketNumber}'),
+                    key: globalKey ?? ValueKey('${prize.prizeType}_${ticket.ticketNumber}'),
                     ticketNumber: ticket.ticketNumber,
                     category: prize.prizeTypeFormatted,
                     location: ticket.location,
@@ -148,15 +152,19 @@ class _DynamicPrizeSectionsWidgetState
                   _buildSinglePrizeTwoColumnGrid(
                       ticketNumbers, theme, prize.prizeTypeFormatted)
                 else
-                  _HighlightedTicketWidget(
-                    key: ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
-                    ticketNumber: ticketNumbers.first,
-                    category: prize.prizeTypeFormatted,
-                    allLotteryNumbers: widget.allLotteryNumbers,
-                    highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
-                    theme: theme,
-                    variant: TicketVariant.singleLarge,
-                  ),
+                  () {
+                    final keyId = '${prize.prizeTypeFormatted}_${ticketNumbers.first}';
+                    final globalKey = widget.ticketGlobalKeys[keyId];
+                    return _HighlightedTicketWidget(
+                      key: globalKey ?? ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
+                      ticketNumber: ticketNumbers.first,
+                      category: prize.prizeTypeFormatted,
+                      allLotteryNumbers: widget.allLotteryNumbers,
+                      highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
+                      theme: theme,
+                      variant: TicketVariant.singleLarge,
+                    );
+                  }(),
               ],
             ),
           ),
@@ -176,10 +184,12 @@ class _DynamicPrizeSectionsWidgetState
           spacing: 10.0,
           runSpacing: 10.0,
           children: ticketNumbers.map((ticketNumber) {
+            final keyId = '${category}_$ticketNumber';
+            final globalKey = widget.ticketGlobalKeys[keyId];
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
-                key: ValueKey('${category}_$ticketNumber'),
+                key: globalKey ?? ValueKey('${category}_$ticketNumber'),
                 ticketNumber: ticketNumber,
                 category: category,
                 allLotteryNumbers: widget.allLotteryNumbers,
@@ -237,10 +247,12 @@ class _DynamicPrizeSectionsWidgetState
           spacing: 12.0,
           runSpacing: 12.0,
           children: numbers.map((number) {
+            final keyId = '${category}_$number';
+            final globalKey = widget.ticketGlobalKeys[keyId];
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
-                key: ValueKey('${category}_$number'),
+                key: globalKey ?? ValueKey('${category}_$number'),
                 ticketNumber: number,
                 category: category,
                 allLotteryNumbers: widget.allLotteryNumbers,
@@ -266,10 +278,12 @@ class _DynamicPrizeSectionsWidgetState
           spacing: 8.0,
           runSpacing: 8.0,
           children: numbers.map((number) {
+            final keyId = '${category}_$number';
+            final globalKey = widget.ticketGlobalKeys[keyId];
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
-                key: ValueKey('${category}_$number'),
+                key: globalKey ?? ValueKey('${category}_$number'),
                 ticketNumber: number,
                 category: category,
                 allLotteryNumbers: widget.allLotteryNumbers,

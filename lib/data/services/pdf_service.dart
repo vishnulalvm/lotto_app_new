@@ -145,17 +145,17 @@ class PdfService {
 
           // --- High Tier Prizes ---
           contentWidgets.addAll(
-            highTierPrizes.map((prize) => _buildHighTierPrize(prize)),
+            highTierPrizes.map((prize) => _buildClickableHighTierPrize(prize)),
           );
 
           // --- Consolation Prize ---
           if (consolationPrize != null) {
-            contentWidgets.add(_buildConsolationPrize(consolationPrize));
+            contentWidgets.add(_buildClickableConsolationPrize(consolationPrize));
           }
 
           contentWidgets.add(pw.SizedBox(height: 15));
           contentWidgets.add(
-            pw.Text(
+            _buildClickableText(
               'FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS',
               style: _safeTextStyle(
                 fontWeight: pw.FontWeight.bold,
@@ -169,7 +169,7 @@ class PdfService {
           // --- Lower Tier Prizes ---
           contentWidgets.addAll(
             lowerTierPrizes
-                .expand((prize) => _buildLowerTierPrizeWidgets(prize)),
+                .expand((prize) => _buildClickableLowerTierPrizeWidgets(prize)),
           );
 
           // --- Tappable Link at bottom ---
@@ -177,11 +177,11 @@ class PdfService {
           contentWidgets.add(
             pw.Center(
               child: pw.UrlLink(
-                destination: 'https://www.lottoapp.app',
+                destination: 'https://www.lottoapp.com',
                 child: pw.Text(
-                  'Visit www.Lottoapp.app',
+                  'Visit www.Lottoapp.com',
                   style: pw.TextStyle(
-                    font: _notoSansRegular, // your loaded regular font
+                    font: _notoSansRegular,
                     fontSize: 12,
                     decoration: pw.TextDecoration.underline,
                     color: PdfColors.blue,
@@ -244,6 +244,14 @@ class PdfService {
     );
   }
 
+  // Clickable version of high tier prize
+  static pw.Widget _buildClickableHighTierPrize(PrizeModel prize) {
+    return pw.UrlLink(
+      destination: 'https://www.lottoapp.com',
+      child: _buildHighTierPrize(prize),
+    );
+  }
+
   static pw.Widget _buildConsolationPrize(PrizeModel prize) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 4),
@@ -268,6 +276,14 @@ class PdfService {
           )
         ],
       ),
+    );
+  }
+
+  // Clickable version of consolation prize
+  static pw.Widget _buildClickableConsolationPrize(PrizeModel prize) {
+    return pw.UrlLink(
+      destination: 'https://www.lottoapp.com',
+      child: _buildConsolationPrize(prize),
     );
   }
 
@@ -316,6 +332,32 @@ class PdfService {
     );
 
     return widgets;
+  }
+
+  // Clickable version of lower tier prize widgets
+  static List<pw.Widget> _buildClickableLowerTierPrizeWidgets(PrizeModel prize) {
+    return _buildLowerTierPrizeWidgets(prize).map((widget) => 
+      pw.UrlLink(
+        destination: 'https://www.lottoapp.com',
+        child: widget,
+      )
+    ).toList();
+  }
+
+  // Helper method to create clickable text
+  static pw.Widget _buildClickableText(
+    String text, {
+    pw.TextStyle? style,
+    pw.TextAlign? textAlign,
+  }) {
+    return pw.UrlLink(
+      destination: 'https://www.lottoapp.com',
+      child: pw.Text(
+        text,
+        style: style,
+        textAlign: textAlign,
+      ),
+    );
   }
 
   static pw.Widget _buildMinimalFooter(int pageNumber, int pageCount) {

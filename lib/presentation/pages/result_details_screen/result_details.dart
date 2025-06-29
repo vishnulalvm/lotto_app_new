@@ -45,6 +45,10 @@ class _LotteryResultDetailsScreenState
   // Save state tracking
   bool _isSaved = false;
 
+  // Auto-scroll functionality
+  final Map<String, GlobalKey> _ticketGlobalKeys = {};
+  bool _isAutoScrolling = false;
+
   @override
   void initState() {
     super.initState();
@@ -169,17 +173,101 @@ class _LotteryResultDetailsScreenState
       // Only perform search if query is empty or meets minimum length
       if (_searchQuery.isEmpty) {
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
+        _clearTicketKeys();
       } else if (_searchQuery.length >= _minSearchLength) {
         _filteredLotteryNumbers = _allLotteryNumbers.where((item) {
           final ticketNumber = item['number'].toString().toLowerCase();
           final searchLower = _searchQuery.toLowerCase();
           return ticketNumber.contains(searchLower);
         }).toList();
+        
+        // Generate GlobalKeys for matched tickets and trigger auto-scroll
+        _generateTicketKeys();
+        _triggerAutoScroll();
       } else {
         // If query is less than minimum length, show all numbers
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
+        _clearTicketKeys();
       }
     });
+  }
+
+  // Generate GlobalKeys for matched tickets
+  void _generateTicketKeys() {
+    _ticketGlobalKeys.clear();
+    
+    for (final item in _filteredLotteryNumbers) {
+      final ticketNumber = item['number'].toString();
+      final category = item['category'].toString();
+      final keyId = '${category}_$ticketNumber';
+      _ticketGlobalKeys[keyId] = GlobalKey();
+    }
+  }
+
+  // Clear ticket keys
+  void _clearTicketKeys() {
+    _ticketGlobalKeys.clear();
+  }
+
+  // Trigger auto-scroll to first match
+  void _triggerAutoScroll() {
+    if (_filteredLotteryNumbers.isNotEmpty && !_isAutoScrolling) {
+      // Use post-frame callback to ensure widgets are built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToFirstMatch();
+      });
+    }
+  }
+
+  // Scroll to the first matching ticket
+  void _scrollToFirstMatch() {
+    if (_filteredLotteryNumbers.isEmpty || _ticketGlobalKeys.isEmpty || _isAutoScrolling) {
+      return;
+    }
+
+    try {
+      _isAutoScrolling = true;
+      
+      // Get the first match
+      final firstMatch = _filteredLotteryNumbers.first;
+      final ticketNumber = firstMatch['number'].toString();
+      final category = firstMatch['category'].toString();
+      final keyId = '${category}_$ticketNumber';
+      
+      final globalKey = _ticketGlobalKeys[keyId];
+      if (globalKey?.currentContext != null) {
+        // Scroll to the widget with smooth animation
+        Scrollable.ensureVisible(
+          globalKey!.currentContext!,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          alignment: 0.3, // Position slightly above center for better visibility
+          alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
+        ).then((_) {
+          // Reset auto-scrolling flag after animation completes
+          if (mounted) {
+            setState(() {
+              _isAutoScrolling = false;
+            });
+          }
+        });
+      } else {
+        // If context is not available yet, try again after a short delay
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _scrollToFirstMatch();
+          }
+        });
+      }
+    } catch (e) {
+      // Handle any scrolling errors gracefully
+      print('Auto-scroll error: $e');
+      if (mounted) {
+        setState(() {
+          _isAutoScrolling = false;
+        });
+      }
+    }
   }
 
   Future<void> _toggleSaveResult(LotteryResultModel result) async {
@@ -607,6 +695,7 @@ class _LotteryResultDetailsScreenState
                     ? _filteredLotteryNumbers
                     : _allLotteryNumbers,
                 highlightedTicketNumber: _isSearchActive ? _searchQuery : '',
+                ticketGlobalKeys: _ticketGlobalKeys,
               ),
               const SizedBox(height: 6),
               _buildContactSection(theme),
