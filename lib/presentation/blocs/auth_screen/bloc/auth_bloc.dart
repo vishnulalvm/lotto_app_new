@@ -11,6 +11,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterRequested>(_onRegister);
     on<AuthLogoutRequested>(_onLogout);
     on<AuthCheckStatus>(_onCheckStatus);
+    on<AuthAutoSignInRequested>(_onAutoSignIn);
   }
 
   Future<void> _onLogin(
@@ -81,6 +82,43 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(AuthInitial());
+    }
+  }
+
+  Future<void> _onAutoSignIn(
+    AuthAutoSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      // First try to register the user
+      final user = await repository.register(event.name, event.phoneNumber);
+      emit(AuthSuccess(
+        phoneNumber: user.phoneNumber,
+        name: user.name,
+        message: user.message ?? 'Registration successful',
+      ));
+    } catch (e) {
+      // Check if the error is due to user already existing
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('user with this phone number already exists') ||
+          errorString.contains('phone_number') ||
+          errorString.contains('already exists')) {
+        // User exists, try to sign in instead
+        try {
+          final user = await repository.login(event.phoneNumber);
+          emit(AuthSuccess(
+            phoneNumber: user.phoneNumber,
+            name: user.name,
+            message: user.message ?? 'Welcome back!',
+          ));
+        } catch (loginError) {
+          emit(AuthFailure(loginError.toString()));
+        }
+      } else {
+        // Other registration error, show original error
+        emit(AuthFailure(e.toString()));
+      }
     }
   }
 }

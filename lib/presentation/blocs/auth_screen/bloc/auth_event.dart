@@ -15,4 +15,8 @@ class AuthLogoutRequested extends AuthEvent {}
 
 class AuthCheckStatus extends AuthEvent {}
 
-// Updated BlocProvider setup
+class AuthAutoSignInRequested extends AuthEvent {
+  final String name;
+  final String phoneNumber;
+  AuthAutoSignInRequested(this.name, this.phoneNumber);
+}

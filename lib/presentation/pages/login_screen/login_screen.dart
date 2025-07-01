@@ -18,7 +18,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   bool isLoading = false;
-  bool isSignUp = true; // Default to sign up mode
   String? phoneErrorText; // For showing validation errors
 
   // Language data
@@ -86,55 +85,28 @@ class _LoginScreenState extends State<LoginScreen> {
       phoneErrorText = null;
     });
 
-    if (isSignUp) {
-      if (nameController.text.isEmpty || phoneController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('please_fill_all_fields'.tr())),
-        );
-        return;
-      }
-
-      if (!_isValidPhoneNumber(phoneController.text)) {
-        setState(() {
-          phoneErrorText = 'Please enter a valid 10-digit mobile number';
-        });
-        return;
-      }
-
-      context.read<AuthBloc>().add(
-            AuthRegisterRequested(
-              nameController.text,
-              _validateAndFormatPhoneNumber(phoneController.text),
-            ),
-          );
-    } else {
-      if (phoneController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('please_enter_phone'.tr())),
-        );
-        return;
-      }
-
-      if (!_isValidPhoneNumber(phoneController.text)) {
-        setState(() {
-          phoneErrorText = 'Please enter a valid 10-digit mobile number';
-        });
-        return;
-      }
-
-      context.read<AuthBloc>().add(
-            AuthLoginRequested(
-                _validateAndFormatPhoneNumber(phoneController.text)),
-          );
+    if (nameController.text.isEmpty || phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('please_fill_all_fields'.tr())),
+      );
+      return;
     }
+
+    if (!_isValidPhoneNumber(phoneController.text)) {
+      setState(() {
+        phoneErrorText = 'Please enter a valid 10-digit mobile number';
+      });
+      return;
+    }
+
+    context.read<AuthBloc>().add(
+          AuthAutoSignInRequested(
+            nameController.text,
+            _validateAndFormatPhoneNumber(phoneController.text),
+          ),
+        );
   }
 
-  void _toggleAuthMode() {
-    setState(() {
-      isSignUp = !isSignUp;
-      phoneErrorText = null; // Clear error when toggling modes
-    });
-  }
 
   void _changeLanguage(Locale locale) {
     context.setLocale(locale);
@@ -158,8 +130,6 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           context.go('/'); // Navigate to home page
         } else if (state is AuthFailure) {
-          print('Auth Failure: ${state.error}');
- 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('auth_error'.tr())),
           );
@@ -242,9 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               // Form title
                               Text(
-                                isSignUp
-                                    ? 'sign_up_to_continue'.tr()
-                                    : 'sign_in_to_continue'.tr(),
+                                'enter_your_details'.tr(),
                                 style: TextStyle(
                                   fontSize: size.width > 600 ? 18 : 16,
                                   fontWeight: FontWeight.w500,
@@ -261,60 +229,53 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    AnimatedCrossFade(
-                                      firstChild: Container(
-                                        decoration: BoxDecoration(
-                                          // Use card theme color for input fields
-                                          color: theme.cardTheme.color,
-                                          borderRadius:
-                                              BorderRadius.circular(24),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: isDark
-                                                  ? Colors.black
-                                                      .withValues(alpha: 0.3)
-                                                  : Colors.black
-                                                      .withValues(alpha: 0.03),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
-                                        ),
-                                        margin:
-                                            const EdgeInsets.only(bottom: 15),
-                                        child: TextField(
-                                          controller: nameController,
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            // Use theme text color
-                                            color: theme
-                                                .textTheme.bodyLarge?.color,
+                                    // Name field - Always visible
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        // Use card theme color for input fields
+                                        color: theme.cardTheme.color,
+                                        borderRadius:
+                                            BorderRadius.circular(24),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: isDark
+                                                ? Colors.black
+                                                    .withValues(alpha: 0.3)
+                                                : Colors.black
+                                                    .withValues(alpha: 0.03),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
                                           ),
-                                          decoration: InputDecoration(
-                                            hintText: 'name_or_username'.tr(),
-                                            hintStyle: TextStyle(
-                                              // Use theme hint color
-                                              color: theme
-                                                  .textTheme.bodySmall?.color,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                            border: InputBorder.none,
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: 20,
-                                              vertical: 16,
-                                            ),
+                                        ],
+                                      ),
+                                      margin:
+                                          const EdgeInsets.only(bottom: 15),
+                                      child: TextField(
+                                        controller: nameController,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          // Use theme text color
+                                          color: theme
+                                              .textTheme.bodyLarge?.color,
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: 'name_or_username'.tr(),
+                                          hintStyle: TextStyle(
+                                            // Use theme hint color
+                                            color: theme
+                                                .textTheme.bodySmall?.color,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          border: InputBorder.none,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 16,
                                           ),
                                         ),
                                       ),
-                                      secondChild: const SizedBox.shrink(),
-                                      crossFadeState: isSignUp
-                                          ? CrossFadeState.showFirst
-                                          : CrossFadeState.showSecond,
-                                      duration:
-                                          const Duration(milliseconds: 300),
                                     ),
                                     // Phone number field - Always visible
                                     Column(
@@ -412,40 +373,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ],
                                     ),
                                   ],
-                                ),
-                              ),
-                              // Toggle button below text fields
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: GestureDetector(
-                                  onTap: _toggleAuthMode,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(top: 16.0),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: theme.primaryColor
-                                          .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: theme.primaryColor
-                                            .withValues(alpha: 0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      isSignUp
-                                          ? 'sign_in'.tr()
-                                          : 'sign_up'.tr(),
-                                      style: TextStyle(
-                                        color: theme.primaryColor,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
                                 ),
                               ),
 
