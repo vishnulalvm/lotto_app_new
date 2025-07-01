@@ -1038,19 +1038,12 @@ class _LotteryResultDetailsScreenState
             ),
             const SizedBox(height: 16),
             Text(
-              'Error Loading Result',
+              'Failed Loading Result',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
+         
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {

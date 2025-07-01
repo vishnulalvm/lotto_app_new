@@ -1,14 +1,10 @@
-// File: lib/services/pdf_service.dart
 import 'dart:io';
 import 'dart:math';
-// Required for Uint8List
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-// Make sure to import your data model.
-// This is a placeholder, update with your actual path.
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 
 class PdfService {
@@ -150,22 +146,9 @@ class PdfService {
 
           // --- Consolation Prize ---
           if (consolationPrize != null) {
-            contentWidgets.add(_buildClickableConsolationPrize(consolationPrize));
+            contentWidgets
+                .add(_buildClickableConsolationPrize(consolationPrize));
           }
-
-          contentWidgets.add(pw.SizedBox(height: 15));
-          contentWidgets.add(
-            _buildClickableText(
-              'FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS',
-              style: _safeTextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 11,
-              ),
-              textAlign: pw.TextAlign.center,
-            ),
-          );
-          contentWidgets.add(pw.SizedBox(height: 10));
-
           // --- Lower Tier Prizes ---
           contentWidgets.addAll(
             lowerTierPrizes
@@ -177,9 +160,9 @@ class PdfService {
           contentWidgets.add(
             pw.Center(
               child: pw.UrlLink(
-                destination: 'https://www.lottoapp.com',
+                destination: 'https://lottokeralalotteries.com/',
                 child: pw.Text(
-                  'Visit www.Lottoapp.com',
+                  'Visit www.lottokeralalotteries.com',
                   style: pw.TextStyle(
                     font: _notoSansRegular,
                     fontSize: 12,
@@ -247,7 +230,7 @@ class PdfService {
   // Clickable version of high tier prize
   static pw.Widget _buildClickableHighTierPrize(PrizeModel prize) {
     return pw.UrlLink(
-      destination: 'https://www.lottoapp.com',
+      destination: 'https://www.lottokeralalotteries.com',
       child: _buildHighTierPrize(prize),
     );
   }
@@ -282,7 +265,7 @@ class PdfService {
   // Clickable version of consolation prize
   static pw.Widget _buildClickableConsolationPrize(PrizeModel prize) {
     return pw.UrlLink(
-      destination: 'https://www.lottoapp.com',
+      destination: 'https://www.lottokeralalotteries.com',
       child: _buildConsolationPrize(prize),
     );
   }
@@ -290,7 +273,7 @@ class PdfService {
   /// **NEW:** Returns a flat list of widgets for a single prize category.
 
   static List<pw.Widget> _buildLowerTierPrizeWidgets(PrizeModel prize) {
-    const int columns = 10; // ← increased to 10 columns
+    const int columns = 14; // ← increased to 10 columns
     final widgets = <pw.Widget>[];
 
     // Prize header
@@ -335,30 +318,17 @@ class PdfService {
   }
 
   // Clickable version of lower tier prize widgets
-  static List<pw.Widget> _buildClickableLowerTierPrizeWidgets(PrizeModel prize) {
-    return _buildLowerTierPrizeWidgets(prize).map((widget) => 
-      pw.UrlLink(
-        destination: 'https://www.lottoapp.com',
-        child: widget,
-      )
-    ).toList();
+  static List<pw.Widget> _buildClickableLowerTierPrizeWidgets(
+      PrizeModel prize) {
+    return _buildLowerTierPrizeWidgets(prize)
+        .map((widget) => pw.UrlLink(
+              destination: 'https://www.lottokeralalotteries.com',
+              child: widget,
+            ))
+        .toList();
   }
 
   // Helper method to create clickable text
-  static pw.Widget _buildClickableText(
-    String text, {
-    pw.TextStyle? style,
-    pw.TextAlign? textAlign,
-  }) {
-    return pw.UrlLink(
-      destination: 'https://www.lottoapp.com',
-      child: pw.Text(
-        text,
-        style: style,
-        textAlign: textAlign,
-      ),
-    );
-  }
 
   static pw.Widget _buildMinimalFooter(int pageNumber, int pageCount) {
     return pw.Column(
