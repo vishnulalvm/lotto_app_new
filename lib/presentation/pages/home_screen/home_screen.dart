@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/rendering.dart';
@@ -19,18 +20,29 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late ScrollController _scrollController;
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
   bool _isExpanded = true;
   bool _isScrollingDown = false;
+  DateTime? _lastRefreshTime;
+  Timer? _periodicRefreshTimer;
+  bool isBackgroundRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLotteryResults();
+
+    // Add observer for app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+
+    // Load data immediately
+    _loadLotteryResultsWithCache();
+
+    // Set up periodic refresh timer (every 5 minutes)
+    _setupPeriodicRefresh();
 
     _scrollController = ScrollController();
     _fabAnimationController = AnimationController(
@@ -52,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _periodicRefreshTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _fabAnimationController.dispose();
@@ -91,8 +105,98 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
   }
 
+  /// Load results with cache-first strategy for better UX
+  void _loadLotteryResultsWithCache() {
+    // Load from cache first (fast), then refresh from network
+    context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
+
+    // After a short delay, refresh from network in background
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _refreshResultsInBackground();
+      }
+    });
+  }
+
   void _refreshResults() {
+    _lastRefreshTime = DateTime.now();
     context.read<HomeScreenResultsBloc>().add(RefreshLotteryResultsEvent());
+  }
+
+  /// Refresh results in background without showing loading state
+  void _refreshResultsInBackground() {
+    // Only refresh if we haven't refreshed recently (within 2 minutes)
+    if (_lastRefreshTime != null &&
+        DateTime.now().difference(_lastRefreshTime!).inMinutes < 2) {
+      return;
+    }
+
+    // Show background refresh indicator
+    if (mounted) {
+      setState(() {
+        isBackgroundRefreshing = true;
+      });
+    }
+
+    _lastRefreshTime = DateTime.now();
+    context.read<HomeScreenResultsBloc>().add(BackgroundRefreshEvent());
+
+    // Hide indicator after a short delay
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          isBackgroundRefreshing = false;
+        });
+      }
+    });
+  }
+
+  /// Set up periodic refresh timer
+  void _setupPeriodicRefresh() {
+    _periodicRefreshTimer = Timer.periodic(
+      const Duration(minutes: 5), // Refresh every 5 minutes
+      (timer) {
+        if (mounted) {
+          _refreshResultsInBackground();
+        }
+      },
+    );
+  }
+
+  /// Handle app lifecycle changes
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App came back to foreground - refresh data if it's been a while
+        if (mounted) {
+          _handleAppResumed();
+        }
+        break;
+      case AppLifecycleState.paused:
+        // App went to background - cancel periodic timer to save battery
+        _periodicRefreshTimer?.cancel();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  /// Handle app resume - refresh data if needed
+  void _handleAppResumed() {
+    // Restart periodic refresh timer
+    _setupPeriodicRefresh();
+
+    // Refresh data if we haven't refreshed in the last 3 minutes
+    if (_lastRefreshTime == null ||
+        DateTime.now().difference(_lastRefreshTime!).inMinutes >= 3) {
+      _refreshResultsInBackground();
+    }
   }
 
   // Method to show date picker and navigate to specific date
@@ -153,25 +257,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // Helper method to format points numbers (e.g., 1250 -> "1.25K", 1000000 -> "1M")
-  String _formatPoints(int points) {
-    if (points < 1000) {
-      return points.toString();
-    } else if (points < 1000000) {
-      double thousands = points / 1000;
-      if (thousands == thousands.roundToDouble()) {
-        return '${thousands.round()}K';
-      } else {
-        return '${thousands.toStringAsFixed(1)}K';
-      }
-    } else {
-      double millions = points / 1000000;
-      if (millions == millions.roundToDouble()) {
-        return '${millions.round()}M';
-      } else {
-        return '${millions.toStringAsFixed(1)}M';
-      }
-    }
-  }
+  // String _formatPoints(int points) {
+  //   if (points < 1000) {
+  //     return points.toString();
+  //   } else if (points < 1000000) {
+  //     double thousands = points / 1000;
+  //     if (thousands == thousands.roundToDouble()) {
+  //       return '${thousands.round()}K';
+  //     } else {
+  //       return '${thousands.toStringAsFixed(1)}K';
+  //     }
+  //   } else {
+  //     double millions = points / 1000000;
+  //     if (millions == millions.roundToDouble()) {
+  //       return '${millions.round()}M';
+  //     } else {
+  //       return '${millions.toStringAsFixed(1)}M';
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
- AppBar _buildAppBar(ThemeData theme) {
+  AppBar _buildAppBar(ThemeData theme) {
     return AppBar(
       centerTitle: true,
       backgroundColor: theme.appBarTheme.backgroundColor,
@@ -254,7 +358,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               decoration: BoxDecoration(
                 color: Colors.red,
-                borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 20)),
+                borderRadius:
+                    BorderRadius.circular(AppResponsive.spacing(context, 20)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -277,8 +382,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             );
           }
-          
-          // Show app title when online
+
+          // Show app title with refresh indicator when background refreshing
           return Text(
             'lotto_app_title'.tr(),
             style: TextStyle(
@@ -291,74 +396,74 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       actions: [
         // Beautiful Coin Button
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppResponsive.spacing(context, 4),
-          ),
-          child: GestureDetector(
-            onTap: () => context.go('/lottoPoints'),
-            child: Container(
-              height: AppResponsive.fontSize(context, 26),
-              padding: EdgeInsets.symmetric(
-                horizontal: AppResponsive.spacing(context, 6),
-                vertical: AppResponsive.spacing(context, 4),
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 204, 61, 25), // Gold
-                    Color.fromARGB(255, 206, 71, 4), // Light Gold
-                    Color.fromARGB(255, 229, 92, 38), // Gold
-                  ],
-                  stops: [0.0, 0.5, 1.0],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(
-                  AppResponsive.spacing(context, 18),
-                ),
-                border: Border.all(
-                  color: Color(0xFFFFE55C).withValues(alpha: 0.5),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.monetization_on,
-                    color: Color(0xFF8B4513), // Brown color for contrast
-                    size: AppResponsive.fontSize(context, 14),
-                  ),
-                  SizedBox(width: AppResponsive.spacing(context, 4)),
-                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                    builder: (context, state) {
-                      String pointsText = '0';
-                      if (state is HomeScreenResultsLoaded) {
-                        pointsText = _formatPoints(state.data.totalPoints);
-                      }
-                      return Text(
-                        pointsText,
-                        style: TextStyle(
-                          fontSize: AppResponsive.fontSize(context, 10),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              offset: Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        // Padding(
+        //   padding: EdgeInsets.symmetric(
+        //     horizontal: AppResponsive.spacing(context, 4),
+        //   ),
+        //   child: GestureDetector(
+        //     onTap: () => context.go('/lottoPoints'),
+        //     child: Container(
+        //       height: AppResponsive.fontSize(context, 26),
+        //       padding: EdgeInsets.symmetric(
+        //         horizontal: AppResponsive.spacing(context, 6),
+        //         vertical: AppResponsive.spacing(context, 4),
+        //       ),
+        //       decoration: BoxDecoration(
+        //         gradient: LinearGradient(
+        //           colors: [
+        //             Color.fromARGB(255, 204, 61, 25), // Gold
+        //             Color.fromARGB(255, 206, 71, 4), // Light Gold
+        //             Color.fromARGB(255, 229, 92, 38), // Gold
+        //           ],
+        //           stops: [0.0, 0.5, 1.0],
+        //           begin: Alignment.topLeft,
+        //           end: Alignment.bottomRight,
+        //         ),
+        //         borderRadius: BorderRadius.circular(
+        //           AppResponsive.spacing(context, 18),
+        //         ),
+        //         border: Border.all(
+        //           color: Color(0xFFFFE55C).withValues(alpha: 0.5),
+        //           width: 1,
+        //         ),
+        //       ),
+        //       child: Row(
+        //         mainAxisSize: MainAxisSize.min,
+        //         children: [
+        //           Icon(
+        //             Icons.monetization_on,
+        //             color: Color(0xFF8B4513), // Brown color for contrast
+        //             size: AppResponsive.fontSize(context, 14),
+        //           ),
+        //           SizedBox(width: AppResponsive.spacing(context, 4)),
+        //           BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+        //             builder: (context, state) {
+        //               String pointsText = '0';
+        //               if (state is HomeScreenResultsLoaded) {
+        //                 pointsText = _formatPoints(state.data.totalPoints);
+        //               }
+        //               return Text(
+        //                 pointsText,
+        //                 style: TextStyle(
+        //                   fontSize: AppResponsive.fontSize(context, 10),
+        //                   fontWeight: FontWeight.bold,
+        //                   color: Colors.white,
+        //                   shadows: [
+        //                     Shadow(
+        //                       color: Colors.white.withValues(alpha: 0.5),
+        //                       offset: Offset(0, 1),
+        //                       blurRadius: 2,
+        //                     ),
+        //                   ],
+        //                 ),
+        //               );
+        //             },
+        //           ),
+        //         ],
+        //       ),
+        //     ),
+        //   ),
+        // ),
 
         PopupMenuButton<String>(
           icon: Icon(
@@ -431,12 +536,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
       builder: (context, state) {
         List<String> carouselImages = [];
-        
+
         // Get images from API response or fallback to default
         if (state is HomeScreenResultsLoaded) {
           carouselImages = state.data.updates.allImages;
         }
-        
+
         // Fallback to default images if no images from API
         if (carouselImages.isEmpty) {
           carouselImages = [
@@ -447,7 +552,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             'assets/images/tree.jpeg',
           ];
         }
-        
+
         return Padding(
           padding: AppResponsive.padding(context, horizontal: 16, vertical: 8),
           child: CarouselSlider(
@@ -466,12 +571,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: AppResponsive.margin(context, horizontal: 0),
                     decoration: BoxDecoration(
                       color: Colors.pink[100],
-                      borderRadius:
-                          BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 8)),
                     ),
                     child: ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 8)),
                       child: _buildCarouselImage(imageUrl),
                     ),
                   );
@@ -483,7 +588,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
     );
   }
-  
+
   Widget _buildCarouselImage(String imageUrl) {
     // Check if it's a URL or local asset
     if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
@@ -502,7 +607,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return Center(
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
@@ -525,9 +631,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'route': '/barcode_scanner_screen'
       },
       {'icon': Icons.emoji_events, 'label': 'claim'.tr(), 'route': '/claim'},
-      {'icon': Icons.games_outlined, 'label': 'predict'.tr(), 'route': '/Predict'},
+      {
+        'icon': Icons.games_outlined,
+        'label': 'predict'.tr(),
+        'route': '/Predict'
+      },
       {'icon': Icons.newspaper, 'label': 'news'.tr(), 'route': '/news_screen'},
-      {'icon': Icons.bookmark, 'label': 'saved'.tr(), 'route': '/saved-results'},
+      {
+        'icon': Icons.bookmark,
+        'label': 'saved'.tr(),
+        'route': '/saved-results'
+      },
     ];
 
     return Container(
@@ -612,7 +726,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 Text(
-                  state.isRefreshing ? 'refreshing_results'.tr() : 'loading_lottery_results'.tr(),
+                  state.isRefreshing
+                      ? 'refreshing_results'.tr()
+                      : 'loading_lottery_results'.tr(),
                   style: TextStyle(
                     color: theme.textTheme.bodyMedium?.color,
                     fontSize: AppResponsive.fontSize(context, 14),
@@ -623,7 +739,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Text(
                     'getting_latest_data'.tr(),
                     style: TextStyle(
-                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.7),
                       fontSize: AppResponsive.fontSize(context, 12),
                     ),
                   ),
@@ -645,7 +762,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red, size: AppResponsive.fontSize(context, 20)),
+                      Icon(Icons.error_outline,
+                          color: Colors.red,
+                          size: AppResponsive.fontSize(context, 20)),
                       SizedBox(width: AppResponsive.spacing(context, 8)),
                       Expanded(
                         child: Column(
@@ -673,18 +792,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         onPressed: _loadLotteryResults,
                         child: Text(
                           'retry'.tr(),
-                          style: TextStyle(color: Colors.red, fontSize: AppResponsive.fontSize(context, 12)),
+                          style: TextStyle(
+                              color: Colors.red,
+                              fontSize: AppResponsive.fontSize(context, 12)),
                         ),
                       ),
                     ],
                   ),
                 ),
                 // Show cached data
-                _buildResultsList(state.offlineData!, theme, isOfflineData: true),
+                _buildResultsList(state.offlineData!, theme,
+                    isOfflineData: true),
               ],
             );
           }
-          
+
           // No offline data available
           return Container(
             padding: const EdgeInsets.all(32),
@@ -882,8 +1004,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     style: TextStyle(
                       fontSize: AppResponsive.fontSize(context, 13),
                       fontWeight: FontWeight.w500,
-                      color:
-                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.7),
                     ),
                   ),
                   SizedBox(height: AppResponsive.spacing(context, 4)),
@@ -1053,15 +1175,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildResultsList(
-    HomeScreenResultsModel data, 
+    HomeScreenResultsModel data,
     ThemeData theme, {
     HomeScreenResultsLoaded? state,
     bool isOfflineData = false,
   }) {
     // Build indicators
     List<Widget> indicators = [];
-    
-    
+
     // Filter indicator
     if (state != null && state.isFiltered && state.filteredDate != null) {
       indicators.add(
@@ -1070,7 +1191,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+            borderRadius:
+                BorderRadius.circular(AppResponsive.spacing(context, 8)),
             border: Border.all(
               color: theme.colorScheme.primary.withValues(alpha: 0.3),
               width: 1,
@@ -1096,7 +1218,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               TextButton.icon(
                 onPressed: () {
-                  context.read<HomeScreenResultsBloc>().add(ClearDateFilterEvent());
+                  context
+                      .read<HomeScreenResultsBloc>()
+                      .add(ClearDateFilterEvent());
                 },
                 icon: Icon(
                   Icons.clear,
@@ -1112,7 +1236,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+                  padding: AppResponsive.padding(context,
+                      horizontal: 8, vertical: 4),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -1122,7 +1247,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       );
     }
-    
+
     // No results case
     if (data.results.isEmpty) {
       return Column(
@@ -1134,7 +1259,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Icon(
                   Icons.inbox_outlined,
-                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                  color:
+                      theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                   size: AppResponsive.fontSize(context, 48),
                 ),
                 const SizedBox(height: 16),
@@ -1152,7 +1278,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<HomeScreenResultsBloc>().add(ClearDateFilterEvent());
+                      context
+                          .read<HomeScreenResultsBloc>()
+                          .add(ClearDateFilterEvent());
                     },
                     icon: const Icon(Icons.clear),
                     label: Text(
@@ -1164,7 +1292,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.floatingActionButtonTheme.backgroundColor,
+                      backgroundColor:
+                          theme.floatingActionButtonTheme.backgroundColor,
                     ),
                   ),
                 ],
@@ -1174,7 +1303,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       );
     }
-    
+
     // Group results by date category
     Map<String, List<HomeScreenResultModel>> groupedResults = {};
     for (var result in data.results) {

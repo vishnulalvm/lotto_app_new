@@ -1,76 +1,245 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class DisclaimerScreen extends StatelessWidget {
   const DisclaimerScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Disclaimer'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.appBarTheme.iconTheme?.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          'disclaimer'.tr(),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
-      backgroundColor: Colors.grey[200],
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // App info header
+          _buildHeaderCard(theme, context),
+          const SizedBox(height: 16),
+          
+          // Disclaimer section
           _buildCard(
+            theme: theme,
             icon: Icons.info_outline,
-            title: 'Disclaimer',
-            content: "Ponkudam App does not represent any government entity. "
-                "We are not affiliated with any government organization. "
-                "and do not facilitate government services through this app. "
-                "Our source of information is publicly available data, including official government websites. "
-                "Users are advised to cross-check all information, including potential winnings, with the official government gazette for confirmation. "
-                "Please note, this app does not sell lottery tickets and only displays lottery-related data.",
+            iconColor: Colors.orange,
+            title: 'disclaimer_title'.tr(),
+            content: 'disclaimer_content'.tr(),
           ),
           const SizedBox(height: 16),
+          
+          // Prediction disclaimer
           _buildCard(
-            icon: Icons.lightbulb_outline,
-            title: 'Prediction',
-            content:
-                "Our app offers lottery predictions based on past data and analysis. "
-                "However, lottery results are random, and no prediction can guarantee a win. "
-                "Use our predictions as a guide, but play responsibly and understand that winning is based on chance. "
-                "Our aim is to enhance your lottery experience with useful data and insights.",
+            theme: theme,
+            icon: Icons.psychology_outlined,
+            iconColor: Colors.purple,
+            title: 'prediction_disclaimer_title'.tr(),
+            content: 'prediction_disclaimer_content'.tr(),
           ),
+          const SizedBox(height: 16),
+          
+          // Responsibility notice
+          _buildCard(
+            theme: theme,
+            icon: Icons.security_outlined,
+            iconColor: Colors.green,
+            title: 'responsibility_title'.tr(),
+            content: 'responsibility_content'.tr(),
+          ),
+          const SizedBox(height: 16),
+          
+          // Data source info
+          _buildCard(
+            theme: theme,
+            icon: Icons.source_outlined,
+            iconColor: Colors.blue,
+            title: 'data_source_title'.tr(),
+            content: 'data_source_content'.tr(),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Important notice footer
+          _buildImportantNotice(theme, context),
         ],
       ),
     );
   }
 
-  Widget _buildCard(
-      {required IconData icon,
-      required String title,
-      required String content}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+  Widget _buildHeaderCard(ThemeData theme, BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              theme.primaryColor.withOpacity(0.1),
+              theme.primaryColor.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/icons/logo_foreground.png', // Updated logo path
+                width: 80,
+                height: 80,
+            ),),
+            const SizedBox(height: 12),
+            Text(
+              'lotto_app_title'.tr(),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'app_version'.tr(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({
+    required ThemeData theme,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String content,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.blue),
-              const SizedBox(width: 8),
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 16,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              content,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.5,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportantNotice(ThemeData theme, BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.red.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.red.withOpacity(0.05),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.red,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'important_notice'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(content, style: const TextStyle(fontSize: 14, height: 1.4)),
-        ],
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'important_notice_content'.tr(),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.5,
+                color: Colors.red[700],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

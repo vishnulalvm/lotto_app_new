@@ -158,6 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           context.go('/'); // Navigate to home page
         } else if (state is AuthFailure) {
+          print('Auth Failure: ${state.error}');
  
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('auth_error'.tr())),

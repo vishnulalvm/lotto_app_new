@@ -23,49 +23,69 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   void _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      debugPrint('Could not launch $url');
+    try {
+      final uri = Uri.parse(url);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('could_not_open_link'.tr())),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_opening_link'.tr())),
+        );
+      }
     }
   }
 
   void _checkForUpdate() async {
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version;
+    try {
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
 
-    // Replace with your actual latest version
-    const latestVersion = '1.0.9';
+      // Replace with your actual latest version
+      const latestVersion = '1.0.9';
 
-    if (currentVersion != latestVersion) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Update Available'),
-          content: Text('A newer version ($latestVersion) is available.'),
-          actions: [
-            TextButton(
-              child: const Text('Later'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('Update Now'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                launchUrl(
-                  Uri.parse(
-                    'https://play.google.com/store/apps/details?id=com.example.lotto_app',
-                  ),
-                  mode: LaunchMode.externalApplication,
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You are using the latest version')),
-      );
+      if (!mounted) return;
+
+      if (currentVersion != latestVersion) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('update_available'.tr()),
+            content: Text('newer_version_available'.tr(namedArgs: {'version': latestVersion})),
+            actions: [
+              TextButton(
+                child: Text('later'.tr()),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: Text('update_now'.tr()),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _launchUrl('https://play.google.com/store/apps/details?id=com.example.lotto_app');
+                },
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('latest_version_message'.tr())),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('error_checking_updates'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -177,14 +197,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               builder: (_) => const DisclaimerScreen()),
                         ),
                       ),
-                      _buildListTile(
-                        'check_for_updates'.tr(),
-                        Icons.update,
-                        trailing: Text(
-                          '1.0.8(39)',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        onTap: _checkForUpdate,
+                      FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snapshot) {
+                          final version = snapshot.data?.version ?? 'loading'.tr();
+                          final buildNumber = snapshot.data?.buildNumber ?? '';
+                          final versionText = buildNumber.isNotEmpty ? '$version($buildNumber)' : version;
+                          
+                          return _buildListTile(
+                            'check_for_updates'.tr(),
+                            Icons.update,
+                            trailing: Text(
+                              versionText,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            onTap: _checkForUpdate,
+                          );
+                        },
                       ),
                     ],
                     theme,
@@ -391,12 +420,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('delete_account_not_implemented'.tr()),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('delete_account_not_implemented'.tr()),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
               },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
@@ -430,7 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('App language'),
+          title: Text('app_language'.tr()),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -460,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('close'),
+              child: Text('close'.tr()),
             ),
           ],
         );

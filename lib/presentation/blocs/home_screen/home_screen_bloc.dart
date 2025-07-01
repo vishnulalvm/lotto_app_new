@@ -28,6 +28,7 @@ class HomeScreenResultsBloc
     on<ClearDateFilterEvent>(_onClearDateFilter);
     on<ConnectivityChangedEvent>(_onConnectivityChanged);
     on<ClearCacheEvent>(_onClearCache);
+    on<BackgroundRefreshEvent>(_onBackgroundRefresh);
 
     // Listen to connectivity changes
     _connectivitySubscription = _connectivityService.connectionStream.listen(
@@ -189,6 +190,61 @@ class HomeScreenResultsBloc
       add(LoadLotteryResultsEvent(forceRefresh: true));
     } catch (e) {
       await _handleError(e, emit, context: 'Failed to clear cache');
+    }
+  }
+
+  /// Background refresh - silently update data without showing loading state
+  Future<void> _onBackgroundRefresh(
+    BackgroundRefreshEvent event,
+    Emitter<HomeScreenResultsState> emit,
+  ) async {
+    try {
+      // Only perform background refresh if we're not in loading state
+      if (state is HomeScreenResultsLoading) {
+        return;
+      }
+
+      final result = await _useCase.execute(forceRefresh: true);
+      _cachedResults = result;
+
+      // Get additional metadata
+      final dataSource = await _useCase.getDataSource();
+      final cacheInfo = await _useCase.getCacheInfo();
+
+      // If we have a current loaded state, preserve the filter settings
+      if (state is HomeScreenResultsLoaded) {
+        final currentState = state as HomeScreenResultsLoaded;
+        
+        // If filtered, apply the same filter to new data
+        HomeScreenResultsModel dataToEmit = result;
+        if (currentState.isFiltered && currentState.filteredDate != null) {
+          dataToEmit = _filterResultsByDate(result, currentState.filteredDate!);
+        }
+
+        emit(HomeScreenResultsLoaded(
+          dataToEmit,
+          filteredDate: currentState.filteredDate,
+          isFiltered: currentState.isFiltered,
+          isOffline: _connectivityService.isOffline,
+          dataSource: dataSource,
+          cacheAgeInMinutes: cacheInfo['ageInMinutes'],
+        ));
+      } else {
+        // No previous state, emit normally
+        emit(HomeScreenResultsLoaded(
+          result,
+          isFiltered: false,
+          isOffline: _connectivityService.isOffline,
+          dataSource: dataSource,
+          cacheAgeInMinutes: cacheInfo['ageInMinutes'],
+        ));
+      }
+    } catch (e) {
+      // For background refresh, we don't want to show errors unless there's no data
+      if (state is! HomeScreenResultsLoaded) {
+        await _handleError(e, emit, context: 'Background refresh failed');
+      }
+      // If we already have loaded data, silently fail the background refresh
     }
   }
 

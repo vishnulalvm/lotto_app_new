@@ -43,3 +43,9 @@ class ClearCacheEvent extends HomeScreenResultsEvent {
   @override
   String toString() => 'ClearCacheEvent()';
 }
+
+/// Event for background refresh (silent refresh)
+class BackgroundRefreshEvent extends HomeScreenResultsEvent {
+  @override
+  String toString() => 'BackgroundRefreshEvent()';
+}
