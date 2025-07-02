@@ -110,7 +110,7 @@ class PdfService {
         // 1️⃣ Move margin & format into PageTheme
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.symmetric(vertical: 30, horizontal: 25),
+          margin: const pw.EdgeInsets.symmetric(vertical: 20, horizontal: 25), // Reduced vertical margin
 
           // 2️⃣ Draw the watermark on every page
           buildBackground: (pw.Context context) {
@@ -139,9 +139,17 @@ class PdfService {
         build: (pw.Context context) {
           final List<pw.Widget> contentWidgets = [];
 
-          // --- High Tier Prizes ---
+          // --- High Tier Prizes with Horizontal Layout for 1st, 2nd and 3rd ---
           contentWidgets.addAll(
-            highTierPrizes.map((prize) => _buildClickableHighTierPrize(prize)),
+            highTierPrizes.map((prize) {
+              if (prize.prizeType.toLowerCase() == '1st' || 
+                  prize.prizeType.toLowerCase() == '2nd' ||
+                  prize.prizeType.toLowerCase() == '3rd') {
+                return _buildClickableHorizontalHighTierPrize(prize);
+              } else {
+                return _buildClickableHighTierPrize(prize);
+              }
+            }),
           );
 
           // --- Consolation Prize ---
@@ -190,15 +198,15 @@ class PdfService {
           'KERALA STATE LOTTERIES - RESULT',
           style: _safeTextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
         ),
-        pw.SizedBox(height: 4),
+        pw.SizedBox(height: 3), // Reduced spacing
         pw.Text(
           '${_sanitizeText(result.lotteryName.toUpperCase())} LOTTERY NO: ${_sanitizeText(result.drawNumber)} DRAW held on: ${_sanitizeText(result.formattedDate)}',
           style: _safeTextStyle(fontSize: 11),
           textAlign: pw.TextAlign.center,
         ),
-        pw.SizedBox(height: 5),
+        pw.SizedBox(height: 3), // Reduced spacing
         pw.Divider(thickness: 1, color: PdfColors.grey700),
-        pw.SizedBox(height: 15),
+        pw.SizedBox(height: 10), // Reduced spacing
       ],
     );
   }
@@ -209,8 +217,8 @@ class PdfService {
       child:
           pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
         pw.Text(
-          '${_sanitizeText(prize.prizeTypeFormatted)} Rs : ${_sanitizeText(prize.formattedPrizeAmount)}/-',
-          style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-', // Added colon after Rs
+          style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 4),
         ...prize.ticketsWithLocation.map(
@@ -219,11 +227,44 @@ class PdfService {
             child: pw.Text(
               '${_sanitizeText(ticket.ticketNumber)} (${_sanitizeText(ticket.location ?? 'N/A')})',
               style:
-                  _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                  _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
             ),
           ),
         ),
       ]),
+    );
+  }
+
+  // NEW: Horizontal layout for 1st and 2nd prizes
+  static pw.Widget _buildHorizontalHighTierPrize(PrizeModel prize) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // Prize title and winning numbers on same line
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ', // Added colon at the end
+                style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: prize.ticketsWithLocation.map(
+                    (ticket) => pw.Text(
+                      '${_sanitizeText(ticket.ticketNumber)} (${_sanitizeText(ticket.location ?? 'N/A')})',
+                      style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ).toList(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -235,27 +276,39 @@ class PdfService {
     );
   }
 
+  // Clickable version of horizontal high tier prize
+  static pw.Widget _buildClickableHorizontalHighTierPrize(PrizeModel prize) {
+    return pw.UrlLink(
+      destination: 'https://www.lottokeralalotteries.com',
+      child: _buildHorizontalHighTierPrize(prize),
+    );
+  }
+
   static pw.Widget _buildConsolationPrize(PrizeModel prize) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 4),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            '${_sanitizeText(prize.prizeTypeFormatted)} Rs : ${_sanitizeText(prize.formattedPrizeAmount)}/-',
-            style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(left: 20.0),
-            child: pw.Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              children: prize.allTicketNumbers
-                  .map((number) => pw.Text(_sanitizeText(number),
-                      style: _safeTextStyle(fontSize: 11)))
-                  .toList(),
-            ),
+          // Prize title and winning numbers on same line for space efficiency
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ', // Added colon at the end
+                style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Expanded(
+                child: pw.Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: prize.allTicketNumbers
+                      .map((number) => pw.Text(_sanitizeText(number),
+                          style: _safeTextStyle(fontSize: 11)))
+                      .toList(),
+                ),
+              ),
+            ],
           )
         ],
       ),
@@ -273,46 +326,69 @@ class PdfService {
   /// **NEW:** Returns a flat list of widgets for a single prize category.
 
   static List<pw.Widget> _buildLowerTierPrizeWidgets(PrizeModel prize) {
-    const int columns = 14; // ← increased to 10 columns
+// ← increased to 10 columns
     final widgets = <pw.Widget>[];
 
-    // Prize header
+    // Prize header - Horizontal layout with numbers starting immediately after colon
     widgets.add(
       pw.Padding(
         padding: const pw.EdgeInsets.only(top: 8.0, bottom: 5.0),
-        child: pw.Text(
-          '${_sanitizeText(prize.prizeTypeFormatted)} – Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-',
-          style: _safeTextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              '${_sanitizeText(prize.prizeTypeFormatted)} – Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ',
+              style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold), // Keep title at 12
+            ),
+            pw.Expanded(
+              child: pw.Wrap(
+                spacing: 8,
+                runSpacing: 2,
+                children: prize.allTicketNumbers.take(12).map((number) => 
+                  pw.Text(
+                    _sanitizeText(number),
+                    style: _safeTextStyle(fontSize: 12), // Same size as title
+                  )
+                ).toList(),
+              ),
+            ),
+          ],
         ),
       ),
     );
 
-    // Break numbers into rows of `columns` count
-    final rows = <List<String>>[];
-    for (var i = 0; i < prize.allTicketNumbers.length; i += columns) {
-      rows.add(
-        prize.allTicketNumbers.sublist(
-          i,
-          min(i + columns, prize.allTicketNumbers.length),
+    // If there are more than 12 numbers, show remaining in table format
+    if (prize.allTicketNumbers.length > 12) {
+      const int columns = 14;
+      final remainingNumbers = prize.allTicketNumbers.skip(12).toList();
+      
+      // Break remaining numbers into rows of `columns` count
+      final rows = <List<String>>[];
+      for (var i = 0; i < remainingNumbers.length; i += columns) {
+        rows.add(
+          remainingNumbers.sublist(
+            i,
+            min(i + columns, remainingNumbers.length),
+          ),
+        );
+      }
+
+      // Render remaining numbers as a flowing table
+      widgets.add(
+        pw.Table.fromTextArray(
+          data: rows,
+          cellStyle: _safeTextStyle(fontSize: 10),
+          cellAlignment: pw.Alignment.center,
+          border: pw.TableBorder(
+            horizontalInside: pw.BorderSide(width: 0.2, color: PdfColors.grey400),
+          ),
+          columnWidths: {
+            for (var c = 0; c < columns; c++)
+              c: pw.FractionColumnWidth(1 / columns),
+          },
         ),
       );
     }
-
-    // Render as a flowing table
-    widgets.add(
-      pw.Table.fromTextArray(
-        data: rows,
-        cellStyle: _safeTextStyle(fontSize: 10),
-        cellAlignment: pw.Alignment.center,
-        border: pw.TableBorder(
-          horizontalInside: pw.BorderSide(width: 0.2, color: PdfColors.grey400),
-        ),
-        columnWidths: {
-          for (var c = 0; c < columns; c++)
-            c: pw.FractionColumnWidth(1 / columns),
-        },
-      ),
-    );
 
     return widgets;
   }
@@ -334,20 +410,14 @@ class PdfService {
     return pw.Column(
       children: [
         pw.Divider(thickness: 0.5, color: PdfColors.grey500),
-        pw.SizedBox(height: 5),
+        pw.SizedBox(height: 2), // Further reduced spacing
         pw.Text(
           'The prize winners are advised to verify the winning numbers with the results published in the Kerala Government Gazette and surrender the winning tickets within 90 days.',
           style: _safeTextStyle(fontSize: 9, color: PdfColors.grey700),
           textAlign: pw.TextAlign.center,
         ),
-        pw.SizedBox(height: 5),
-        pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: pw.Text(
-            'Page $pageNumber of $pageCount',
-            style: _safeTextStyle(fontSize: 9, color: PdfColors.grey700),
-          ),
-        ),
+        pw.SizedBox(height: 2), // Further reduced spacing
+        // Removed page number display
       ],
     );
   }

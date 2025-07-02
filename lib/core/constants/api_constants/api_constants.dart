@@ -7,4 +7,5 @@ class ApiConstants {
   static const String homeResults = '/results/results/';
   static const String resultDetails = '/results/get-by-unique-id/';
   static const String news = '/results/news/';
+  static const String predict = '/results/predict/';
 }
