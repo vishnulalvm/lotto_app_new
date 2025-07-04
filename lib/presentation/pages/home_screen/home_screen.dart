@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
@@ -196,6 +197,59 @@ class _HomeScreenState extends State<HomeScreen>
     if (_lastRefreshTime == null ||
         DateTime.now().difference(_lastRefreshTime!).inMinutes >= 3) {
       _refreshResultsInBackground();
+    }
+  }
+
+  /// Launch website when carousel image is tapped
+  Future<void> _launchWebsite() async {
+    const String websiteUrl = 'https://lottokeralalotteries.com/';
+    
+    try {
+      final Uri url = Uri.parse(websiteUrl);
+      
+      // Check if the URL can be launched
+      final bool canLaunch = await canLaunchUrl(url);
+      
+      if (canLaunch) {
+        // Try to launch the URL with platform default mode first
+        final bool launched = await launchUrl(
+          url,
+          mode: LaunchMode.platformDefault,
+        );
+        
+        if (!launched) {
+          // If platform default failed, try external application
+          final bool launchedExternal = await launchUrl(
+            url,
+            mode: LaunchMode.externalApplication,
+          );
+          
+          if (!launchedExternal) {
+            _showErrorSnackBar('could_not_open_website'.tr());
+          }
+        }
+      } else {
+        _showErrorSnackBar('could_not_open_website'.tr());
+      }
+    } catch (e) {
+      _showErrorSnackBar('error_opening_website'.tr());
+    }
+  }
+
+  /// Show error snackbar for website launch failures
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(
+            label: 'retry'.tr(),
+            textColor: Colors.white,
+            onPressed: _launchWebsite,
+          ),
+        ),
+      );
     }
   }
 
@@ -566,18 +620,21 @@ class _HomeScreenState extends State<HomeScreen>
             items: carouselImages.map((imageUrl) {
               return Builder(
                 builder: (BuildContext context) {
-                  return Container(
-                    width: AppResponsive.width(context, 100),
-                    margin: AppResponsive.margin(context, horizontal: 0),
-                    decoration: BoxDecoration(
-                      color: Colors.pink[100],
-                      borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 8)),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 8)),
-                      child: _buildCarouselImage(imageUrl),
+                  return GestureDetector(
+                    onTap: () => _launchWebsite(),
+                    child: Container(
+                      width: AppResponsive.width(context, 100),
+                      margin: AppResponsive.margin(context, horizontal: 0),
+                      decoration: BoxDecoration(
+                        color: Colors.pink[100],
+                        borderRadius: BorderRadius.circular(
+                            AppResponsive.spacing(context, 8)),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                            AppResponsive.spacing(context, 8)),
+                        child: _buildCarouselImage(imageUrl),
+                      ),
                     ),
                   );
                 },
@@ -630,7 +687,7 @@ class _HomeScreenState extends State<HomeScreen>
         'label': 'scanner'.tr(),
         'route': '/barcode_scanner_screen'
       },
-      {'icon': Icons.emoji_events, 'label': 'claim'.tr(), 'route': '/claim'},
+      {'icon': Icons.live_tv, 'label': 'Live'.tr(), 'route': '/claim'},
       {
         'icon': Icons.games_outlined,
         'label': 'predict'.tr(),

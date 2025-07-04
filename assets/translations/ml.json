@@ -304,6 +304,12 @@
 
   "could_not_open_link": "ലിങ്ക് തുറക്കാൻ കഴിഞ്ഞില്ല",
   "error_opening_link": "ലിങ്ക് തുറക്കുന്നതിൽ പിശക്",
+  "could_not_open_website": "വെബ്‌സൈറ്റ് തുറക്കാൻ കഴിഞ്ഞില്ല",
+  "error_opening_website": "വെബ്‌സൈറ്റ് തുറക്കുന്നതിൽ പിശക്",
+  "copy_link": "ലിങ്ക് പകർത്തുക",
+  "lottery": "ലോട്ടറി",
+  "claim_lottery": "ലോട്ടറി ക്ലെയിം ചെയ്യുക",
+  "support": "സപ്പോർട്ട്",
   "update_available": "അപ്ഡേറ്റ് ലഭ്യമാണ്",
   "newer_version_available": "പുതിയ പതിപ്പ് ({version}) ലഭ്യമാണ്.",
   "later": "പിന്നീട്",

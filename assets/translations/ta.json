@@ -282,6 +282,12 @@
 
   "could_not_open_link": "இணைப்பைத் திறக்க முடியவில்லை",
   "error_opening_link": "இணைப்பைத் திறப்பதில் பிழை",
+  "could_not_open_website": "வலைத்தளத்தைத் திறக்க முடியவில்லை",
+  "error_opening_website": "வலைத்தளத்தைத் திறப்பதில் பிழை",
+  "copy_link": "இணைப்பை நகலெடு",
+  "lottery": "லாட்டரி",
+  "claim_lottery": "லாட்டரி உரிமை கோரு",
+  "support": "ஆதரவு",
   "update_available": "புதுப்பிப்பு கிடைக்கிறது",
   "newer_version_available": "புதிய பதிப்பு ({version}) கிடைக்கிறது.",
   "later": "பின்னர்",

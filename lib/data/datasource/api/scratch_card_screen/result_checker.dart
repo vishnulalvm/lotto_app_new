@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
 import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
 
 class TicketCheckApiService {
-  static const String baseUrl = 'https://lottery-app-5bve.onrender.com/api';
+
   static const String checkTicketEndpoint = '/results/check-ticket/';
 
   Future<TicketCheckResponseModel> checkTicket({
@@ -19,7 +20,7 @@ class TicketCheckApiService {
       );
 
       final response = await http.post(
-        Uri.parse('$baseUrl$checkTicketEndpoint'),
+        Uri.parse('${ApiConstants.baseUrl}$checkTicketEndpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );

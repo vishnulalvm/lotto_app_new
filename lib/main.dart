@@ -46,7 +46,7 @@ void main() async {
 
   // Initialize connectivity service
   await ConnectivityService().initialize();
-  
+
   // Initialize SavedResultsService
   await SavedResultsService.init();
 

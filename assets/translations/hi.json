@@ -236,6 +236,12 @@
 
   "could_not_open_link": "लिंक नहीं खुल सका",
   "error_opening_link": "लिंक खोलने में त्रुटि",
+  "could_not_open_website": "वेबसाइट नहीं खुल सकी",
+  "error_opening_website": "वेबसाइट खोलने में त्रुटि",
+  "copy_link": "लिंक कॉपी करें",
+  "lottery": "लॉटरी",
+  "claim_lottery": "लॉटरी क्लेम करें",
+  "support": "सहायता",
   "update_available": "अपडेट उपलब्ध है",
   "newer_version_available": "नया संस्करण ({version}) उपलब्ध है।",
   "later": "बाद में",

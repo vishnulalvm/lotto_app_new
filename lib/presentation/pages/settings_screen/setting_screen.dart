@@ -247,14 +247,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                     theme,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: _buildListTile(
-                      'contact_us'.tr(),
-                      Icons.contact_support_outlined,
-                      onTap: () => _showContactSheet(
-                          context), // Updated to show bottom sheet
-                    ),
+                  _buildSection(
+                    'lottery'.tr(),
+                    [
+                      _buildListTile(
+                        'claim_lottery'.tr(),
+                        Icons.emoji_events_outlined,
+                        onTap: () => context.go('/claim'),
+                      ),
+                    ],
+                    theme,
+                  ),
+                  _buildSection(
+                    'support'.tr(),
+                    [
+                      _buildListTile(
+                        'contact_us'.tr(),
+                        Icons.contact_support_outlined,
+                        onTap: () => _showContactSheet(context),
+                      ),
+                    ],
+                    theme,
                   ),
                   _buildActionButton(
                     'log_out'.tr(),

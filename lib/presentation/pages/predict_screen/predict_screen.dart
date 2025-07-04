@@ -17,6 +17,7 @@ class _PredictScreenState extends State<PredictScreen>
     with TickerProviderStateMixin {
   String? selectedPrizeType = '1st'; // Default to 1st prize
   late AnimationController _typewriterController;
+  bool _isDisclaimerExpanded = false;
 
   final List<String> prizeTypes = [
     '1st',
@@ -91,8 +92,10 @@ class _PredictScreenState extends State<PredictScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildPrizeTypeSelector(theme),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 10),
                     _buildPredictionCard(theme),
+                    const SizedBox(height: 10),
+                    _buildMostRepeatedCard(theme),
                   ],
                 ),
               ),
@@ -355,12 +358,168 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
+  Widget _buildMostRepeatedCard(ThemeData theme) {
+    // Dummy data for most repeated numbers from previous week
+    final mostRepeatedNumbers = [
+      {'number': 'KL405721', 'frequency': 8},
+      {'number': '2847', 'frequency': 7},
+      {'number': 'WN684593', 'frequency': 6},
+      {'number': '1254', 'frequency': 6},
+      {'number': 'AK721394', 'frequency': 5},
+    ];
+
+    return Card(
+      color: theme.cardTheme.color,
+      elevation: theme.cardTheme.elevation,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: Colors.orange[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Most Repeated Numbers',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Previous week\'s most frequent numbers',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: mostRepeatedNumbers.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = mostRepeatedNumbers[index];
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.orange.withValues(alpha: 0.1),
+                        Colors.orange.withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.orange[600],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          item['number'] as String,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[600],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${item['frequency']}x',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.orange[700],
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Based on analysis of previous week\'s lottery results',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.orange[700],
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomDisclaimer(ThemeData theme) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.amber.withValues(alpha: 0.1),
+        color: Colors.amber.withValues(alpha: _isDisclaimerExpanded ? 0.1 : 0.05),
         border: Border(
           top: BorderSide(
             color: Colors.amber.withValues(alpha: 0.3),
@@ -369,26 +528,143 @@ class _PredictScreenState extends State<PredictScreen>
         ),
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.info_outline,
-              color: Colors.amber[700],
-              size: 16,
+            // Minimal disclaimer bar
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _isDisclaimerExpanded = !_isDisclaimerExpanded;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.amber[700],
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'For entertainment only • Tap for details',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.amber[700],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _isDisclaimerExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.amber[700],
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'For entertainment only • Results are random',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.amber[700],
-                  fontSize: 12,
+            // Expandable detailed content
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 300),
+              crossFadeState: _isDisclaimerExpanded 
+                  ? CrossFadeState.showSecond 
+                  : CrossFadeState.showFirst,
+              firstChild: const SizedBox.shrink(),
+              secondChild: Container(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.amber.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Important Information',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: Colors.amber[800],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDisclaimerPoint(
+                        theme,
+                        '🎲',
+                        'Entertainment Purpose',
+                        'Predictions are for fun and should not guide financial decisions.',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDisclaimerPoint(
+                        theme,
+                        '📊',
+                        'Statistical Analysis',
+                        'Based on historical data, but lottery outcomes remain random.',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDisclaimerPoint(
+                        theme,
+                        '⚠️',
+                        'Play Responsibly',
+                        'Past patterns don\'t guarantee future results.',
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDisclaimerPoint(ThemeData theme, String emoji, String title, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          emoji,
+          style: const TextStyle(fontSize: 14),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$title: ',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.amber[800],
+                    fontSize: 12,
+                  ),
+                ),
+                TextSpan(
+                  text: description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[700],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

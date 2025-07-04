@@ -304,110 +304,178 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     );
   }
 
-  // Enhanced banner that explains different result types
-  Widget _buildResultTypeBanner(ThemeData theme, TicketCheckResponseModel result) {
-    Color bannerColor;
-    Color iconColor;
-    IconData bannerIcon;
-    String title;
-    String subtitle;
+  // Enhanced banner that explains different result types with clear user messaging
+  Widget _buildResultTypeBanner(
+      ThemeData theme, TicketCheckResponseModel result) {
+    return _getResultBannerConfig(result, theme);
+  }
 
-    switch (result.responseType) {
-      case ResponseType.currentWinner:
-        bannerColor = Colors.green[50]!;
-        iconColor = Colors.green[600]!;
-        bannerIcon = Icons.celebration;
-        title = 'current_draw_result'.tr();
-        subtitle = 'result_published_you_won'.tr();
-        break;
-      case ResponseType.currentLoser:
-        bannerColor = Colors.orange[50]!;
-        iconColor = Colors.orange[600]!;
-        bannerIcon = Icons.info_outline;
-        title = 'current_draw_result'.tr();
-        subtitle = 'result_published_no_prize'.tr();
-        break;
-      case ResponseType.previousWinner:
-        bannerColor = Colors.blue[50]!;
-        iconColor = Colors.blue[600]!;
-        bannerIcon = Icons.history;
-        title = 'previous_draw_winner'.tr();
-        subtitle = 'current_result_pending_won_previous'.tr();
-        break;
-      case ResponseType.previousLoser:
-        bannerColor = Colors.grey[50]!;
-        iconColor = Colors.grey[600]!;
-        bannerIcon = Icons.schedule;
-        title = 'result_not_available'.tr();
-        subtitle = 'no_current_result_no_previous_prize'.tr();
-        break;
-      case ResponseType.unknown:
-        bannerColor = Colors.grey[50]!;
-        iconColor = Colors.grey[600]!;
-        bannerIcon = Icons.help_outline;
-        title = 'unknown_result'.tr();
-        subtitle = 'unable_to_determine_result_type'.tr();
-        break;
+  Widget _getResultBannerConfig(
+      TicketCheckResponseModel result, ThemeData theme) {
+    // Analyze all combinations systematically
+    final bool wonPrize = result.wonPrize;
+    final bool resultPublished = result.resultPublished;
+    final bool isPreviousResult = result.isPreviousResult;
+
+    late Color bannerColor;
+    late Color iconColor;
+    late IconData primaryIcon;
+
+    late String title;
+    late String subtitle;
+
+    // Handle all 8 possible combinations
+    if (wonPrize && resultPublished && !isPreviousResult) {
+      // Combination 1: Current Winner
+      bannerColor = Colors.green[50]!;
+      iconColor = Colors.green[600]!;
+      primaryIcon = Icons.emoji_events;
+
+      title = '🎉 Congratulations! You Won!';
+      subtitle = 'Current Draw Result';
+    } else if (!wonPrize && resultPublished && !isPreviousResult) {
+      // Combination 5: Current Loser
+      bannerColor = Colors.orange[50]!;
+      iconColor = Colors.orange[600]!;
+      primaryIcon = Icons.info;
+
+      title = 'Better Luck Next Time';
+      subtitle = 'Current Draw Result';
+    } else if (wonPrize && !resultPublished && isPreviousResult) {
+      // Combination 8: Previous Winner, Current Pending
+      bannerColor = Colors.blue[50]!;
+      iconColor = Colors.blue[600]!;
+      primaryIcon = Icons.history;
+
+      title = '🏆 Previous Winner!';
+      subtitle = 'Current Result Pending';
+    } else if (!wonPrize && !resultPublished && isPreviousResult) {
+      // Combination 4: No Previous Win, Current Pending
+      bannerColor = Colors.grey[50]!;
+      iconColor = Colors.grey[600]!;
+      primaryIcon = Icons.schedule;
+
+      title = 'Result Pending';
+      subtitle = 'Current Draw Not Published';
+    } else if (wonPrize && resultPublished && isPreviousResult) {
+      // Combination 6: Previous Winner with Published Historical Result
+      bannerColor = Colors.blue[50]!;
+      iconColor = Colors.blue[600]!;
+      primaryIcon = Icons.history_edu;
+      title = '🏅 Historical Winner';
+      subtitle = 'Previous Draw Victory';
+    } else if (!wonPrize && resultPublished && isPreviousResult) {
+      // Combination 2: Previous Non-Winner with Published Historical Result
+      bannerColor = Colors.grey[50]!;
+      iconColor = Colors.grey[600]!;
+      primaryIcon = Icons.history;
+      title = 'Historical Record';
+      subtitle = 'Previous Draw Result';
+    } else if (wonPrize && !resultPublished && !isPreviousResult) {
+      // Combination 3: Current Winner but Result Not Published (Rare case)
+      bannerColor = Colors.yellow[50]!;
+      iconColor = Colors.yellow[700]!;
+      primaryIcon = Icons.access_time;
+      title = '⏳ Win Confirmation Pending';
+      subtitle = 'Prize Detected, Publishing Soon';
+    } else {
+      // Combination 7: Current Non-Winner, Result Not Published (Default/Error case)
+      bannerColor = Colors.grey[50]!;
+      iconColor = Colors.grey[600]!;
+      primaryIcon = Icons.help_outline;
+      title = 'Status Unknown';
+      subtitle = 'Unable to Determine Result';
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bannerColor,
-        border: Border.all(color: iconColor.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
+      margin: const EdgeInsets.only(
+
+        left: 16,
+        right: 16,
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              bannerIcon,
-              color: iconColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: iconColor,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: iconColor.withValues(alpha: 0.8),
-                  ),
-                ),
-                // Show relevant dates
-                if (result.responseType == ResponseType.previousWinner ||
-                    result.responseType == ResponseType.previousLoser) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${'requested_date'.tr()}: ${_formatDate(result.requestedDate ?? '')} • ${'latest_result'.tr()}: ${_formatDate(result.drawDate)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: iconColor.withValues(alpha: 0.7),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            bannerColor,
+            bannerColor.withOpacity(0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: iconColor.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with icons and title
+            Row(
+              children: [
+                // Primary status icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    primaryIcon,
+                    color: iconColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: iconColor,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: iconColor.withValues(alpha: 0.7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Secondary status indicator
+                // if (secondaryIcon != null)
+                //   Container(
+                //     padding: const EdgeInsets.all(6),
+                //     decoration: BoxDecoration(
+                //       color: iconColor.withValues(alpha: 0.1),
+                //       shape: BoxShape.circle,
+                //     ),
+                //     child: Icon(
+                //       secondaryIcon,
+                //       color: iconColor,
+                //       size: 16,
+                //     ),
+                //   ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -480,7 +548,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                         color: Colors.grey[600],
                       ),
                     ),
-                  if (result.drawDate.isNotEmpty && result.responseType == ResponseType.previousLoser)
+                  if (result.drawDate.isNotEmpty &&
+                      result.responseType == ResponseType.previousLoser)
                     Text(
                       '${'latest_available'.tr()}: ${_formatDate(result.drawDate)}',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -591,8 +660,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                       children: [
                         Icon(
                           result.isWinner
-                              ? (result.responseType == ResponseType.previousWinner 
-                                  ? Icons.history_edu 
+                              ? (result.responseType ==
+                                      ResponseType.previousWinner
+                                  ? Icons.history_edu
                                   : Icons.emoji_events)
                               : Icons.sentiment_dissatisfied,
                           color: Colors.white,
@@ -624,7 +694,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          if (result.responseType == ResponseType.previousWinner) ...[
+                          if (result.responseType ==
+                              ResponseType.previousWinner) ...[
                             const SizedBox(height: 4),
                             Text(
                               'previous_draw_win'.tr(),
@@ -736,8 +807,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           left: 30,
           child: Icon(
             isWinner
-                ? (responseType == ResponseType.previousWinner 
-                    ? Icons.history_outlined 
+                ? (responseType == ResponseType.previousWinner
+                    ? Icons.history_outlined
                     : Icons.emoji_events_outlined)
                 : Icons.sentiment_dissatisfied_outlined,
             color: iconColor,

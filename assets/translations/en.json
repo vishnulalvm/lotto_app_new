@@ -350,6 +350,12 @@
 
   "could_not_open_link": "Could not open link",
   "error_opening_link": "Error opening link",
+  "could_not_open_website": "Could not open website",
+  "error_opening_website": "Error opening website",
+  "copy_link": "Copy Link",
+  "lottery": "Lottery",
+  "claim_lottery": "Claim Lottery",
+  "support": "Support",
   "update_available": "Update Available",
   "newer_version_available": "A newer version ({version}) is available.",
   "later": "Later",
