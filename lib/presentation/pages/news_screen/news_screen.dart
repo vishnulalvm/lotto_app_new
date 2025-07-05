@@ -85,6 +85,8 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
+      appBar: _buildTransparentAppBar(theme),
       body: BlocBuilder<NewsBloc, NewsState>(
         builder: (context, state) {
           if (state is NewsLoading) {
@@ -101,6 +103,87 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
           return _buildEmptyState(theme);
         },
       ),
+    );
+  }
+
+  AppBar _buildTransparentAppBar(ThemeData theme) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: Container(
+        margin: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.3),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: 20,
+          ),
+          onPressed: () => context.go('/'),
+          padding: EdgeInsets.zero,
+        ),
+      ),
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          'news'.tr().toUpperCase(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            fontSize: 16,
+          ),
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        BlocBuilder<NewsBloc, NewsState>(
+          builder: (context, state) {
+            if (state is NewsLoaded && state.news.isNotEmpty) {
+              return Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.share,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    if (currentPage < state.news.length) {
+                      _shareNews(state.news[currentPage]);
+                    }
+                  },
+                  padding: EdgeInsets.zero,
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
     );
   }
 
@@ -183,21 +266,16 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
   }
 
   Widget _buildNewsContent(List<NewsModel> newsList, ThemeData theme) {
-    return Stack(
-      children: [
-        PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          onPageChanged: (index) => setState(() {
-            currentPage = index;
-            expandedNewsId = null;
-          }),
-          itemCount: newsList.length,
-          itemBuilder: (context, index) =>
-              _buildNewsPage(newsList[index], theme),
-        ),
-        _buildOverlayButtons(theme, newsList),
-      ],
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: Axis.vertical,
+      onPageChanged: (index) => setState(() {
+        currentPage = index;
+        expandedNewsId = null;
+      }),
+      itemCount: newsList.length,
+      itemBuilder: (context, index) =>
+          _buildNewsPage(newsList[index], theme),
     );
   }
 
@@ -278,7 +356,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
             onTap: () => _toggleFullContent(news.id.toString()),
             child: Container(
               color: Colors.transparent,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 100, 16, 16), // Added top padding for app bar
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -339,7 +417,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: Text(
-                          key: ValueKey('${news.id}-${isExpanded}'),
+                          key: ValueKey('${news.id}-$isExpanded'),
                           isExpanded ? news.content : news.shortContent,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: Colors.white70,
@@ -382,7 +460,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
                           child: Text(
-                            key: ValueKey('indicator-${isExpanded}'),
+                            key: ValueKey('indicator-$isExpanded'),
                             isExpanded
                                 ? 'Tap to show less'
                                 : 'Tap to read more',
@@ -407,10 +485,10 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 14, horizontal: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -444,59 +522,4 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
     );
   }
 
-  Widget _buildOverlayButtons(ThemeData theme, List<NewsModel> newsList) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.7),
-            Colors.black.withOpacity(0.3),
-            Colors.transparent,
-          ],
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => context.go('/'),
-                  ),
-                  Text(
-                    'LOTTO NEWS',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 18,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.share, color: Colors.white),
-                    onPressed: () {
-                      // Share the current news item
-                      if (newsList.isNotEmpty && currentPage < newsList.length) {
-                        _shareNews(newsList[currentPage]);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

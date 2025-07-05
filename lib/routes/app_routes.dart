@@ -13,5 +13,6 @@ class RouteNames {
   static const String settings = 'settings';
   static const String claimScreen = 'claimScreen';
   static const String lottoPointsScreen = 'lottoPoints';
+  static const String liveVideoScreen = 'liveVideoScreen';
   // Add more route names as needed
 }

@@ -12,6 +12,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
+import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
 import 'package:lotto_app/routes/app_routes.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -331,10 +332,36 @@ class _HomeScreenState extends State<HomeScreen>
   //   }
   // }
 
+  /// Handle back button press and show rating dialog
+  Future<bool> _handleBackPress() async {
+    await RateUsDialog.incrementBackButtonCount();
+    
+    final shouldShowDialog = await RateUsDialog.shouldShowRatingDialog();
+    if (shouldShowDialog && mounted) {
+      await RateUsDialog.show(context);
+      // If user rated, we can still exit. If they dismissed, also allow exit.
+      return true;
+    }
+    
+    // Allow normal back navigation
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GestureDetector(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          final shouldExit = await _handleBackPress();
+          if (shouldExit && context.mounted) {
+            // Exit the app
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: GestureDetector(
       onHorizontalDragEnd: (DragEndDetails details) {
         if (details.primaryVelocity! < 0) {
           context.go('/news_screen');
@@ -385,6 +412,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         floatingActionButton: _buildScanButton(theme),
       ),
+    ),
     );
   }
 
@@ -687,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen>
         'label': 'scanner'.tr(),
         'route': '/barcode_scanner_screen'
       },
-      {'icon': Icons.live_tv, 'label': 'Live'.tr(), 'route': '/claim'},
+      {'icon': Icons.live_tv, 'label': 'Live'.tr(), 'route': '/live_videos'},
       {
         'icon': Icons.games_outlined,
         'label': 'predict'.tr(),

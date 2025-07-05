@@ -20,6 +20,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   DateTime selectedDate = DateTime.now();
   String? lastScannedCode;
   bool isProcessing = false;
+  bool _isNavigatingAway = false;
 
   @override
   void initState() {
@@ -34,14 +35,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     switch (state) {
       case AppLifecycleState.resumed:
         // Resume camera when app comes back to foreground
-        if (mounted) {
-          cameraController.start();
+        if (mounted && !_isNavigatingAway) {
+          _restartCameraIfNeeded();
         }
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
-        // Stop camera when app goes to background
-        cameraController.stop();
+        // Stop camera when app goes to background (but not when navigating)
+        if (!_isNavigatingAway) {
+          cameraController.stop();
+        }
         break;
       case AppLifecycleState.detached:
         break;
@@ -49,6 +52,34 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         // Stop camera when app is hidden
         cameraController.stop();
         break;
+    }
+  }
+
+  Future<void> _restartCameraIfNeeded() async {
+    try {
+      // Check if camera is already running
+      if (!cameraController.value.isRunning) {
+        await cameraController.start();
+        // Reset states when camera restarts
+        setState(() {
+          isProcessing = false;
+          _isNavigatingAway = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error restarting camera: $e');
+      // Try to recreate the controller if restart fails
+      try {
+        cameraController.dispose();
+        cameraController = MobileScannerController();
+        await cameraController.start();
+        setState(() {
+          isProcessing = false;
+          _isNavigatingAway = false;
+        });
+      } catch (e) {
+        debugPrint('Error recreating camera controller: $e');
+      }
     }
   }
 
@@ -108,6 +139,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
   Future<void> _stopCameraAndNavigate(String route, {Object? extra}) async {
     try {
+      // Set navigation flag to prevent lifecycle interference
+      setState(() {
+        _isNavigatingAway = true;
+      });
+
       // Stop the camera before navigation
       await cameraController.stop();
 
@@ -116,9 +152,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
       if (mounted) {
         if (extra != null) {
-          context.push(route, extra: extra);
+          await context.push(route, extra: extra);
+          // Reset navigation flag when returning
+          _handleReturnFromNavigation();
         } else {
-          context.push(route);
+          await context.push(route);
+          // Reset navigation flag when returning
+          _handleReturnFromNavigation();
         }
       }
     } catch (e) {
@@ -126,18 +166,47 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       // Navigate anyway even if camera stop fails
       if (mounted) {
         if (extra != null) {
-          context.push(route, extra: extra);
+          await context.push(route, extra: extra);
+          _handleReturnFromNavigation();
         } else {
-          context.push(route);
+          await context.push(route);
+          _handleReturnFromNavigation();
         }
       }
     }
   }
 
+  void _handleReturnFromNavigation() {
+    // Reset navigation flag and restart camera when returning
+    setState(() {
+      _isNavigatingAway = false;
+      isProcessing = false;
+      lastScannedCode = null; // Reset to allow new scans
+    });
+    
+    // Restart camera after a brief delay
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _restartCameraIfNeeded();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) async {
+        if (didPop) {
+          // Handle hardware back button
+          setState(() {
+            _isNavigatingAway = true;
+          });
+          await cameraController.stop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -155,7 +224,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
             color: theme.appBarTheme.iconTheme?.color,
           ),
           onPressed: () async {
-            // Stop camera before going back
+            // Set navigation flag and stop camera before going back
+            setState(() {
+              _isNavigatingAway = true;
+            });
             await cameraController.stop();
             if (mounted) {
               context.go('/');
@@ -284,6 +356,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -287,6 +287,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     theme: theme,
                     isLoading: false,
                   ),
+
+                  SizedBox(
+                    height: MediaQuery.of(context).padding.bottom + 16,
+                  ), // Add padding for bottom navigation
+
                 ],
               ),
             );

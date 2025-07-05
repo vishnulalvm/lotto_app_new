@@ -16,6 +16,7 @@ import 'package:lotto_app/presentation/pages/save_result_screen/save_result_scre
 import 'package:lotto_app/presentation/pages/search_screen/search_screen.dart';
 import 'package:lotto_app/presentation/pages/settings_screen/setting_screen.dart';
 import 'package:lotto_app/presentation/pages/splash_screen/splash_screen.dart';
+import 'package:lotto_app/presentation/pages/live_video_screen/live_video_screen.dart';
 import 'package:lotto_app/routes/app_routes.dart';
 
 class AppRouter {
@@ -142,6 +143,11 @@ class AppRouter {
                 path: 'lottoPoints',
                 name: RouteNames.lottoPointsScreen,
                 builder: (context, state) => const LottoPointsScreen(),
+              ),
+              GoRoute(
+                path: 'live_videos',
+                name: RouteNames.liveVideoScreen,
+                builder: (context, state) => const LiveVideoScreen(),
               ),
             ],
           ),
