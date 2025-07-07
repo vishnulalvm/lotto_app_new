@@ -495,10 +495,10 @@ class _LotteryResultDetailsScreenState
     final buffer = StringBuffer();
     
     // Header
-    buffer.writeln('KERALA STATE LOTTERIES - RESULT');
-    buffer.writeln('${result.lotteryName.toUpperCase()} LOTTERY NO: ${result.drawNumber}');
+    buffer.writeln('KERALA STATE LOTTERIES - RESULT (LOTTO APP)');
+    buffer.writeln('${result.lotteryName.toUpperCase()} DRAW NO: ${result.drawNumber}');
     buffer.writeln('DRAW HELD ON: ${result.formattedDate}');
-    buffer.writeln('=' * 50);
+    buffer.writeln('=' * 36);
     buffer.writeln();
     
     // Prizes in order
@@ -554,7 +554,7 @@ class _LotteryResultDetailsScreenState
     buffer.writeln();
     buffer.writeln('Contact: 0471-2305230');
     buffer.writeln('Email: cru.dir.lotteries@kerala.gov.in');
-    buffer.writeln('Visit: www.Lottoapp.app');
+    buffer.writeln('Visit: https://lottokeralalotteries.com/');
     
     return buffer.toString();
   }
@@ -571,7 +571,9 @@ class _LotteryResultDetailsScreenState
         // Show success message
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
+
           SnackBar(
+              
             content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),

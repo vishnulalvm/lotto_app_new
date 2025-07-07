@@ -8,6 +8,7 @@ import 'package:lotto_app/data/datasource/api/news_screen/news_api_service.dart'
 import 'package:lotto_app/data/datasource/api/results_screen/results_screen.dart';
 import 'package:lotto_app/data/datasource/api/scratch_card_screen/result_checker.dart';
 import 'package:lotto_app/data/datasource/api/predict_screen/predict_api_service.dart';
+import 'package:lotto_app/data/datasource/api/live_video_screen/live_video_api_service.dart';
 import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
 import 'package:lotto_app/data/repositories/cache/home_screen_cache_repository.dart';
@@ -15,6 +16,7 @@ import 'package:lotto_app/data/repositories/news_screen/news_repository.dart';
 import 'package:lotto_app/data/repositories/results_screen/result_screen.dart';
 import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dart';
 import 'package:lotto_app/data/repositories/predict_screen/predict_repository.dart';
+import 'package:lotto_app/data/repositories/live_video_screen/live_video_repository.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/data/services/cache_manager.dart';
@@ -26,6 +28,7 @@ import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
 import 'package:lotto_app/domain/usecases/predict_screen/predict_usecase.dart';
+import 'package:lotto_app/domain/usecases/live_video_screen/live_video_usecase.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_bloc.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_event.dart';
@@ -35,6 +38,7 @@ import 'package:lotto_app/presentation/blocs/news_screen/news_bloc.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
+import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
 import 'package:lotto_app/routes/route_names.dart';
 
 void main() async {
@@ -132,6 +136,15 @@ class MyApp extends StatelessWidget {
             PredictUseCase(
               PredictRepositoryImpl(
                 PredictApiService(),
+              ),
+            ),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => LiveVideoBloc(
+            LiveVideoUseCase(
+              LiveVideoRepositoryImpl(
+                LiveVideoApiService(),
               ),
             ),
           ),

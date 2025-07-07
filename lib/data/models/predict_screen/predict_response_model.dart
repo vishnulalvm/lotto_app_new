@@ -3,6 +3,7 @@ class PredictResponseModel {
   final String lotteryName;
   final String prizeType;
   final List<String> predictedNumbers;
+  final List<String> repeatedNumbers;
   final String note;
 
   const PredictResponseModel({
@@ -10,6 +11,7 @@ class PredictResponseModel {
     required this.lotteryName,
     required this.prizeType,
     required this.predictedNumbers,
+    required this.repeatedNumbers,
     required this.note,
   });
 
@@ -19,6 +21,7 @@ class PredictResponseModel {
       lotteryName: json['lottery_name'] as String,
       prizeType: json['prize_type'] as String,
       predictedNumbers: List<String>.from(json['predicted_numbers'] as List),
+      repeatedNumbers: List<String>.from(json['repeated_numbers'] as List),
       note: json['note'] as String,
     );
   }
@@ -29,13 +32,14 @@ class PredictResponseModel {
       'lottery_name': lotteryName,
       'prize_type': prizeType,
       'predicted_numbers': predictedNumbers,
+      'repeated_numbers': repeatedNumbers,
       'note': note,
     };
   }
 
   @override
   String toString() {
-    return 'PredictResponseModel(status: $status, lotteryName: $lotteryName, prizeType: $prizeType, predictedNumbers: $predictedNumbers, note: $note)';
+    return 'PredictResponseModel(status: $status, lotteryName: $lotteryName, prizeType: $prizeType, predictedNumbers: $predictedNumbers, repeatedNumbers: $repeatedNumbers, note: $note)';
   }
 
   @override
@@ -46,6 +50,7 @@ class PredictResponseModel {
         other.lotteryName == lotteryName &&
         other.prizeType == prizeType &&
         _listEquals(other.predictedNumbers, predictedNumbers) &&
+        _listEquals(other.repeatedNumbers, repeatedNumbers) &&
         other.note == note;
   }
 
@@ -55,6 +60,7 @@ class PredictResponseModel {
         lotteryName.hashCode ^
         prizeType.hashCode ^
         predictedNumbers.hashCode ^
+        repeatedNumbers.hashCode ^
         note.hashCode;
   }
 

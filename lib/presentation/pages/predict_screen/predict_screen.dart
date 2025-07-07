@@ -122,7 +122,6 @@ class _PredictScreenState extends State<PredictScreen>
           fontWeight: FontWeight.w600,
         ),
       ),
-      centerTitle: true,
     );
   }
 
@@ -137,7 +136,7 @@ class _PredictScreenState extends State<PredictScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Prize Type',
+              'Select Prize Type',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -301,7 +300,7 @@ class _PredictScreenState extends State<PredictScreen>
             );
           },
         ),
-        const SizedBox(height: 20),
+        // const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -359,15 +358,21 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   Widget _buildMostRepeatedCard(ThemeData theme) {
-    // Dummy data for most repeated numbers from previous week
-    final mostRepeatedNumbers = [
-      {'number': 'KL405721', 'frequency': 8},
-      {'number': '2847', 'frequency': 7},
-      {'number': 'WN684593', 'frequency': 6},
-      {'number': '1254', 'frequency': 6},
-      {'number': 'AK721394', 'frequency': 5},
-    ];
+    return BlocBuilder<PredictBloc, PredictState>(
+      builder: (context, state) {
+        List<String> repeatedNumbers = [];
 
+        if (state is PredictLoaded) {
+          repeatedNumbers = state.prediction.repeatedNumbers;
+        }
+
+        return _buildRepeatedNumbersContent(theme, repeatedNumbers);
+      },
+    );
+  }
+
+  Widget _buildRepeatedNumbersContent(
+      ThemeData theme, List<String> repeatedNumbers) {
     return Card(
       color: theme.cardTheme.color,
       elevation: theme.cardTheme.elevation,
@@ -380,136 +385,107 @@ class _PredictScreenState extends State<PredictScreen>
             Row(
               children: [
                 Icon(
-                  Icons.trending_up,
+                  Icons.auto_awesome,
                   color: Colors.orange[600],
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Most Repeated Numbers',
+                  'Most Repeated Last 4 digits',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Previous week\'s most frequent numbers',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
             const SizedBox(height: 20),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: mostRepeatedNumbers.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = mostRepeatedNumbers[index];
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.orange.withValues(alpha: 0.1),
-                        Colors.orange.withValues(alpha: 0.05),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.orange.withValues(alpha: 0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.orange[600],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          item['number'] as String,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[600],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${item['frequency']}x',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.orange.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.orange[700],
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Based on analysis of previous week\'s lottery results',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.orange[700],
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            if (repeatedNumbers.isEmpty)
+              _buildEmptyRepeatedState(theme)
+            else
+              _buildRepeatedNumbersGrid(theme, repeatedNumbers),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyRepeatedState(ThemeData theme) {
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.trending_up,
+              size: 32,
+              color: Colors.orange[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No repeated numbers available',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Generate predictions to see historical patterns',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepeatedNumbersGrid(
+      ThemeData theme, List<String> repeatedNumbers) {
+    return Column(
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: repeatedNumbers.length == 1 ? 1 : 3,
+            childAspectRatio: repeatedNumbers.length == 1 ? 3 : 2,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: repeatedNumbers.length,
+          itemBuilder: (context, index) {
+            return RepeatedNumberCard(
+              number: repeatedNumbers[index],
+              theme: theme,
+              delay: Duration(milliseconds: index * 100),
+              fontSize: repeatedNumbers.length == 1 ? 20 : 16,
+            );
+          },
+        ),
+        // const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '${repeatedNumbers.length} historical pattern${repeatedNumbers.length > 1 ? 's' : ''} found 📊',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.orange[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -519,7 +495,8 @@ class _PredictScreenState extends State<PredictScreen>
       curve: Curves.easeInOut,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.amber.withValues(alpha: _isDisclaimerExpanded ? 0.1 : 0.05),
+        color:
+            Colors.amber.withValues(alpha: _isDisclaimerExpanded ? 0.1 : 0.05),
         border: Border(
           top: BorderSide(
             color: Colors.amber.withValues(alpha: 0.3),
@@ -539,7 +516,8 @@ class _PredictScreenState extends State<PredictScreen>
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     Icon(
@@ -574,8 +552,8 @@ class _PredictScreenState extends State<PredictScreen>
             // Expandable detailed content
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 300),
-              crossFadeState: _isDisclaimerExpanded 
-                  ? CrossFadeState.showSecond 
+              crossFadeState: _isDisclaimerExpanded
+                  ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,
               firstChild: const SizedBox.shrink(),
               secondChild: Container(
@@ -632,7 +610,8 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
-  Widget _buildDisclaimerPoint(ThemeData theme, String emoji, String title, String description) {
+  Widget _buildDisclaimerPoint(
+      ThemeData theme, String emoji, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -800,6 +779,140 @@ class _TypewriterNumberCardState extends State<TypewriterNumberCard>
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Custom Repeated Number Card Widget with Orange Theme
+class RepeatedNumberCard extends StatefulWidget {
+  final String number;
+  final ThemeData theme;
+  final Duration delay;
+  final double fontSize;
+
+  const RepeatedNumberCard({
+    super.key,
+    required this.number,
+    required this.theme,
+    required this.delay,
+    required this.fontSize,
+  });
+
+  @override
+  State<RepeatedNumberCard> createState() => _RepeatedNumberCardState();
+}
+
+class _RepeatedNumberCardState extends State<RepeatedNumberCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<int> _characterCount;
+  bool _isVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: Duration(milliseconds: widget.number.length * 100),
+      vsync: this,
+    );
+
+    _characterCount = StepTween(
+      begin: 0,
+      end: widget.number.length,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start animation after delay
+    Future.delayed(widget.delay, () {
+      if (mounted) {
+        setState(() {
+          _isVisible = true;
+        });
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _isVisible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.orange.withValues(alpha: 0.8),
+              Colors.orange[600]!,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withValues(alpha: 0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Rank badge
+
+            // Number display
+            Center(
+              child: AnimatedBuilder(
+                animation: _characterCount,
+                builder: (context, child) {
+                  String displayText =
+                      widget.number.substring(0, _characterCount.value);
+                  bool showCursor = _controller.isAnimating &&
+                      _characterCount.value < widget.number.length;
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        displayText,
+                        style: widget.theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: widget.fontSize,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (showCursor)
+                        AnimatedOpacity(
+                          opacity:
+                              (_controller.value * 2) % 1 > 0.5 ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 100),
+                          child: Text(
+                            '|',
+                            style: widget.theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: widget.fontSize,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

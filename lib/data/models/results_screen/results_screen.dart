@@ -72,7 +72,7 @@ class LotteryResultModel {
     }
   }
 
-  String get formattedDrawNumber => '$lotteryCode-$drawNumber';
+  String get formattedDrawNumber => drawNumber;
 
   // Get prizes by type
   List<PrizeModel> getPrizesByType(String prizeType) {

@@ -836,6 +836,7 @@ class _HomeScreenState extends State<HomeScreen>
         }
 
         if (state is HomeScreenResultsError) {
+          print('Error loading results: ${state.message}');
           // If we have offline data, show it with an error banner
           if (state.hasOfflineData && state.offlineData != null) {
             return Column(

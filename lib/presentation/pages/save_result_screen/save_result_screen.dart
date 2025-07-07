@@ -117,8 +117,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
                 // For now, just show a message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                        'cannot_undo_message'.tr()),
+                    content: Text('cannot_undo_message'.tr()),
                   ),
                 );
               },
@@ -145,7 +144,6 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
 
   AppBar _buildAppBar(ThemeData theme) {
     return AppBar(
-      centerTitle: true,
       backgroundColor: theme.appBarTheme.backgroundColor,
       elevation: theme.appBarTheme.elevation,
       leading: IconButton(
@@ -154,7 +152,10 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
       ),
       title: Text(
         'saved_results'.tr(),
-        style: theme.appBarTheme.titleTextStyle,
+        style: theme.textTheme.titleLarge?.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       actions: [
         // Search button
@@ -196,7 +197,9 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
                       ? Icons.favorite
                       : Icons.favorite_border),
                   const SizedBox(width: 8),
-                  Text(_showFavoritesOnly ? 'show_all'.tr() : 'favorites_only'.tr()),
+                  Text(_showFavoritesOnly
+                      ? 'show_all'.tr()
+                      : 'favorites_only'.tr()),
                 ],
               ),
             ),

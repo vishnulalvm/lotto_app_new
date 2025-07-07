@@ -212,19 +212,28 @@ class CachedUpdatesModelAdapter extends TypeAdapter<CachedUpdatesModel> {
       image1: fields[0] as String,
       image2: fields[1] as String,
       image3: fields[2] as String,
+      redirectLink1: fields[3] as String?,
+      redirectLink2: fields[4] as String?,
+      redirectLink3: fields[5] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, CachedUpdatesModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.image1)
       ..writeByte(1)
       ..write(obj.image2)
       ..writeByte(2)
-      ..write(obj.image3);
+      ..write(obj.image3)
+      ..writeByte(3)
+      ..write(obj.redirectLink1)
+      ..writeByte(4)
+      ..write(obj.redirectLink2)
+      ..writeByte(5)
+      ..write(obj.redirectLink3);
   }
 
   @override

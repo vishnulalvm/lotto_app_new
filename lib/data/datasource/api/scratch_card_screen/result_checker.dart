@@ -24,11 +24,7 @@ class TicketCheckApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
-      print("date: $date");
-      print("ticketNumber: $ticketNumber");
-      print("phoneNumber: $phoneNumber");
-      print("response.statusCode: ${response.statusCode}");
-      print("response.body: ${response.body}");
+      
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return TicketCheckResponseModel.fromJson(jsonData);

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -54,7 +56,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
   Future<void> _shareNews(NewsModel news) async {
     try {
       String shareText;
-      
+
       if (news.hasValidNewsUrl) {
         // Share with URL if available
         shareText = '${news.headline}\n\n${news.newsUrl}';
@@ -110,74 +112,72 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.3),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-        child: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => context.go('/'),
-          padding: EdgeInsets.zero,
-        ),
-      ),
-      title: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          'news'.tr().toUpperCase(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            fontSize: 16,
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.3),
+                  Colors.black.withValues(alpha: 0.1),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-      centerTitle: true,
+      leading: IconButton(
+        icon: Icon(
+          Icons.arrow_back,
+          color: Colors.white,
+          size: 24,
+        ),
+        onPressed: () => context.go('/'),
+        padding: EdgeInsets.zero,
+      ),
+      title: Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Text(
+            'NEWS SUMMARY',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+              fontSize: 17,
+              shadows: [
+                Shadow(
+                  offset: Offset(0, 1),
+                  blurRadius: 3,
+                  color: Colors.black.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      titleSpacing: 0,
+      centerTitle: false,
       actions: [
         BlocBuilder<NewsBloc, NewsState>(
           builder: (context, state) {
             if (state is NewsLoaded && state.news.isNotEmpty) {
-              return Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
+              return IconButton(
+                icon: Icon(
+                  Icons.share_outlined,
+                  color: Colors.white,
+                  size: 24,
                 ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.share,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    if (currentPage < state.news.length) {
-                      _shareNews(state.news[currentPage]);
-                    }
-                  },
-                  padding: EdgeInsets.zero,
-                ),
+                onPressed: () {
+                  if (currentPage < state.news.length) {
+                    _shareNews(state.news[currentPage]);
+                  }
+                },
+                padding: EdgeInsets.zero,
               );
             }
             return const SizedBox.shrink();
@@ -215,8 +215,6 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-   
-     
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.read<NewsBloc>().add(LoadNewsEvent()),
@@ -274,8 +272,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
         expandedNewsId = null;
       }),
       itemCount: newsList.length,
-      itemBuilder: (context, index) =>
-          _buildNewsPage(newsList[index], theme),
+      itemBuilder: (context, index) => _buildNewsPage(newsList[index], theme),
     );
   }
 
@@ -356,7 +353,8 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
             onTap: () => _toggleFullContent(news.id.toString()),
             child: Container(
               color: Colors.transparent,
-              padding: const EdgeInsets.fromLTRB(16, 100, 16, 16), // Added top padding for app bar
+              padding: const EdgeInsets.fromLTRB(
+                  16, 100, 16, 16), // Added top padding for app bar
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -512,7 +510,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
                         ),
                       ),
                     ),
-                     const SizedBox(height: 16),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -521,5 +519,4 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
       ],
     );
   }
-
 }

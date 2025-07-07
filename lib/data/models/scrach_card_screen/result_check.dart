@@ -191,11 +191,30 @@ class PreviousResult {
       uniqueId: json['uniqueId'] ?? '',
       totalPrizeAmount: (json['totalPrizeAmount'] ?? 0.0).toDouble(),
       prizeDetails: json['prizeDetails'] != null && 
-                   json['prizeDetails'] is Map<String, dynamic> &&
-                   (json['prizeDetails'] as Map<String, dynamic>).isNotEmpty
-          ? PrizeDetails.fromJson(json['prizeDetails'])
+                   json['prizeDetails'] is Map<String, dynamic>
+          ? _parsePrizeDetails(json['prizeDetails'])
           : null,
     );
+  }
+
+  static PrizeDetails? _parsePrizeDetails(Map<String, dynamic> prizeDetailsJson) {
+    // Handle empty object case from API (case 5)
+    if (prizeDetailsJson.isEmpty) {
+      return null;
+    }
+    
+    // Check if it has meaningful data
+    final prizeType = prizeDetailsJson['prizeType'] ?? '';
+    final prizeAmount = (prizeDetailsJson['prizeAmount'] ?? 0.0).toDouble();
+    final matchType = prizeDetailsJson['matchType'] ?? '';
+    final winningTicketNumber = prizeDetailsJson['winningTicketNumber'] ?? '';
+    
+    // If all fields are empty/zero, treat as null
+    if (prizeType.isEmpty && prizeAmount == 0.0 && matchType.isEmpty && winningTicketNumber.isEmpty) {
+      return null;
+    }
+    
+    return PrizeDetails.fromJson(prizeDetailsJson);
   }
 }
 

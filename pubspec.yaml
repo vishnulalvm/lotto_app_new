@@ -33,8 +33,7 @@ dependencies:
   timeago: ^3.7.0
   typewritertext: ^3.0.9
   url_launcher: ^6.3.1
-  video_player: ^2.9.2
-  youtube_player_flutter: ^9.1.1
+  youtube_player_iframe: ^5.2.1
 
 dev_dependencies:
   build_runner: ^2.4.13
@@ -47,9 +46,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/icons/new_logo.png" # Use your foreground image as the default/legacy icon
-  adaptive_icon_foreground: "assets/icons/logo_foreground.png" # Updated to your new path
-  adaptive_icon_background: "#1E1E1E" # Updated to your new path
+  image_path: "assets/icons/new_small_logo.png" # Use your foreground image as the default/legacy icon
+  adaptive_icon_foreground: "assets/icons/new_small_logo_tras.png" # Updated to your new path
+  adaptive_icon_background: "#FFFFFF" # Updated to your new path
   # remove_alpha_ios: true # Not needed if ios: false
 
 flutter:

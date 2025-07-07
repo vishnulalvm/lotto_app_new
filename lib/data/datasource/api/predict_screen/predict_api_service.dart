@@ -12,11 +12,6 @@ class PredictApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
-
-      print('Request URL: ${response.request?.url}');
-      print('Request Body: ${jsonEncode(request.toJson())}'); 
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
       
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);

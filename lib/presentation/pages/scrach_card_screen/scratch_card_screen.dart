@@ -8,6 +8,7 @@ import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dar
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_event.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_state.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/scratch_card_bottom_sheet.dart';
+import 'package:lotto_app/data/services/user_service.dart';
 import 'package:scratcher/widgets.dart';
 import 'package:confetti/confetti.dart';
 
@@ -69,15 +70,31 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     _checkTicketWithAPI();
   }
 
-  void _checkTicketWithAPI() {
+  Future<void> _checkTicketWithAPI() async {
     final ticketNumber = widget.ticketData['ticketNumber'] as String;
     final date = widget.ticketData['date'] as String;
 
-    context.read<TicketCheckBloc>().add(CheckTicketEvent(
-          ticketNumber: ticketNumber,
-          phoneNumber: "+918138946412",
-          date: date,
-        ));
+    // Get user's phone number from stored user data
+    final userService = UserService();
+    String? phoneNumber = await userService.getPhoneNumber();
+    
+    // Fallback to default if no user phone number found
+    phoneNumber ??= "7306902343";
+    
+    // Remove country code if present (+91) to match API format
+    if (phoneNumber.startsWith('+91')) {
+      phoneNumber = phoneNumber.substring(3);
+    } else if (phoneNumber.startsWith('91') && phoneNumber.length == 12) {
+      phoneNumber = phoneNumber.substring(2);
+    }
+
+    if (mounted) {
+      context.read<TicketCheckBloc>().add(CheckTicketEvent(
+            ticketNumber: ticketNumber,
+            phoneNumber: phoneNumber,
+            date: date,
+          ));
+    }
   }
 
   @override
@@ -122,6 +139,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       case ResponseType.previousWinner:
         return true; // Show scratch card for these cases
       case ResponseType.previousLoser:
+      case ResponseType.resultNotPublished:
         return false; // Don't show scratch card - no prize and no current result
       case ResponseType.unknown:
         return false;
@@ -229,9 +247,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 context.read<TicketCheckBloc>().add(ResetTicketCheckEvent());
-                _checkTicketWithAPI();
+                await _checkTicketWithAPI();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primaryColor,
@@ -274,7 +292,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ScratchCardBottomSheet(
               result: result,
               ticketData: widget.ticketData,
-              onCheckAgain: _checkTicketWithAPI,
+              onCheckAgain: () async => await _checkTicketWithAPI(),
             ),
           ],
         ),
@@ -312,79 +330,70 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   Widget _getResultBannerConfig(
       TicketCheckResponseModel result, ThemeData theme) {
-    // Analyze all combinations systematically
-    final bool wonPrize = result.wonPrize;
-    final bool resultPublished = result.resultPublished;
-    final bool isPreviousResult = result.isPreviousResult;
-
+    // Use resultStatus from API response for better accuracy
+    final String resultStatus = result.resultStatus;
+    
     late Color bannerColor;
     late Color iconColor;
     late IconData primaryIcon;
-
     late String title;
     late String subtitle;
 
-    // Handle all 8 possible combinations
-    if (wonPrize && resultPublished && !isPreviousResult) {
-      // Combination 1: Current Winner
-      bannerColor = Colors.green[50]!;
-      iconColor = Colors.green[600]!;
-      primaryIcon = Icons.emoji_events;
-
-      title = '🎉 Congratulations! You Won!';
-      subtitle = 'Current Draw Result';
-    } else if (!wonPrize && resultPublished && !isPreviousResult) {
-      // Combination 5: Current Loser
-      bannerColor = Colors.orange[50]!;
-      iconColor = Colors.orange[600]!;
-      primaryIcon = Icons.info;
-
-      title = 'Better Luck Next Time';
-      subtitle = 'Current Draw Result';
-    } else if (wonPrize && !resultPublished && isPreviousResult) {
-      // Combination 8: Previous Winner, Current Pending
-      bannerColor = Colors.blue[50]!;
-      iconColor = Colors.blue[600]!;
-      primaryIcon = Icons.history;
-
-      title = '🏆 Previous Winner!';
-      subtitle = 'Current Result Pending';
-    } else if (!wonPrize && !resultPublished && isPreviousResult) {
-      // Combination 4: No Previous Win, Current Pending
-      bannerColor = Colors.grey[50]!;
-      iconColor = Colors.grey[600]!;
-      primaryIcon = Icons.schedule;
-
-      title = 'Result Pending';
-      subtitle = 'Current Draw Not Published';
-    } else if (wonPrize && resultPublished && isPreviousResult) {
-      // Combination 6: Previous Winner with Published Historical Result
-      bannerColor = Colors.blue[50]!;
-      iconColor = Colors.blue[600]!;
-      primaryIcon = Icons.history_edu;
-      title = '🏅 Historical Winner';
-      subtitle = 'Previous Draw Victory';
-    } else if (!wonPrize && resultPublished && isPreviousResult) {
-      // Combination 2: Previous Non-Winner with Published Historical Result
-      bannerColor = Colors.grey[50]!;
-      iconColor = Colors.grey[600]!;
-      primaryIcon = Icons.history;
-      title = 'Historical Record';
-      subtitle = 'Previous Draw Result';
-    } else if (wonPrize && !resultPublished && !isPreviousResult) {
-      // Combination 3: Current Winner but Result Not Published (Rare case)
-      bannerColor = Colors.yellow[50]!;
-      iconColor = Colors.yellow[700]!;
-      primaryIcon = Icons.access_time;
-      title = '⏳ Win Confirmation Pending';
-      subtitle = 'Prize Detected, Publishing Soon';
-    } else {
-      // Combination 7: Current Non-Winner, Result Not Published (Default/Error case)
-      bannerColor = Colors.grey[50]!;
-      iconColor = Colors.grey[600]!;
-      primaryIcon = Icons.help_outline;
-      title = 'Status Unknown';
-      subtitle = 'Unable to Determine Result';
+    // Handle cases based on resultStatus from API response
+    switch (resultStatus.toLowerCase()) {
+      case 'won price today':
+        // Case 1: Current Winner
+        bannerColor = Colors.green[50]!;
+        iconColor = Colors.green[600]!;
+        primaryIcon = Icons.emoji_events;
+        title = '🎉 Congratulations! You Won!';
+        subtitle = 'Current Draw Result';
+        break;
+        
+      case 'no price today':
+        // Case 2: Current Loser
+        bannerColor = Colors.orange[50]!;
+        iconColor = Colors.orange[600]!;
+        primaryIcon = Icons.info;
+        title = 'Better Luck Next Time';
+        subtitle = 'Current Draw Result';
+        break;
+        
+      case 'previous result':
+        // Case 3: Previous Winner
+        bannerColor = Colors.yellow[50]!;
+        iconColor = Colors.yellow[900]!;
+        primaryIcon = Icons.emoji_events;
+        title = 'Previous Lottery Winner!';
+        subtitle = 'checked on ${_formatDate(result.drawDate)} lottery';
+        break;
+        
+      case 'previous result no price':
+        // Case 4: Previous No Win
+        bannerColor = Colors.grey[50]!;
+        iconColor = Colors.grey[600]!;
+        primaryIcon = Icons.schedule;
+        title = 'Checked Previous Result';
+        subtitle = 'checked on ${_formatDate(result.drawDate)} lottery';
+        break;
+        
+      case 'result is not published':
+        // Case 5: Result Not Published
+        bannerColor = Colors.amber[50]!;
+        iconColor = Colors.amber[700]!;
+        primaryIcon = Icons.access_time;
+        title = 'Result Not Published';
+        subtitle = 'Result will be available after 3 PM';
+        break;
+        
+      default:
+        // Fallback case
+        bannerColor = Colors.grey[50]!;
+        iconColor = Colors.grey[600]!;
+        primaryIcon = Icons.help_outline;
+        title = 'Status Unknown';
+        subtitle = 'Unable to Determine Result';
+        break;
     }
 
     return Container(
@@ -414,7 +423,12 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(
+          top: 10,
+          bottom: 10,
+          left: 10,
+          right: 10,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -458,20 +472,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                     ],
                   ),
                 ),
-                // Secondary status indicator
-                // if (secondaryIcon != null)
-                //   Container(
-                //     padding: const EdgeInsets.all(6),
-                //     decoration: BoxDecoration(
-                //       color: iconColor.withValues(alpha: 0.1),
-                //       shape: BoxShape.circle,
-                //     ),
-                //     child: Icon(
-                //       secondaryIcon,
-                //       color: iconColor,
-                //       size: 16,
-                //     ),
-                //   ),
               ],
             ),
           ],
@@ -509,16 +509,15 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.schedule,
+                    Icons.sentiment_dissatisfied,
                     color: Colors.grey[500],
                     size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    result.responseType == ResponseType.previousLoser
-                        ? 'no_prize_available'.tr()
-                        : 'no_result_available'.tr(),
+                    _getNoResultTitle(result),
                     style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[700],
                     ),
@@ -526,9 +525,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    result.responseType == ResponseType.previousLoser
-                        ? 'no_current_result_no_previous_win'.tr()
-                        : 'result_not_published_yet'.tr(),
+                    _getNoResultSubtitle(result),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -536,7 +533,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '${'ticket'.tr()}: ${widget.ticketData['ticketNumber']}',
+                    '${'Ticket No'}: ${widget.ticketData['ticketNumber']}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -551,7 +548,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                   if (result.drawDate.isNotEmpty &&
                       result.responseType == ResponseType.previousLoser)
                     Text(
-                      '${'latest_available'.tr()}: ${_formatDate(result.drawDate)}',
+                      '${'Date checked'}: ${_formatDate(result.drawDate)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -630,7 +627,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       ),
       child: Scratcher(
         key: _scratcherKey,
-        brushSize: 40,
+        brushSize: 60,
         threshold: 50,
         color: Colors.grey,
         image: Image.asset('assets/images/scrachcard.png'),
@@ -784,10 +781,33 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       case ResponseType.currentLoser:
         return 'better_luck_next_time'.tr();
       case ResponseType.previousWinner:
-        return 'previous_winner'.tr();
+        return 'congratulations'.tr();
       case ResponseType.previousLoser:
+      case ResponseType.resultNotPublished:
       case ResponseType.unknown:
         return 'better_luck_next_time'.tr();
+    }
+  }
+
+  String _getNoResultTitle(TicketCheckResponseModel result) {
+    switch (result.responseType) {
+      case ResponseType.previousLoser:
+        return 'Better luck next time';
+      case ResponseType.resultNotPublished:
+        return 'Result Not Published';
+      default:
+        return 'no_result_available'.tr();
+    }
+  }
+
+  String _getNoResultSubtitle(TicketCheckResponseModel result) {
+    switch (result.responseType) {
+      case ResponseType.previousLoser:
+        return 'Not today’s result, and no prize in last result';
+      case ResponseType.resultNotPublished:
+        return result.message.isNotEmpty ? result.message : 'result_not_published_yet'.tr();
+      default:
+        return 'result_not_published_yet'.tr();
     }
   }
 

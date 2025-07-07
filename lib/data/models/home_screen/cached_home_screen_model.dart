@@ -244,10 +244,22 @@ class CachedUpdatesModel extends HiveObject {
   @HiveField(2)
   final String image3;
 
+  @HiveField(3)
+  final String? redirectLink1;
+
+  @HiveField(4)
+  final String? redirectLink2;
+
+  @HiveField(5)
+  final String? redirectLink3;
+
   CachedUpdatesModel({
     required this.image1,
     required this.image2,
     required this.image3,
+    this.redirectLink1,
+    this.redirectLink2,
+    this.redirectLink3,
   });
 
   /// Convert from API model to cached model
@@ -256,6 +268,9 @@ class CachedUpdatesModel extends HiveObject {
       image1: apiModel.image1,
       image2: apiModel.image2,
       image3: apiModel.image3,
+      redirectLink1: apiModel.redirectLink1,
+      redirectLink2: apiModel.redirectLink2,
+      redirectLink3: apiModel.redirectLink3,
     );
   }
 
@@ -265,6 +280,9 @@ class CachedUpdatesModel extends HiveObject {
       image1: image1,
       image2: image2,
       image3: image3,
+      redirectLink1: redirectLink1,
+      redirectLink2: redirectLink2,
+      redirectLink3: redirectLink3,
     );
   }
 

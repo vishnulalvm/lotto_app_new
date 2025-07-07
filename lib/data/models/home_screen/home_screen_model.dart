@@ -30,19 +30,49 @@ class UpdatesModel {
   final String image1;
   final String image2;
   final String image3;
+  final String? redirectLink1;
+  final String? redirectLink2;
+  final String? redirectLink3;
 
   UpdatesModel({
     required this.image1,
     required this.image2,
     required this.image3,
+    this.redirectLink1,
+    this.redirectLink2,
+    this.redirectLink3,
   });
 
   factory UpdatesModel.fromJson(Map<String, dynamic> json) {
     return UpdatesModel(
-      image1: json['image1'] ?? '',
-      image2: json['image2'] ?? '',
-      image3: json['image3'] ?? '',
+      image1: _extractImageUrl(json['image1']),
+      image2: _extractImageUrl(json['image2']),
+      image3: _extractImageUrl(json['image3']),
+      redirectLink1: _extractRedirectLink(json['image1']),
+      redirectLink2: _extractRedirectLink(json['image2']),
+      redirectLink3: _extractRedirectLink(json['image3']),
     );
+  }
+
+  // Helper method to extract image URL from either string or object format
+  static String _extractImageUrl(dynamic imageData) {
+    if (imageData == null) return '';
+    
+    if (imageData is String) {
+      return imageData;
+    } else if (imageData is Map<String, dynamic>) {
+      return imageData['image_url']?.toString() ?? '';
+    }
+    
+    return '';
+  }
+
+  // Helper method to extract redirect link from object format
+  static String? _extractRedirectLink(dynamic imageData) {
+    if (imageData is Map<String, dynamic>) {
+      return imageData['redirect_link']?.toString();
+    }
+    return null;
   }
 
   // Helper method to get all image URLs as a list

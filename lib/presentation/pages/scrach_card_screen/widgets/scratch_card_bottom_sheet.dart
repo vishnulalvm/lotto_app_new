@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 class ScratchCardBottomSheet extends StatelessWidget {
   final TicketCheckResponseModel result;
   final Map<String, dynamic> ticketData;
-  final VoidCallback onCheckAgain;
+  final Future<void> Function() onCheckAgain;
 
   const ScratchCardBottomSheet({
     super.key,
@@ -102,12 +102,51 @@ class ScratchCardBottomSheet extends StatelessWidget {
               ),
             ],
           ),
-          if (result.formattedLotteryInfo.isNotEmpty) ...[
+          if (result.lotteryName.isNotEmpty) ...[
             const SizedBox(height: 8),
             Row(
               children: [
                 Icon(
                   Icons.event_outlined,
+                  size: 16,
+                  color: theme.textTheme.bodySmall?.color,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${'lottery'.tr()}: ${result.lotteryName}',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (result.requestedDate.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: theme.textTheme.bodySmall?.color,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${'requested_date'.tr()}: ${_formatDate(result.requestedDate)}',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (result.formattedLotteryInfo.isNotEmpty &&
+              result.responseType != ResponseType.resultNotPublished) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.numbers_outlined,
                   size: 16,
                   color: theme.textTheme.bodySmall?.color,
                 ),
@@ -121,12 +160,13 @@ class ScratchCardBottomSheet extends StatelessWidget {
               ],
             ),
           ],
-          if (result.drawDate.isNotEmpty) ...[
+          if (result.drawDate.isNotEmpty &&
+              result.responseType != ResponseType.resultNotPublished) ...[
             const SizedBox(height: 8),
             Row(
               children: [
                 Icon(
-                  Icons.calendar_today_outlined,
+                  Icons.date_range_outlined,
                   size: 16,
                   color: theme.textTheme.bodySmall?.color,
                 ),
@@ -178,9 +218,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
             OutlinedButton(
               onPressed: () => _navigateToResultDetails(context, result),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.green[600],
+                foregroundColor: Colors.red[600],
                 minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: Colors.green[600]!),
+                side: BorderSide(color: Colors.red[600]!),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -229,11 +269,11 @@ class ScratchCardBottomSheet extends StatelessWidget {
             const SizedBox(height: 12),
             // Secondary action - Check Again
             OutlinedButton(
-              onPressed: onCheckAgain,
+              onPressed: () => _navigateToResultDetails(context, result),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.blue[600],
+                foregroundColor: Colors.red[600],
                 minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: Colors.blue[600]!),
+                side: BorderSide(color: Colors.red[600]!),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -241,10 +281,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.refresh_outlined),
+                  const Icon(Icons.list_alt_outlined),
                   const SizedBox(width: 8),
                   Text(
-                    'check_for_current_result'.tr(),
+                    'view_full_results'.tr(),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -306,17 +346,72 @@ class ScratchCardBottomSheet extends StatelessWidget {
           ],
         );
 
-      case ResponseType.previousLoser:
-      case ResponseType.unknown:
+      case ResponseType.resultNotPublished:
         return Column(
           children: [
-            // Primary action - Home
+            // Info message container
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.amber[700],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      result.message.isNotEmpty
+                          ? result.message
+                          : 'result_will_be_published_soon'.tr(),
+                      style: TextStyle(
+                        color: Colors.amber[800],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Primary action - Check Again Later
             ElevatedButton(
-              onPressed: () => context.go('/'),
+              onPressed: onCheckAgain,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
+                backgroundColor: Colors.amber[600],
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.refresh_outlined),
+                  const SizedBox(width: 8),
+                  Text(
+                    'check_again_later'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Secondary action - Home
+            OutlinedButton(
+              onPressed: () => context.go('/'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber[600],
+                minimumSize: const Size(double.infinity, 48),
+                side: BorderSide(color: Colors.amber[600]!),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -333,10 +428,43 @@ class ScratchCardBottomSheet extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+        );
+
+      case ResponseType.previousLoser:
+      case ResponseType.unknown:
+        return Column(
+          children: [
+            // primary action - see full results
+
+            // First button as ElevatedButton
+            ElevatedButton(
+              onPressed: () => _navigateToResultDetails(context, result),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.list_alt_outlined),
+                  const SizedBox(width: 8),
+                  Text(
+                    'view_full_results'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
-            // Secondary action - Check Again
+
+// Second button as OutlinedButton
             OutlinedButton(
-              onPressed: onCheckAgain,
+              onPressed: () => context.go('/'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
@@ -348,10 +476,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.refresh_outlined),
+                  const Icon(Icons.home_outlined),
                   const SizedBox(width: 8),
                   Text(
-                    'check_again_later'.tr(),
+                    'back_to_home'.tr(),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
