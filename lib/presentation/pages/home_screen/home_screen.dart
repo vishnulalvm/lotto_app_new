@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:lotto_app/presentation/pages/home_screen/widgets/costume_carousel.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/first_time_language_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
@@ -359,74 +359,102 @@ class _HomeScreenState extends State<HomeScreen>
     return true;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          final shouldExit = await _handleBackPress();
-          if (shouldExit && context.mounted) {
-            // Exit the app
-            Navigator.of(context).pop();
-          }
+
+@override
+Widget build(BuildContext context) {
+  final theme = Theme.of(context);
+  return PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, result) async {
+      if (!didPop) {
+        final shouldExit = await _handleBackPress();
+        if (shouldExit && context.mounted) {
+          // Exit the app
+          Navigator.of(context).pop();
+        }
+      }
+    },
+    child: GestureDetector(
+      onHorizontalDragEnd: (DragEndDetails details) {
+        if (details.primaryVelocity! < 0) {
+          context.go('/news_screen');
         }
       },
-      child: GestureDetector(
-        onHorizontalDragEnd: (DragEndDetails details) {
-          if (details.primaryVelocity! < 0) {
-            context.go('/news_screen');
-          }
-        },
-        child: Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: _buildAppBar(theme),
-          body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-            listener: (context, state) {
-              // Clear any existing snackbars first
-              ScaffoldMessenger.of(context).clearSnackBars();
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: _buildAppBar(theme),
+        body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+          listener: (context, state) {
+            // Clear any existing snackbars first
+            ScaffoldMessenger.of(context).clearSnackBars();
 
-              if (state is HomeScreenResultsError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${'error_prefix'.tr()}${state.message}'),
-                    backgroundColor: Colors.red,
-                    action: SnackBarAction(
-                      label: 'retry'.tr(),
-                      textColor: Colors.white,
-                      onPressed: _loadLotteryResults,
-                    ),
+            if (state is HomeScreenResultsError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${'error_prefix'.tr()}${state.message}'),
+                  backgroundColor: Colors.red,
+                  action: SnackBarAction(
+                    label: 'retry'.tr(),
+                    textColor: Colors.white,
+                    onPressed: _loadLotteryResults,
                   ),
-                );
-              }
-            },
-            child: RefreshIndicator(
-              onRefresh: () async {
-                _refreshResults();
-              },
-              child: SingleChildScrollView(
-                controller:
-                    _scrollController, // This was the original missing piece!
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildCarousel(),
-                    SizedBox(height: AppResponsive.spacing(context, 5)),
-                    _buildNavigationIcons(theme),
-                    SizedBox(height: AppResponsive.spacing(context, 10)),
-                    _buildResultsSection(theme),
-                    SizedBox(height: AppResponsive.spacing(context, 100)),
-                  ],
                 ),
+              );
+            }
+          },
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _refreshResults();
+            },
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Replace _buildCarousel() with the custom widget
+                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                    builder: (context, state) {
+                      List<String> carouselImages = [];
+                      
+                      // Get images from API response
+                      if (state is HomeScreenResultsLoaded) {
+                        carouselImages = state.data.updates.allImages;
+                      }
+                      
+                      return SimpleCarouselWidget(
+                        images: carouselImages,
+                        onImageTap: () => _launchWebsite(),
+                        // Optional: Customize colors to match your theme
+                        gradientStartColor: Colors.pink.shade100,
+                        gradientEndColor: Colors.pink.shade300,
+                        // Optional: Custom settings
+                        autoPlay: true,
+                        autoPlayInterval: const Duration(seconds: 4),
+                        fallbackImages: const [
+                          'assets/images/five.jpeg',
+                          'assets/images/four.jpeg',
+                          'assets/images/seven.jpeg',
+                          'assets/images/six.jpeg',
+                          'assets/images/tree.jpeg',
+                        ],
+                      );
+                    },
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 5)),
+                  _buildNavigationIcons(theme),
+                  SizedBox(height: AppResponsive.spacing(context, 10)),
+                  _buildResultsSection(theme),
+                  SizedBox(height: AppResponsive.spacing(context, 100)),
+                ],
               ),
             ),
           ),
-          floatingActionButton: _buildScanButton(theme),
         ),
+        floatingActionButton: _buildScanButton(theme),
       ),
-    );
-  }
+    ),
+  );
+}
 
   AppBar _buildAppBar(ThemeData theme) {
     return AppBar(
@@ -588,10 +616,10 @@ class _HomeScreenState extends State<HomeScreen>
           ],
           onSelected: (value) {
             switch (value) {
-              case 'settings':
+              case 'settings_value': // Match the actual returned value
                 context.push('/settings');
                 break;
-              case 'contact':
+              case 'contact_value': // Match the actual returned value
                 showContactSheet(context);
                 break;
             }
@@ -630,99 +658,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCarousel() {
-    return BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-      builder: (context, state) {
-        List<String> carouselImages = [];
 
-        // Get images from API response or fallback to default
-        if (state is HomeScreenResultsLoaded) {
-          carouselImages = state.data.updates.allImages;
-        }
-
-        // Fallback to default images if no images from API
-        if (carouselImages.isEmpty) {
-          carouselImages = [
-            'assets/images/five.jpeg',
-            'assets/images/four.jpeg',
-            'assets/images/seven.jpeg',
-            'assets/images/six.jpeg',
-            'assets/images/tree.jpeg',
-          ];
-        }
-
-        return Padding(
-          padding: AppResponsive.padding(context, horizontal: 16, vertical: 8),
-          child: CarouselSlider(
-            options: CarouselOptions(
-              height: AppResponsive.height(
-                  context, AppResponsive.isMobile(context) ? 15 : 20),
-              autoPlay: true,
-              enlargeCenterPage: true,
-              viewportFraction: AppResponsive.isMobile(context) ? 0.85 : 0.7,
-            ),
-            items: carouselImages.map((imageUrl) {
-              return Builder(
-                builder: (BuildContext context) {
-                  return GestureDetector(
-                    onTap: () => _launchWebsite(),
-                    child: Container(
-                      width: AppResponsive.width(context, 100),
-                      margin: AppResponsive.margin(context, horizontal: 0),
-                      decoration: BoxDecoration(
-                        color: Colors.pink[100],
-                        borderRadius: BorderRadius.circular(
-                            AppResponsive.spacing(context, 8)),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                            AppResponsive.spacing(context, 8)),
-                        child: _buildCarouselImage(imageUrl),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCarouselImage(String imageUrl) {
-    // Check if it's a URL or local asset
-    if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          // Fallback to a default asset image on network error
-          return Image.asset(
-            'assets/images/five.jpeg',
-            fit: BoxFit.cover,
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
-      );
-    } else {
-      // Local asset image
-      return Image.asset(
-        imageUrl,
-        fit: BoxFit.cover,
-      );
-    }
-  }
 
   Widget _buildNavigationIcons(ThemeData theme) {
     final List<Map<String, dynamic>> navItems = [

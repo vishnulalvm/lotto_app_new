@@ -44,7 +44,7 @@ class ContactBottomSheet extends StatelessWidget {
             context,
             icon: Icons.phone_outlined,
             title: 'call_us'.tr(),
-            onTap: () => _makePhoneCall('9876543210'),
+            onTap: () => _makePhoneCall('6238970003'),
             theme: theme,
           ),
           _buildContactOption(
@@ -109,7 +109,7 @@ class ContactBottomSheet extends StatelessWidget {
 
   Future<void> _launchWhatsApp(String message) async {
     final Uri whatsappUri = Uri.parse(
-      'whatsapp://send?phone=+919876543210&text=${Uri.encodeComponent(message)}',
+      'whatsapp://send?phone=+916238970003&text=${Uri.encodeComponent(message)}',
     );
     try {
       await launchUrl(whatsappUri);

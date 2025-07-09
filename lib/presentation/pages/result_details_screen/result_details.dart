@@ -13,6 +13,7 @@ import 'package:lotto_app/presentation/blocs/results_screen/results_details_scre
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/dynamic_prize_sections_widget.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
   final String? uniqueId;
@@ -895,7 +896,7 @@ class _LotteryResultDetailsScreenState
                 Icons.email, 'Email: cru.dir.lotteries@kerala.gov.in', theme),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: _launchOfficialWebsite,
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
@@ -912,6 +913,33 @@ class _LotteryResultDetailsScreenState
         ),
       ),
     );
+  }
+
+  Future<void> _launchOfficialWebsite() async {
+    final Uri url = Uri.parse('https://statelottery.kerala.gov.in/index.php/lottery-result-view');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication, // Opens in external browser
+        );
+      } else {
+        // Handle error - show snackbar or dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not launch website'),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle any exceptions
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error opening website'),
+        ),
+      );
+    }
   }
 
   Widget _buildContactRow(IconData icon, String text, ThemeData theme) {
