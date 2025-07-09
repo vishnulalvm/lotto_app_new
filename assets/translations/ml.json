@@ -337,5 +337,23 @@
   "today_result": "ഇന്നത്തെ ഫലം",
   "yesterday_result": "കഴിഞ്ഞ ദിവസത്തെ ഫലം",
 
-   "most_repeated_last_4_digits": "ആവർത്തിച്ച അവസാന 4 അക്കങ്ങൾ"
+  "most_repeated_last_4_digits": "ആവർത്തിച്ച അവസാന 4 അക്കങ്ങൾ",
+  "choose_lottery_type": "ലോട്ടറി തരം തിരഞ്ഞെടുക്കുക",
+  "select_prize_type": "സമ്മാന തരം തിരഞ്ഞെടുക്കുക",
+  "samrudhi_sunday": "സമൃദ്ധി (ഞായർ)",
+  "bhagyathara_monday": "ഭാഗ്യതാരാ (തിങ്കൾ)",
+  "sthree_sakthi_tuesday": "സ്ത്രീ ശക്തി (ചൊവ്വ)",
+  "dhanalekshmi_wednesday": "ധനലക്ഷ്മി (ബുധൻ)",
+  "karunya_plus_thursday": "കാരുണ്യ പ്ലസ് (വ്യാഴം)",
+  "suvarna_keralam_friday": "സുവർണ്ണ കേരളം (വെള്ളി)",
+  "karunya_saturday": "കാരുണ്യ (ശനി)",
+  "accuracy_breakdown": "കൃത്യതയുടെ തകർച്ച",
+  "accuracy_breakdown_yesterday": "കഴിഞ്ഞ ദിവസത്തെ ഫലങ്ങളിൽ നിന്നുള്ള കൃത്യതയുടെ തകർച്ച",
+  "no_numbers_in_category": "ഈ വിഭാഗത്തിൽ നമ്പറുകളൊന്നുമില്ല",
+    "yesterdays_prediction_accuracy": "കഴിഞ്ഞ ദിവസത്തെ പ്രവചന കൃത്യത",
+  "perfect_match": "കൃത്യമായ പൊരുത്തം",
+  "close_match": "അടുത്ത പൊരുത്തം",
+  "partial_match": "ഭാഗിക പൊരുത്തം",
+  "low_match": "കുറഞ്ഞ പൊരുത്തം",
+  "numbers": "നമ്പറുകൾ:"
 }

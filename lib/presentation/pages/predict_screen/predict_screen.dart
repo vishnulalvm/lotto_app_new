@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/repeated_number.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/yesterday_accuracy_widget.dart';
 
 class PredictScreen extends StatefulWidget {
   const PredictScreen({super.key});
@@ -16,6 +19,7 @@ class PredictScreen extends StatefulWidget {
 class _PredictScreenState extends State<PredictScreen>
     with TickerProviderStateMixin {
   String? selectedPrizeType = '1st'; // Default to 1st prize
+  String? selectedLotteryType; // Add this for lottery selection
   late AnimationController _typewriterController;
   bool _isDisclaimerExpanded = false;
 
@@ -29,6 +33,15 @@ class _PredictScreenState extends State<PredictScreen>
     '7th',
     '8th'
   ];
+final List<Map<String, String>> lotteryTypes = [
+  {'value': 'SAMRUDHI', 'label_key': 'samrudhi_sunday'},
+  {'value': 'BHAGYATHARA', 'label_key': 'bhagyathara_monday'},
+  {'value': 'STHREE SAKTHI', 'label_key': 'sthree_sakthi_tuesday'},
+  {'value': 'DHANALEKSHMI', 'label_key': 'dhanalekshmi_wednesday'},
+  {'value': 'KARUNYA PLUS', 'label_key': 'karunya_plus_thursday'},
+  {'value': 'SUVARNA KERALAM', 'label_key': 'suvarna_keralam_friday'},
+  {'value': 'KARUNYA', 'label_key': 'karunya_saturday'},
+];
 
   @override
   void initState() {
@@ -37,6 +50,7 @@ class _PredictScreenState extends State<PredictScreen>
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
+    selectedLotteryType = _getLotteryNameForToday();
 
     // Auto-generate with default prize type
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -91,11 +105,15 @@ class _PredictScreenState extends State<PredictScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    _buildLotteryTypeSelector(theme), // Add this new widget
+                    const SizedBox(height: 10),
                     _buildPrizeTypeSelector(theme),
                     const SizedBox(height: 10),
                     _buildPredictionCard(theme),
                     const SizedBox(height: 10),
                     _buildMostRepeatedCard(theme),
+                    const SizedBox(height: 10),
+                    _buildYesterdayAccuracyCard(theme), // Add this line
                   ],
                 ),
               ),
@@ -116,10 +134,89 @@ class _PredictScreenState extends State<PredictScreen>
         onPressed: () => context.go('/'),
       ),
       title: Text(
-        lotteryName,
+        'predict'.tr(),
         style: theme.textTheme.titleLarge?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  // New lottery type selector widget
+  Widget _buildLotteryTypeSelector(ThemeData theme) {
+    return Card(
+      color: theme.cardTheme.color,
+      elevation: theme.cardTheme.elevation,
+      shape: theme.cardTheme.shape,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: theme.primaryColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Select Lottery Type',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: selectedLotteryType,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: theme.primaryColor.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: theme.primaryColor, width: 2),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                filled: true,
+                fillColor: theme.primaryColor.withOpacity(0.05),
+                prefixIcon: Icon(
+                  Icons.confirmation_number,
+                  color: theme.primaryColor.withOpacity(0.7),
+                ),
+              ),
+              items: lotteryTypes.map((Map<String, String> lottery) {
+                return DropdownMenuItem<String>(
+                  value: lottery['value'],
+                  child: Text(
+                    lottery['label_key']!.tr(), // Translate the label here
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedLotteryType = newValue;
+                });
+                if (newValue != null && selectedPrizeType != null) {
+                  _generatePrediction(newValue);
+                }
+              },
+              hint: Text(
+                'choose_lottery_type'.tr(),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+            )
+          ],
         ),
       ),
     );
@@ -135,11 +232,21 @@ class _PredictScreenState extends State<PredictScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Select Prize Type',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.emoji_events,
+                  color: Colors.amber[600],
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'select_prize_type'.tr(),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -158,11 +265,18 @@ class _PredictScreenState extends State<PredictScreen>
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 filled: true,
                 fillColor: theme.primaryColor.withValues(alpha: 0.05),
+                prefixIcon: Icon(
+                  Icons.star,
+                  color: Colors.amber[600],
+                ),
               ),
               items: prizeTypes.map((String type) {
                 return DropdownMenuItem<String>(
                   value: type,
-                  child: Text('$type Prize'),
+                  child: Text(
+                    '$type Prize',
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 );
               }).toList(),
               onChanged: (String? newValue) {
@@ -170,8 +284,8 @@ class _PredictScreenState extends State<PredictScreen>
                   selectedPrizeType = newValue;
                 });
                 // Auto-generate when prize type changes
-                if (newValue != null) {
-                  _generatePrediction(_getLotteryNameForToday());
+                if (newValue != null && selectedLotteryType != null) {
+                  _generatePrediction(selectedLotteryType!);
                 }
               },
             ),
@@ -610,6 +724,160 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
+  Widget _buildYesterdayAccuracyCard(ThemeData theme) {
+    return BlocBuilder<PredictBloc, PredictState>(
+      builder: (context, state) {
+        YesterdayPredictionAccuracy? accuracyData;
+
+        if (state is PredictLoaded) {
+          accuracyData = state.prediction.yesterdayPredictionAccuracy;
+        }
+
+        return _buildAccuracyContent(theme, accuracyData);
+      },
+    );
+  }
+
+  Widget _buildAccuracyContent(
+      ThemeData theme, YesterdayPredictionAccuracy? accuracyData) {
+    return Card(
+      color: theme.cardTheme.color,
+      elevation: theme.cardTheme.elevation,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.analytics_outlined,
+                  color: Colors.green[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'yesterdays_prediction_accuracy'.tr(),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            if (accuracyData != null) ...[
+              const SizedBox(height: 16),
+              _buildAccuracySummary(
+                  theme, accuracyData.summary, accuracyData.date),
+              const SizedBox(height: 20),
+              YesterdayAccuracyWidget(
+                digitAccuracy: accuracyData.digitAccuracy,
+                theme: theme,
+              ),
+            ] else
+              _buildEmptyAccuracyState(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccuracySummary(
+      ThemeData theme, AccuracySummary summary, String date) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.green.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Date: $date',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Perfect Matches: ${summary.perfectMatchCount}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.green[600],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${summary.overallAccuracyPercent.toStringAsFixed(1)}%',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyAccuracyState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.analytics_outlined,
+                size: 32,
+                color: Colors.green[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No accuracy data available',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Generate predictions to see yesterday\'s accuracy',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey[500],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDisclaimerPoint(
       ThemeData theme, String emoji, String title, String description) {
     return Row(
@@ -779,140 +1047,6 @@ class _TypewriterNumberCardState extends State<TypewriterNumberCard>
               );
             },
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Custom Repeated Number Card Widget with Orange Theme
-class RepeatedNumberCard extends StatefulWidget {
-  final String number;
-  final ThemeData theme;
-  final Duration delay;
-  final double fontSize;
-
-  const RepeatedNumberCard({
-    super.key,
-    required this.number,
-    required this.theme,
-    required this.delay,
-    required this.fontSize,
-  });
-
-  @override
-  State<RepeatedNumberCard> createState() => _RepeatedNumberCardState();
-}
-
-class _RepeatedNumberCardState extends State<RepeatedNumberCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<int> _characterCount;
-  bool _isVisible = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: Duration(milliseconds: widget.number.length * 100),
-      vsync: this,
-    );
-
-    _characterCount = StepTween(
-      begin: 0,
-      end: widget.number.length,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
-
-    // Start animation after delay
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        setState(() {
-          _isVisible = true;
-        });
-        _controller.forward();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _isVisible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.orange.withValues(alpha: 0.8),
-              Colors.orange[600]!,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.orange.withValues(alpha: 0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Rank badge
-
-            // Number display
-            Center(
-              child: AnimatedBuilder(
-                animation: _characterCount,
-                builder: (context, child) {
-                  String displayText =
-                      widget.number.substring(0, _characterCount.value);
-                  bool showCursor = _controller.isAnimating &&
-                      _characterCount.value < widget.number.length;
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        displayText,
-                        style: widget.theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: widget.fontSize,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (showCursor)
-                        AnimatedOpacity(
-                          opacity:
-                              (_controller.value * 2) % 1 > 0.5 ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 100),
-                          child: Text(
-                            '|',
-                            style: widget.theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: widget.fontSize,
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
         ),
       ),
     );

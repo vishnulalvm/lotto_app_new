@@ -12,7 +12,8 @@ class PredictApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
-      
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return PredictResponseModel.fromJson(jsonData);
@@ -20,6 +21,7 @@ class PredictApiService {
         throw Exception('Failed to get prediction: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error getting prediction: $e');
       throw Exception('Error getting prediction: $e');
     }
   }
