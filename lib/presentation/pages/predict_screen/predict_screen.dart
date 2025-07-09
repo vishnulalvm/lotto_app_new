@@ -391,7 +391,7 @@ class _PredictScreenState extends State<PredictScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Most Repeated Last 4 digits',
+                  'most_repeated_last_4_digits'.tr(),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),

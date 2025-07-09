@@ -2,9 +2,9 @@ class ApiConstants {
 // This class contains the API endpoints used in the application.
 // back up  base URL in case the server error occurs
 
-  static const String backUpUrl = 'https://api.lottokeralalotteries.com/api';
+  static const String backUpUrl = 'https://sea-lion-app-begbw.ondigitalocean.app/api';
   static const String baseUrl =
-      'https://sea-lion-app-begbw.ondigitalocean.app/api';
+      'https://api.lottokeralalotteries.com/api';
 
 // This is the main endpoint for all API requests.
   static const String login = '/users/login/';

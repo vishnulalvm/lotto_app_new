@@ -177,9 +177,9 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
     setState(() {
       _isExpanded = false;
       // Don't clear search when collapsed to maintain search state
-      // _controller.clear(); // Clear search when collapsed
+      _controller.clear(); // Clear search when collapsed
     });
-    
+
     // Call onChanged with empty string to clear search results
     widget.onChanged?.call('');
   }

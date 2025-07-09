@@ -4,6 +4,16 @@
   "google": "Google",
   "connected": "Connected",
   "about": "About",
+  "winners": "WINNERS",
+  "vishuBumper": "VISHU BUMPER",
+  "summerBumper": "SUMMER BUMPER",
+  "karunyaPlus": "KARUNYA PLUS",
+  "suvarnaKeralam": "SUVARNA KERALAM",
+  "karunya": "KARUNYA",
+  "samrudhi": "SAMRUDHI",
+  "bhagyathara": "BHAGYATHARA",
+  "sthreeSakthi": "STHREE SAKTHI",
+  "dhanalekshmi": "DHANALEKSHMI",
   "terms_of_use": "Terms of Use",
   "privacy_policy": "Privacy Policy",
   "check_for_updates": "Check for updates",
@@ -374,5 +384,10 @@
   "update_now": "Update Now",
   "latest_version_message": "You are using the latest version",
   "error_checking_updates": "Error checking for updates",
-  "disclaimer": "Disclaimer"
+  "disclaimer": "Disclaimer",
+  "no_consolation_prize": "No Consolation Prize",
+  "consolation_prize_amount": "Consolation Prize {}/-",
+  "today_result": "Today Result",
+  "yesterday_result": "Yesterday Result",
+  "most_repeated_last_4_digits": "Most Repeated Last 4 Digits"
 }

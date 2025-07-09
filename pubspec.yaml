@@ -2,7 +2,7 @@ name: lotto_app
 description: "A Lottery Result App"
 publish_to: "none"
 
-version: 1.0.1+1
+version: 1.1.3+3
 
 environment:
   sdk: ^3.6.0
@@ -18,6 +18,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  fluttertoast: ^8.2.12
   go_router: ^14.6.3
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -47,7 +48,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icons/new_small_logo.png" # Use your foreground image as the default/legacy icon
-  adaptive_icon_foreground: "assets/icons/new_small_logo_tras.png" # Updated to your new path
+  adaptive_icon_foreground: "assets/icons/new_foregraund.png" # Updated to your new path
   adaptive_icon_background: "#FFFFFF" # Updated to your new path
   # remove_alpha_ios: true # Not needed if ios: false
 

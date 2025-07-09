@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:lotto_app/presentation/pages/home_screen/widgets/first_time_language_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
@@ -62,6 +63,8 @@ class _HomeScreenState extends State<HomeScreen>
 
     _fabAnimationController.forward();
     _scrollController.addListener(_onScroll);
+
+    _showLanguageDialogIfNeeded();
   }
 
   @override
@@ -72,6 +75,15 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.dispose();
     _fabAnimationController.dispose();
     super.dispose();
+  }
+
+  void _showLanguageDialogIfNeeded() async {
+    // Wait a bit for the home screen to settle
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (mounted) {
+      await FirstTimeLanguageDialog.show(context);
+    }
   }
 
   void _onScroll() {
@@ -204,27 +216,27 @@ class _HomeScreenState extends State<HomeScreen>
   /// Launch website when carousel image is tapped
   Future<void> _launchWebsite() async {
     const String websiteUrl = 'https://lottokeralalotteries.com/';
-    
+
     try {
       final Uri url = Uri.parse(websiteUrl);
-      
+
       // Check if the URL can be launched
       final bool canLaunch = await canLaunchUrl(url);
-      
+
       if (canLaunch) {
         // Try to launch the URL with platform default mode first
         final bool launched = await launchUrl(
           url,
           mode: LaunchMode.platformDefault,
         );
-        
+
         if (!launched) {
           // If platform default failed, try external application
           final bool launchedExternal = await launchUrl(
             url,
             mode: LaunchMode.externalApplication,
           );
-          
+
           if (!launchedExternal) {
             _showErrorSnackBar('could_not_open_website'.tr());
           }
@@ -335,14 +347,14 @@ class _HomeScreenState extends State<HomeScreen>
   /// Handle back button press and show rating dialog
   Future<bool> _handleBackPress() async {
     await RateUsDialog.incrementBackButtonCount();
-    
+
     final shouldShowDialog = await RateUsDialog.shouldShowRatingDialog();
     if (shouldShowDialog && mounted) {
       await RateUsDialog.show(context);
       // If user rated, we can still exit. If they dismissed, also allow exit.
       return true;
     }
-    
+
     // Allow normal back navigation
     return true;
   }
@@ -362,57 +374,57 @@ class _HomeScreenState extends State<HomeScreen>
         }
       },
       child: GestureDetector(
-      onHorizontalDragEnd: (DragEndDetails details) {
-        if (details.primaryVelocity! < 0) {
-          context.go('/news_screen');
-        }
-      },
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _buildAppBar(theme),
-        body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-          listener: (context, state) {
-            // Clear any existing snackbars first
-            ScaffoldMessenger.of(context).clearSnackBars();
+        onHorizontalDragEnd: (DragEndDetails details) {
+          if (details.primaryVelocity! < 0) {
+            context.go('/news_screen');
+          }
+        },
+        child: Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: _buildAppBar(theme),
+          body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+            listener: (context, state) {
+              // Clear any existing snackbars first
+              ScaffoldMessenger.of(context).clearSnackBars();
 
-            if (state is HomeScreenResultsError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${'error_prefix'.tr()}${state.message}'),
-                  backgroundColor: Colors.red,
-                  action: SnackBarAction(
-                    label: 'retry'.tr(),
-                    textColor: Colors.white,
-                    onPressed: _loadLotteryResults,
+              if (state is HomeScreenResultsError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${'error_prefix'.tr()}${state.message}'),
+                    backgroundColor: Colors.red,
+                    action: SnackBarAction(
+                      label: 'retry'.tr(),
+                      textColor: Colors.white,
+                      onPressed: _loadLotteryResults,
+                    ),
                   ),
-                ),
-              );
-            }
-          },
-          child: RefreshIndicator(
-            onRefresh: () async {
-              _refreshResults();
+                );
+              }
             },
-            child: SingleChildScrollView(
-              controller:
-                  _scrollController, // This was the original missing piece!
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  _buildCarousel(),
-                  SizedBox(height: AppResponsive.spacing(context, 5)),
-                  _buildNavigationIcons(theme),
-                  SizedBox(height: AppResponsive.spacing(context, 10)),
-                  _buildResultsSection(theme),
-                  SizedBox(height: AppResponsive.spacing(context, 100)),
-                ],
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _refreshResults();
+              },
+              child: SingleChildScrollView(
+                controller:
+                    _scrollController, // This was the original missing piece!
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildCarousel(),
+                    SizedBox(height: AppResponsive.spacing(context, 5)),
+                    _buildNavigationIcons(theme),
+                    SizedBox(height: AppResponsive.spacing(context, 10)),
+                    _buildResultsSection(theme),
+                    SizedBox(height: AppResponsive.spacing(context, 100)),
+                  ],
+                ),
               ),
             ),
           ),
+          floatingActionButton: _buildScanButton(theme),
         ),
-        floatingActionButton: _buildScanButton(theme),
       ),
-    ),
     );
   }
 
@@ -467,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen>
 
           // Show app title with refresh indicator when background refreshing
           return Text(
-            'lotto_app_title'.tr(),
+            'LOTTO',
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 22),
               fontWeight: FontWeight.bold,
@@ -560,16 +572,18 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           itemBuilder: (BuildContext context) => [
             _buildPopupMenuItem(
-              'settings',
+              'settings_value', // The actual value returned when selected
               Icons.settings,
-              'Settings',
-              theme,
+              'settings', // This is the translation key
+              Theme.of(context),
+              context, // Pass context
             ),
             _buildPopupMenuItem(
-              'contact',
+              'contact_value', // The actual value returned when selected
               Icons.contact_support,
-              'Contact Us',
-              theme,
+              'contact_us', // This is the translation key
+              Theme.of(context),
+              context, // Pass context
             ),
           ],
           onSelected: (value) {
@@ -590,8 +604,9 @@ class _HomeScreenState extends State<HomeScreen>
   PopupMenuItem<String> _buildPopupMenuItem(
     String value,
     IconData icon,
-    String text,
+    String textKey, // Renamed to textKey to clarify its purpose
     ThemeData theme,
+    BuildContext context, // Added context to access AppResponsive
   ) {
     return PopupMenuItem<String>(
       value: value,
@@ -604,7 +619,8 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           SizedBox(width: AppResponsive.spacing(context, 12)),
           Text(
-            text,
+            textKey
+                .tr(), // Call .tr() on the textKey to get the translated string
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 14),
             ),
@@ -1045,7 +1061,7 @@ class _HomeScreenState extends State<HomeScreen>
                       SizedBox(width: AppResponsive.spacing(context, 10)),
                       Expanded(
                         child: Text(
-                          result.formattedTitle,
+                          result.getFormattedTitle(context),
                           style: TextStyle(
                             fontSize: AppResponsive.fontSize(context, 16),
                             fontWeight: FontWeight.bold,
@@ -1438,7 +1454,7 @@ class _HomeScreenState extends State<HomeScreen>
                 left: 8.0 * _fabAnimation.value, // Smooth spacing transition
               ),
               child: Text(
-                'Barcode Scan',
+                'barcode_scan'.tr(),
                 style: TextStyle(
                   fontSize: AppResponsive.fontSize(context, 14),
                 ),

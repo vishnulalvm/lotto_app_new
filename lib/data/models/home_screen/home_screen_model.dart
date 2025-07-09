@@ -1,3 +1,24 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+
+class LotteryLocalizationHelper {
+  static final Map<String, String> _lotteryNameToKey = {
+    'VISHU BUMPER': 'vishuBumper',
+    'SUMMER BUMPER': 'summerBumper',
+    'KARUNYA PLUS': 'karunyaPlus',
+    'SUVARNA KERALAM': 'suvarnaKeralam',
+    'KARUNYA': 'karunya',
+    'SAMRUDHI': 'samrudhi',
+    'BHAGYATHARA': 'bhagyathara',
+    'STHREE SAKTHI': 'sthreeSakthi',
+    'DHANALEKSHMI': 'dhanalekshmi',
+  };
+
+  static String getLotteryKey(String lotteryName) {
+    return _lotteryNameToKey[lotteryName.toUpperCase()] ?? 'karunya';
+  }
+}
+
 class HomeScreenResultsModel {
   final String status;
   final int count;
@@ -20,8 +41,9 @@ class HomeScreenResultsModel {
       totalPoints: json['total_points'] ?? 0,
       updates: UpdatesModel.fromJson(json['updates'] ?? {}),
       results: (json['results'] as List<dynamic>?)
-          ?.map((item) => HomeScreenResultModel.fromJson(item))
-          .toList() ?? [],
+              ?.map((item) => HomeScreenResultModel.fromJson(item))
+              .toList() ??
+          [],
     );
   }
 }
@@ -57,13 +79,13 @@ class UpdatesModel {
   // Helper method to extract image URL from either string or object format
   static String _extractImageUrl(dynamic imageData) {
     if (imageData == null) return '';
-    
+
     if (imageData is String) {
       return imageData;
     } else if (imageData is Map<String, dynamic>) {
       return imageData['image_url']?.toString() ?? '';
     }
-    
+
     return '';
   }
 
@@ -76,7 +98,8 @@ class UpdatesModel {
   }
 
   // Helper method to get all image URLs as a list
-  List<String> get allImages => [image1, image2, image3].where((url) => url.isNotEmpty).toList();
+  List<String> get allImages =>
+      [image1, image2, image3].where((url) => url.isNotEmpty).toList();
 }
 
 class HomeScreenResultModel {
@@ -87,9 +110,9 @@ class HomeScreenResultModel {
   final String lotteryCode;
   final String drawNumber;
   final FirstPrizeModel firstPrize;
-  final ConsolationPrizesModel? consolationPrizes; // Made nullable
+  final ConsolationPrizesModel? consolationPrizes;
   final bool isPublished;
-  final bool isBumper; // New field
+  final bool isBumper;
 
   HomeScreenResultModel({
     required this.date,
@@ -99,7 +122,7 @@ class HomeScreenResultModel {
     required this.lotteryCode,
     required this.drawNumber,
     required this.firstPrize,
-    this.consolationPrizes, // Nullable
+    this.consolationPrizes,
     required this.isPublished,
     required this.isBumper,
   });
@@ -113,7 +136,7 @@ class HomeScreenResultModel {
       lotteryCode: json['lottery_code'] ?? '',
       drawNumber: json['draw_number'] ?? '',
       firstPrize: FirstPrizeModel.fromJson(json['first_prize'] ?? {}),
-      consolationPrizes: json['consolation_prizes'] != null 
+      consolationPrizes: json['consolation_prizes'] != null
           ? ConsolationPrizesModel.fromJson(json['consolation_prizes'])
           : null,
       isPublished: json['is_published'] ?? false,
@@ -121,47 +144,66 @@ class HomeScreenResultModel {
     );
   }
 
-  // Helper methods for UI display
-  String get formattedTitle => '$lotteryName $lotteryCode Winner List';
-  
+  // Updated method to support localization with easy_localization
+  String getFormattedTitle(BuildContext context) {
+    final lotteryKey = LotteryLocalizationHelper.getLotteryKey(lotteryName);
+    final localizedLotteryName = lotteryKey.tr();
+    final localizedWinners = 'winners'.tr();
+
+    return '$localizedLotteryName $localizedWinners - $drawNumber';
+  }
+
+  // Keep the original method for backward compatibility (optional)
+  String get formattedTitle => '$lotteryName WINNERS - $drawNumber';
+
+  // ... rest of your existing methods remain the same
   String get formattedFirstPrize {
     final amountInLakhs = (firstPrize.amount / 100000).toInt();
     return '1st Prize Rs ${firstPrize.amount.toInt()}/-  [$amountInLakhs Lakhs]';
   }
-  
-  String get formattedWinner => '${firstPrize.ticketNumber} (${firstPrize.place})';
-  
+
+  String get formattedWinner =>
+      '${firstPrize.ticketNumber} (${firstPrize.place})';
+
   List<String> get consolationTicketsList {
     if (consolationPrizes == null) return [];
-    return consolationPrizes!.ticketNumbers.split(' ').where((ticket) => ticket.isNotEmpty).toList();
+    return consolationPrizes!.ticketNumbers
+        .split(' ')
+        .where((ticket) => ticket.isNotEmpty)
+        .toList();
   }
-  
+
   String get formattedConsolationPrize {
-    if (consolationPrizes == null) return 'No Consolation Prize';
-    return 'Consolation Prize ${consolationPrizes!.amount.toInt()}/-';
+    if (consolationPrizes == null) {
+      return 'no_consolation_prize'.tr(); // Use the translation key
+    }
+    // Use named arguments for dynamic values with easy_localization
+    return 'consolation_prize_amount'
+        .tr(args: ['${consolationPrizes!.amount.toInt()}']);
   }
-  
-  // New helper method for bumper status
+
   String get lotteryTypeLabel => isBumper ? 'BUMPER' : 'REGULAR';
-  
-  // Date formatting helpers
+
   DateTime get dateTime => DateTime.parse(date);
-  
+
   String get formattedDate {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final resultDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    
+
     if (resultDate == today) {
-      return 'Today Result';
+      return 'today_result'.tr(); // Use translation key
     } else if (resultDate == yesterday) {
-      return 'Yesterday Result';
+      return 'yesterday_result'.tr(); // Use translation key
     } else {
+      // For date formatting, easy_localization's DateFormat can be used,
+      // or you can continue with manual formatting if preferred,
+      // ensuring the format is consistent across locales.
       return '${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year}';
     }
   }
-  
+
   bool get isNew {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -169,7 +211,6 @@ class HomeScreenResultModel {
     return resultDate == today;
   }
 
-  // Helper method to check if consolation prizes exist
   bool get hasConsolationPrizes => consolationPrizes != null;
 }
 

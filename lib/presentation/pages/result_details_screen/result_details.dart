@@ -12,6 +12,7 @@ import 'package:lotto_app/presentation/blocs/results_screen/results_details_scre
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_state.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/dynamic_prize_sections_widget.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_bar.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
   final String? uniqueId;
@@ -49,6 +50,7 @@ class _LotteryResultDetailsScreenState
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
   bool _isAutoScrolling = false;
   String _lastSearchQuery = '';
+  bool _hasShownNoResultsToast = false;
 
   @override
   void initState() {
@@ -176,21 +178,25 @@ class _LotteryResultDetailsScreenState
       if (_searchQuery.isEmpty) {
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
         _clearTicketKeys();
+        _hasShownNoResultsToast = false;
       } else if (_searchQuery.length >= _minSearchLength) {
         _filteredLotteryNumbers = _allLotteryNumbers.where((item) {
           final ticketNumber = item['number'].toString().toLowerCase();
           final searchLower = _searchQuery.toLowerCase();
           return ticketNumber.contains(searchLower);
         }).toList();
-        
+
         // Generate GlobalKeys for matched tickets
         _generateTicketKeys();
-        
+        _checkAndShowNoResultsToast();
+
         // Schedule auto-scroll after widget rebuild completes
         WidgetsBinding.instance.addPostFrameCallback((_) {
           // Add additional delay to ensure widgets are fully built with new keys
           Future.delayed(const Duration(milliseconds: 150), () {
-            if (mounted && _searchQuery == _lastSearchQuery && _filteredLotteryNumbers.isNotEmpty) {
+            if (mounted &&
+                _searchQuery == _lastSearchQuery &&
+                _filteredLotteryNumbers.isNotEmpty) {
               _triggerAutoScroll();
             }
           });
@@ -199,14 +205,57 @@ class _LotteryResultDetailsScreenState
         // If query is less than minimum length, show all numbers
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
         _clearTicketKeys();
+        _hasShownNoResultsToast = false; // Reset flag
       }
     });
+  }
+
+  void _checkAndShowNoResultsToast() {
+    // Check if we have an active search with no results
+    if (_isSearchActive &&
+        _filteredLotteryNumbers.isEmpty &&
+        !_hasShownNoResultsToast) {
+      _hasShownNoResultsToast = true;
+
+      // Use WidgetsBinding to ensure the toast shows after the current build cycle
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _searchQuery == _lastSearchQuery) {
+          _showNoResultsToast();
+        }
+      });
+    }
+  }
+
+  void _showNoResultsToast() {
+    try {
+      Fluttertoast.showToast(
+        msg: "Sorry no results found for '$_searchQuery'",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        timeInSecForIosWeb: 2,
+        backgroundColor: Colors.red[800],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } catch (e) {
+      print('Error showing toast: $e');
+      // Fallback to SnackBar if toast fails
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("No results found for '$_searchQuery'"),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.grey[800],
+          ),
+        );
+      }
+    }
   }
 
   // Generate GlobalKeys for matched tickets
   void _generateTicketKeys() {
     _ticketGlobalKeys.clear();
-    
+
     for (final item in _filteredLotteryNumbers) {
       final ticketNumber = item['number'].toString();
       final category = item['category'].toString();
@@ -229,16 +278,18 @@ class _LotteryResultDetailsScreenState
 
   // Scroll to the first matching ticket
   void _scrollToFirstMatch() {
-    if (_filteredLotteryNumbers.isEmpty || _ticketGlobalKeys.isEmpty || _isAutoScrolling) {
+    if (_filteredLotteryNumbers.isEmpty ||
+        _ticketGlobalKeys.isEmpty ||
+        _isAutoScrolling) {
       return;
     }
 
     try {
       _isAutoScrolling = true;
-      
+
       // Find the best match based on search query or use first match
       Map<String, dynamic>? targetMatch;
-      
+
       if (_searchQuery.isNotEmpty && _searchQuery.length >= _minSearchLength) {
         // Try to find the most relevant match for the search query
         targetMatch = _filteredLotteryNumbers.firstWhere(
@@ -253,11 +304,11 @@ class _LotteryResultDetailsScreenState
         // Use first match if no specific search query
         targetMatch = _filteredLotteryNumbers.first;
       }
-      
+
       final ticketNumber = targetMatch['number'].toString();
       final category = targetMatch['category'].toString();
       final keyId = '${category}_$ticketNumber';
-      
+
       final globalKey = _ticketGlobalKeys[keyId];
       if (globalKey?.currentContext != null) {
         // Scroll to the widget with smooth animation
@@ -295,7 +346,6 @@ class _LotteryResultDetailsScreenState
       }
     }
   }
-
 
   Future<void> _toggleSaveResult(LotteryResultModel result) async {
     try {
@@ -388,14 +438,6 @@ class _LotteryResultDetailsScreenState
         );
       }
     }
-  }
-
-  // Add method to clear search
-  void _clearSearch() {
-    setState(() {
-      _searchQuery = '';
-      _filteredLotteryNumbers = List.from(_allLotteryNumbers);
-    });
   }
 
   // Helper method to check if search is active
@@ -493,69 +535,87 @@ class _LotteryResultDetailsScreenState
   // Method to format lottery result as text
   String _formatLotteryResultText(LotteryResultModel result) {
     final buffer = StringBuffer();
-    
+
     // Header
     buffer.writeln('KERALA STATE LOTTERIES - RESULT (LOTTO APP)');
-    buffer.writeln('${result.lotteryName.toUpperCase()} DRAW NO: ${result.drawNumber}');
+    buffer.writeln(
+        '${result.lotteryName.toUpperCase()} DRAW NO: ${result.drawNumber}');
     buffer.writeln('DRAW HELD ON: ${result.formattedDate}');
     buffer.writeln('=' * 36);
     buffer.writeln();
-    
+
     // Prizes in order
     final prizes = result.prizes;
-    
+
     // First prize
     final firstPrize = result.getFirstPrize();
     if (firstPrize != null) {
-      buffer.writeln('${firstPrize.prizeTypeFormatted} Rs : ${firstPrize.formattedPrizeAmount}/-');
+      buffer.writeln(
+          '${firstPrize.prizeTypeFormatted} Rs : ${firstPrize.formattedPrizeAmount}/-');
       for (final ticket in firstPrize.ticketsWithLocation) {
-        buffer.writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+        buffer
+            .writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
       }
       buffer.writeln();
     }
-    
+
     // Consolation prize
     final consolationPrize = result.getConsolationPrize();
     if (consolationPrize != null) {
-      buffer.writeln('${consolationPrize.prizeTypeFormatted} Rs : ${consolationPrize.formattedPrizeAmount}/-');
+      buffer.writeln(
+          '${consolationPrize.prizeTypeFormatted} Rs : ${consolationPrize.formattedPrizeAmount}/-');
       final numbers = consolationPrize.allTicketNumbers.join(', ');
       buffer.writeln('  $numbers');
       buffer.writeln();
     }
-    
+
     // Remaining prizes (2nd to 10th)
     final remainingPrizes = prizes
-        .where((prize) => prize.prizeType != '1st' && prize.prizeType != 'consolation')
+        .where((prize) =>
+            prize.prizeType != '1st' && prize.prizeType != 'consolation')
         .toList();
-    
+
     // Sort remaining prizes
     remainingPrizes.sort((a, b) {
-      final prizeOrder = ['2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+      final prizeOrder = [
+        '2nd',
+        '3rd',
+        '4th',
+        '5th',
+        '6th',
+        '7th',
+        '8th',
+        '9th',
+        '10th'
+      ];
       final aIndex = prizeOrder.indexOf(a.prizeType);
       final bIndex = prizeOrder.indexOf(b.prizeType);
       return aIndex.compareTo(bIndex);
     });
-    
+
     buffer.writeln('FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS:');
     buffer.writeln();
-    
+
     for (final prize in remainingPrizes) {
-      buffer.writeln('${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
+      buffer.writeln(
+          '${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
       final numbers = prize.allTicketNumbers.join(', ');
       buffer.writeln('  $numbers');
       buffer.writeln();
     }
-    
+
     // Footer
     buffer.writeln('=' * 50);
-    buffer.writeln('The prize winners are advised to verify the winning numbers');
-    buffer.writeln('with the results published in the Kerala Government Gazette');
+    buffer
+        .writeln('The prize winners are advised to verify the winning numbers');
+    buffer
+        .writeln('with the results published in the Kerala Government Gazette');
     buffer.writeln('and surrender the winning tickets within 90 days.');
     buffer.writeln();
     buffer.writeln('Contact: 0471-2305230');
     buffer.writeln('Email: cru.dir.lotteries@kerala.gov.in');
     buffer.writeln('Visit: https://lottokeralalotteries.com/');
-    
+
     return buffer.toString();
   }
 
@@ -563,17 +623,15 @@ class _LotteryResultDetailsScreenState
   Future<void> _copyAndShareResult(LotteryResultModel result) async {
     try {
       final resultText = _formatLotteryResultText(result);
-      
+
       // Copy to clipboard
       await Clipboard.setData(ClipboardData(text: resultText));
-      
+
       if (mounted) {
         // Show success message
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-              
             content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
@@ -614,8 +672,9 @@ class _LotteryResultDetailsScreenState
   Future<void> _shareResultText(LotteryResultModel result) async {
     try {
       final resultText = _formatLotteryResultText(result);
-      final subject = 'Kerala Lottery Result: ${result.lotteryName} - Draw ${result.drawNumber}';
-      
+      final subject =
+          'Kerala Lottery Result: ${result.lotteryName} - Draw ${result.drawNumber}';
+
       await Share.share(
         resultText,
         subject: subject,
@@ -693,6 +752,11 @@ class _LotteryResultDetailsScreenState
   }
 
   Widget _buildLoadedContent(ThemeData theme, LotteryResultModel result) {
+    print('Filtered numbers: ${_filteredLotteryNumbers.length}');
+    print('All numbers: ${_allLotteryNumbers.length}');
+    print('Search query: $_searchQuery');
+    print('Is search active: $_isSearchActive');
+    print('Ticket keys: ${_ticketGlobalKeys.keys.join(', ')}');
     return RefreshIndicator(
       onRefresh: () async {
         if (widget.uniqueId != null) {
@@ -712,7 +776,7 @@ class _LotteryResultDetailsScreenState
               _buildHeaderSection(theme, result),
               const SizedBox(height: 6),
               // Show search results info if searching
-              if (_isSearchActive) _buildSearchResultsInfo(theme),
+
               // Show search instruction if query is too short
               if (_searchQuery.isNotEmpty && !_isSearchActive)
                 _buildSearchInstructionInfo(theme),
@@ -732,57 +796,6 @@ class _LotteryResultDetailsScreenState
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSearchResultsInfo(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: theme.primaryColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.primaryColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search,
-            size: 16,
-            color: theme.primaryColor,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Found ${_filteredLotteryNumbers.length} result${_filteredLotteryNumbers.length != 1 ? 's' : ''} for "$_searchQuery"',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.primaryColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              _clearSearch();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.close,
-                size: 14,
-                color: theme.primaryColor,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1045,7 +1058,6 @@ class _LotteryResultDetailsScreenState
                 fontWeight: FontWeight.bold,
               ),
             ),
-         
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
