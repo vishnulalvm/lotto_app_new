@@ -15,6 +15,7 @@ import 'package:lotto_app/data/datasource/api/live_video_screen/live_video_api_s
 import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
 import 'package:lotto_app/data/repositories/cache/home_screen_cache_repository.dart';
+import 'package:lotto_app/data/repositories/cache/result_details_cache_repository.dart';
 import 'package:lotto_app/data/repositories/news_screen/news_repository.dart';
 import 'package:lotto_app/data/repositories/results_screen/result_screen.dart';
 import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dart';
@@ -124,6 +125,8 @@ class MyApp extends StatelessWidget {
             LotteryResultDetailsUseCase(
               LotteryResultDetailsRepository(
                 LotteryResultDetailsApiService(),
+                ResultDetailsCacheRepositoryImpl(),
+                ConnectivityService(),
               ),
             ),
           ),

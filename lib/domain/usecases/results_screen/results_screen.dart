@@ -6,7 +6,21 @@ class LotteryResultDetailsUseCase {
 
   LotteryResultDetailsUseCase(this._repository);
 
-  Future<LotteryResultDetailsModel> execute(String uniqueId) async {
-    return await _repository.getLotteryResultDetails(uniqueId);
+  Future<LotteryResultDetailsModel> execute(
+    String uniqueId, {
+    bool forceRefresh = false,
+  }) async {
+    return await _repository.getLotteryResultDetails(
+      uniqueId,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  Future<void> clearCache(String uniqueId) async {
+    await _repository.clearCache(uniqueId);
+  }
+
+  Future<void> clearAllCache() async {
+    await _repository.clearAllCache();
   }
 }

@@ -13,6 +13,13 @@ class LotteryResultDetailsModel {
       result: LotteryResultModel.fromJson(json['result'] ?? {}),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'result': result.toJson(),
+    };
+  }
 }
 
 class LotteryResultModel {
@@ -58,6 +65,22 @@ class LotteryResultModel {
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date,
+      'id': id,
+      'unique_id': uniqueId,
+      'lottery_name': lotteryName,
+      'lottery_code': lotteryCode,
+      'draw_number': drawNumber,
+      'prizes': prizes.map((prize) => prize.toJson()).toList(),
+      'is_published': isPublished,
+      'is_bumper': isBumper,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
   }
 
   // Helper methods for UI display
@@ -142,6 +165,17 @@ class PrizeModel {
           ?.map((item) => TicketModel.fromJson(item))
           .toList() ?? [],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'prize_type': prizeType,
+      'prize_amount': prizeAmount,
+      'place_used': placeUsed,
+      'is_grid': isGrid,
+      'ticket_numbers': ticketNumbers,
+      'tickets': tickets.map((ticket) => ticket.toJson()).toList(),
+    };
   }
 
   // Helper methods for UI display
@@ -237,6 +271,13 @@ class TicketModel {
       ticketNumber: json['ticket_number'] ?? '',
       location: json['location'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ticket_number': ticketNumber,
+      'location': location,
+    };
   }
 
   String get displayText {

@@ -444,6 +444,22 @@ class _LotteryResultDetailsScreenState
   bool get _isSearchActive =>
       _searchQuery.isNotEmpty && _searchQuery.length >= _minSearchLength;
 
+  // Helper method to check if it's live hours
+  bool get _isLiveHours {
+    final now = DateTime.now();
+    return now.hour >= 15 && now.hour < 16;
+  }
+
+  // Helper method to check if result is today's and live
+  bool _isResultLive(LotteryResultModel result) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final resultDate = DateTime.parse(result.date);
+    final resultDateOnly = DateTime(resultDate.year, resultDate.month, resultDate.day);
+    
+    return resultDateOnly == today && _isLiveHours;
+  }
+
   // PDF sharing functionality
   Future<void> _shareResultAsPdf(LotteryResultModel result) async {
     if (_isGeneratingPdf) return;
@@ -829,39 +845,85 @@ class _LotteryResultDetailsScreenState
   }
 
   Widget _buildHeaderSection(ThemeData theme, LotteryResultModel result) {
+    final isLive = _isResultLive(result);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.calendar_today,
-                  size: 18,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-              const SizedBox(width: 4),
-              Text(
-                result.formattedDate,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today,
+                      size: 18,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                  const SizedBox(width: 4),
+                  Text(
+                    result.formattedDate,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Icon(Icons.tag,
+                      size: 18,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                  const SizedBox(width: 4),
+                  Text(
+                    result.formattedDrawNumber,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          Row(
-            children: [
-              Icon(Icons.tag,
-                  size: 18,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-              const SizedBox(width: 4),
-              Text(
-                result.formattedDrawNumber,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+          // Live indicator
+          if (isLive) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'LIVE - Results updating',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1061,6 +1123,7 @@ class _LotteryResultDetailsScreenState
   }
 
   Widget _buildErrorWidget(ThemeData theme, String message) {
+    print('Error loading result details: $message');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),

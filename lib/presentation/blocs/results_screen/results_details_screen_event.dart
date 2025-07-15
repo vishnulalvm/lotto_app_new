@@ -17,3 +17,8 @@ class RefreshLotteryResultDetailsEvent extends LotteryResultDetailsEvent {
   @override
   String toString() => 'RefreshLotteryResultDetailsEvent(uniqueId: $uniqueId)';
 }
+
+class BackgroundRefreshResultDetailsEvent extends LotteryResultDetailsEvent {
+  @override
+  String toString() => 'BackgroundRefreshResultDetailsEvent()';
+}
