@@ -211,6 +211,19 @@ class HomeScreenResultModel {
     return resultDate == today;
   }
 
+  bool get isLive {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final resultDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    
+    // Only show Live badge if it's today's result
+    if (resultDate != today) return false;
+    
+    // Check if current time is between 3 PM (15:00) and 4 PM (16:00)
+    final currentHour = now.hour;
+    return currentHour >= 15 && currentHour < 16;
+  }
+
   bool get hasConsolationPrizes => consolationPrizes != null;
 }
 

@@ -1257,8 +1257,8 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
 
-        // New Badge (only shown if it's today's result)
-        if (result.isNew)
+        // Badge (New/Live based on time and date)
+        if (result.isNew || result.isLive)
           Positioned(
             top: 13,
             right: AppResponsive.spacing(context, 16),
@@ -1266,7 +1266,7 @@ class _HomeScreenState extends State<HomeScreen>
               padding:
                   AppResponsive.padding(context, horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: result.isLive ? Colors.green : Colors.red,
                 borderRadius: BorderRadius.only(
                   bottomLeft:
                       Radius.circular(AppResponsive.spacing(context, 8)),
@@ -1282,7 +1282,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ],
               ),
               child: Text(
-                'new_badge'.tr(),
+                result.isLive ? 'live_badge'.tr() : 'new_badge'.tr(),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: AppResponsive.fontSize(context, 10),
