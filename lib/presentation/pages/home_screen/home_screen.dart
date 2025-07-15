@@ -4,8 +4,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:lotto_app/presentation/pages/home_screen/widgets/ai_probability_fab.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/costume_carousel.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/first_time_language_dialog.dart';
+import 'package:lotto_app/routes/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
@@ -14,7 +16,6 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart'
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
-import 'package:lotto_app/routes/app_routes.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -359,102 +360,103 @@ class _HomeScreenState extends State<HomeScreen>
     return true;
   }
 
-
-@override
-Widget build(BuildContext context) {
-  final theme = Theme.of(context);
-  return PopScope(
-    canPop: false,
-    onPopInvokedWithResult: (didPop, result) async {
-      if (!didPop) {
-        final shouldExit = await _handleBackPress();
-        if (shouldExit && context.mounted) {
-          // Exit the app
-          Navigator.of(context).pop();
-        }
-      }
-    },
-    child: GestureDetector(
-      onHorizontalDragEnd: (DragEndDetails details) {
-        if (details.primaryVelocity! < 0) {
-          context.go('/news_screen');
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          final shouldExit = await _handleBackPress();
+          if (shouldExit && context.mounted) {
+            // Exit the app
+            Navigator.of(context).pop();
+          }
         }
       },
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _buildAppBar(theme),
-        body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-          listener: (context, state) {
-            // Clear any existing snackbars first
-            ScaffoldMessenger.of(context).clearSnackBars();
+      child: GestureDetector(
+        onHorizontalDragEnd: (DragEndDetails details) {
+          if (details.primaryVelocity! < 0) {
+            context.go('/news_screen');
+          }
+        },
+        child: Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: _buildAppBar(theme),
+          body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+            listener: (context, state) {
+              // Clear any existing snackbars first
+              ScaffoldMessenger.of(context).clearSnackBars();
 
-            if (state is HomeScreenResultsError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${'error_prefix'.tr()}${state.message}'),
-                  backgroundColor: Colors.red,
-                  action: SnackBarAction(
-                    label: 'retry'.tr(),
-                    textColor: Colors.white,
-                    onPressed: _loadLotteryResults,
+              if (state is HomeScreenResultsError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${'error_prefix'.tr()}${state.message}'),
+                    backgroundColor: Colors.red,
+                    action: SnackBarAction(
+                      label: 'retry'.tr(),
+                      textColor: Colors.white,
+                      onPressed: _loadLotteryResults,
+                    ),
                   ),
-                ),
-              );
-            }
-          },
-          child: RefreshIndicator(
-            onRefresh: () async {
-              _refreshResults();
+                );
+              }
             },
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  // Replace _buildCarousel() with the custom widget
-                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                    builder: (context, state) {
-                      List<String> carouselImages = [];
-                      
-                      // Get images from API response
-                      if (state is HomeScreenResultsLoaded) {
-                        carouselImages = state.data.updates.allImages;
-                      }
-                      
-                      return SimpleCarouselWidget(
-                        images: carouselImages,
-                        onImageTap: () => _launchWebsite(),
-                        // Optional: Customize colors to match your theme
-                        gradientStartColor: Colors.pink.shade100,
-                        gradientEndColor: Colors.pink.shade300,
-                        // Optional: Custom settings
-                        autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 4),
-                        fallbackImages: const [
-                          'assets/images/five.jpeg',
-                          'assets/images/four.jpeg',
-                          'assets/images/seven.jpeg',
-                          'assets/images/six.jpeg',
-                          'assets/images/tree.jpeg',
-                        ],
-                      );
-                    },
-                  ),
-                  SizedBox(height: AppResponsive.spacing(context, 5)),
-                  _buildNavigationIcons(theme),
-                  SizedBox(height: AppResponsive.spacing(context, 10)),
-                  _buildResultsSection(theme),
-                  SizedBox(height: AppResponsive.spacing(context, 100)),
-                ],
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _refreshResults();
+              },
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Replace _buildCarousel() with the custom widget
+                    BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                      builder: (context, state) {
+                        List<String> carouselImages = [];
+
+                        // Get images from API response
+                        if (state is HomeScreenResultsLoaded) {
+                          carouselImages = state.data.updates.allImages;
+                        }
+
+                        return SimpleCarouselWidget(
+                          images: carouselImages,
+                          onImageTap: () => _launchWebsite(),
+                          // Optional: Customize colors to match your theme
+                          gradientStartColor: Colors.pink.shade100,
+                          gradientEndColor: Colors.pink.shade300,
+                          // Optional: Custom settings
+                          autoPlay: true,
+                          autoPlayInterval: const Duration(seconds: 4),
+                          fallbackImages: const [
+                            'assets/images/five.jpeg',
+                            'assets/images/four.jpeg',
+                            'assets/images/seven.jpeg',
+                            'assets/images/six.jpeg',
+                            'assets/images/tree.jpeg',
+                          ],
+                        );
+                      },
+                    ),
+                    SizedBox(height: AppResponsive.spacing(context, 5)),
+                    _buildNavigationIcons(theme),
+                    SizedBox(height: AppResponsive.spacing(context, 10)),
+                    _buildResultsSection(theme),
+                    SizedBox(height: AppResponsive.spacing(context, 100)),
+                  ],
+                ),
               ),
             ),
           ),
+          floatingActionButton: _buildScanButton(theme),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
         ),
-        floatingActionButton: _buildScanButton(theme),
       ),
-    ),
-  );
-}
+    );
+  }
 
   AppBar _buildAppBar(ThemeData theme) {
     return AppBar(
@@ -658,8 +660,6 @@ Widget build(BuildContext context) {
     );
   }
 
-
-
   Widget _buildNavigationIcons(ThemeData theme) {
     final List<Map<String, dynamic>> navItems = [
       {
@@ -788,7 +788,6 @@ Widget build(BuildContext context) {
         }
 
         if (state is HomeScreenResultsError) {
-          print('Error loading results: ${state.message}');
           // If we have offline data, show it with an error banner
           if (state.hasOfflineData && state.offlineData != null) {
             return Column(
@@ -1368,44 +1367,12 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildScanButton(ThemeData theme) {
-    return AnimatedBuilder(
-      animation: _fabAnimation,
-      builder: (context, child) {
-        return FloatingActionButton.extended(
-          onPressed: () {
-            context.pushNamed(RouteNames.barcodeScannerScreen);
-          },
-          backgroundColor: theme.floatingActionButtonTheme.backgroundColor,
-          foregroundColor: theme.floatingActionButtonTheme.foregroundColor,
-          icon: Icon(
-            Icons.qr_code_scanner,
-            size: AppResponsive.fontSize(context, 24),
-          ),
-          label: SizeTransition(
-            sizeFactor: _fabAnimation,
-            axis: Axis.horizontal,
-            axisAlignment: -1.0, // Align to start (left)
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 8.0 * _fabAnimation.value, // Smooth spacing transition
-              ),
-              child: Text(
-                'barcode_scan'.tr(),
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                ),
-              ),
-            ),
-          ),
-          // Smooth padding transition using animation value
-          extendedPadding: EdgeInsets.symmetric(
-            horizontal: 12.0 + (4.0 * _fabAnimation.value),
-          ),
-          // Smooth spacing transition
-          extendedIconLabelSpacing:
-              0.0, // Set to 0 since we handle spacing in the Padding widget
-        );
+    return AIProbabilityFAB(
+      onPressed: () {
+        context.pushNamed(RouteNames.probabilityBarcodeScanner);
       },
+      sizeAnimation: _fabAnimation,
+      theme: theme,
     );
   }
 }

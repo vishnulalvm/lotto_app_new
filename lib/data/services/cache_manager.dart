@@ -29,7 +29,7 @@ class CacheManager {
       await _cleanupExpiredCache();
       await _manageCacheSize();
     } catch (e) {
-      print('Cache maintenance error: $e');
+      // Silently handle cache maintenance errors
     }
   }
 

@@ -48,23 +48,14 @@ class HomeScreenCacheRepositoryImpl implements HomeScreenCacheRepository {
 
       final cachedModel = CachedHomeScreenModel.fromApiModel(results);
       
-      // Debug log before write attempt
-      print('Attempting to cache ${results.results.length} home screen results');
-      
       await HiveService.homeScreenBox.put(_cacheKey, cachedModel);
       
-      // Debug log after successful write
-      print('Successfully cached home screen results');
-      
     } on HiveError catch (e) {
-      print('HiveError during cache write: ${e.toString()}');
       if (e.toString().contains('disk full') || e.toString().contains('no space')) {
         throw CacheStorageFullException('No space left to cache home screen results', e);
       }
       throw CacheWriteException('Failed to write home screen cache to Hive', e);
     } catch (e) {
-      print('Unexpected error during cache write: ${e.toString()}');
-      print('Error type: ${e.runtimeType}');
       throw CacheWriteException('Unexpected error caching home screen results: ${e.toString()}', e);
     }
   }
@@ -91,7 +82,6 @@ class HomeScreenCacheRepositoryImpl implements HomeScreenCacheRepository {
 
       return !cachedData.isExpired;
     } catch (e) {
-      print('Error checking cache validity: $e');
       return false;
     }
   }
@@ -107,7 +97,6 @@ class HomeScreenCacheRepositoryImpl implements HomeScreenCacheRepository {
 
       return cachedData.isFresh;
     } catch (e) {
-      print('Error checking cache freshness: $e');
       return false;
     }
   }
@@ -123,7 +112,6 @@ class HomeScreenCacheRepositoryImpl implements HomeScreenCacheRepository {
 
       return cachedData.cacheAgeInMinutes;
     } catch (e) {
-      print('Error getting cache age: $e');
       return -1;
     }
   }

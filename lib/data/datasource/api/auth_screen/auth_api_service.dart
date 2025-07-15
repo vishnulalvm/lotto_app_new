@@ -35,9 +35,6 @@ class AuthApiService {
           'phone_number': phoneNumber,
         }),
       );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
       
       if (response.statusCode == 201 || response.statusCode == 200) {
         return UserModel.fromJson(json.decode(response.body));

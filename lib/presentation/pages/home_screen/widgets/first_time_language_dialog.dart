@@ -169,7 +169,7 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
             gradient: LinearGradient(
               colors: [
                 theme.primaryColor,
-                theme.primaryColor.withOpacity(0.7),
+                theme.primaryColor.withValues(alpha: 0.7),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -198,7 +198,7 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
         Text(
           'Please select your preferred language',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
           ),
           textAlign: TextAlign.center,
         ),
@@ -233,11 +233,11 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
                       border: Border.all(
                         color: isSelected
                             ? theme.primaryColor
-                            : theme.dividerColor.withOpacity(0.3),
+                            : theme.dividerColor.withValues(alpha: 0.3),
                         width: isSelected ? 2 : 1,
                       ),
                       color: isSelected
-                          ? theme.primaryColor.withOpacity(0.1)
+                          ? theme.primaryColor.withValues(alpha: 0.1)
                           : theme.cardColor,
                     ),
                     child: Row(
@@ -270,7 +270,7 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
                                 language['nativeName'],
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.textTheme.bodyMedium?.color
-                                      ?.withOpacity(0.7),
+                                      ?.withValues(alpha: 0.7),
                                 ),
                               ),
                             ],
@@ -323,7 +323,7 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
             child: Text(
               'Skip for now',
               style: TextStyle(
-                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -352,7 +352,7 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white.withOpacity(0.8),
+                        Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                   )

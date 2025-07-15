@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lotto_app/presentation/pages/lotto_point_screen/lotto_point_screen.dart';
+import 'package:lotto_app/presentation/pages/probility_screen/probability_barcode_scanner.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/scratch_card_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/presentation/pages/ad_dialog/ad_dialog.dart';
@@ -108,7 +109,13 @@ class AppRouter {
                 builder: (context, state) => const LotteryNewsScreen(),
               ),
               GoRoute(
+                path: '/probability_barcode-scanner',
+                name: RouteNames.probabilityBarcodeScanner,
+                builder: (context, state) => const ProbabilityBarcodeScannerScreen(),
+              ),
+              GoRoute(
                 path: '/result/scratch',
+                name: RouteNames.scratchCardScreen,
                 builder: (context, state) {
                   final ticketData = state.extra as Map<String, dynamic>;
                   return ScratchCardResultScreen(ticketData: ticketData);

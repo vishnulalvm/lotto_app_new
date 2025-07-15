@@ -77,10 +77,10 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     // Get user's phone number from stored user data
     final userService = UserService();
     String? phoneNumber = await userService.getPhoneNumber();
-    
+
     // Fallback to default if no user phone number found
     phoneNumber ??= "7306902343";
-    
+
     // Remove country code if present (+91) to match API format
     if (phoneNumber.startsWith('+91')) {
       phoneNumber = phoneNumber.substring(3);
@@ -227,7 +227,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             Icon(
               Icons.error_outline,
               size: 80,
-              color: Colors.red[400],
+              color: theme.brightness == Brightness.dark
+                  ? Colors.red[300]
+                  : Colors.red[400],
             ),
             const SizedBox(height: 24),
             Text(
@@ -241,7 +243,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             Text(
               error,
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
+                color: theme.textTheme.bodyMedium?.color,
               ),
               textAlign: TextAlign.center,
             ),
@@ -253,6 +255,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
@@ -261,6 +264,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => context.go('/'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.primaryColor,
+              ),
               child: Text('go_back'.tr()),
             ),
           ],
@@ -332,7 +338,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       TicketCheckResponseModel result, ThemeData theme) {
     // Use resultStatus from API response for better accuracy
     final String resultStatus = result.resultStatus;
-    
+    final bool isDark = theme.brightness == Brightness.dark;
+
     late Color bannerColor;
     late Color iconColor;
     late IconData primaryIcon;
@@ -343,53 +350,57 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     switch (resultStatus.toLowerCase()) {
       case 'won price today':
         // Case 1: Current Winner
-        bannerColor = Colors.green[50]!;
-        iconColor = Colors.green[600]!;
+        bannerColor =
+            isDark ? Colors.green[900]!.withValues(alpha: 0.3) : Colors.green[50]!;
+        iconColor = isDark ? Colors.green[400]! : Colors.green[600]!;
         primaryIcon = Icons.emoji_events;
         title = '🎉 Congratulations! You Won!';
         subtitle = 'Current Draw Result';
         break;
-        
+
       case 'no price today':
         // Case 2: Current Loser
-        bannerColor = Colors.orange[50]!;
-        iconColor = Colors.orange[600]!;
+        bannerColor =
+            isDark ? Colors.orange[900]!.withValues(alpha: 0.3) : Colors.orange[50]!;
+        iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
         primaryIcon = Icons.info;
         title = 'Better Luck Next Time';
         subtitle = 'Current Draw Result';
         break;
-        
+
       case 'previous result':
         // Case 3: Previous Winner
-        bannerColor = Colors.yellow[50]!;
-        iconColor = Colors.yellow[900]!;
+        bannerColor =
+            isDark ? Colors.yellow[900]!.withValues(alpha: 0.3) : Colors.yellow[50]!;
+        iconColor = isDark ? Colors.yellow[400]! : Colors.yellow[900]!;
         primaryIcon = Icons.emoji_events;
         title = 'Previous Lottery Winner!';
         subtitle = 'checked on ${_formatDate(result.drawDate)} lottery';
         break;
-        
+
       case 'previous result no price':
         // Case 4: Previous No Win
-        bannerColor = Colors.grey[50]!;
-        iconColor = Colors.grey[600]!;
+        bannerColor = isDark ? theme.cardColor : Colors.grey[50]!;
+        iconColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
         primaryIcon = Icons.schedule;
         title = 'Checked Previous Result';
         subtitle = 'checked on ${_formatDate(result.drawDate)} lottery';
         break;
-        
+
       case 'result is not published':
         // Case 5: Result Not Published
-        bannerColor = Colors.amber[50]!;
-        iconColor = Colors.amber[700]!;
+        bannerColor =
+            isDark ? Colors.amber[900]!.withValues(alpha: 0.3) : Colors.amber[50]!;
+        iconColor = isDark ? Colors.amber[400]! : Colors.amber[700]!;
         primaryIcon = Icons.access_time;
         title = 'Result Not Published';
         subtitle = 'Result will be available after 3 PM';
         break;
-        
+
       default:
         // Fallback case
-        bannerColor = Colors.grey[50]!;
-        iconColor = Colors.grey[600]!;
+        bannerColor = isDark ? theme.cardColor : Colors.grey[50]!;
+        iconColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
         primaryIcon = Icons.help_outline;
         title = 'Status Unknown';
         subtitle = 'Unable to Determine Result';
@@ -399,7 +410,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(
-
         left: 16,
         right: 16,
       ),
@@ -407,12 +417,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         gradient: LinearGradient(
           colors: [
             bannerColor,
-            bannerColor.withOpacity(0.7),
+            bannerColor.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: iconColor.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: iconColor.withValues(alpha: 0.3),
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -482,13 +494,15 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   Widget _buildNoResultCard(ThemeData theme, TicketCheckResponseModel result) {
     return Container(
-      width: 300,
-      height: 300,
+      width: 320,
+      height: 320,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: theme.brightness == Brightness.dark
+                ? Colors.grey.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 5),
@@ -499,8 +513,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.grey[100],
-            border: Border.all(color: Colors.grey[300]!),
+            color: theme.cardColor,
+            border: Border.all(
+              width: 2,
+              color: theme.brightness == Brightness.dark
+                  ? Colors.grey[600]!
+                  : Colors.grey[300]!,
+            ),
           ),
           child: Container(
             padding: const EdgeInsets.all(24),
@@ -510,8 +529,10 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                 children: [
                   Icon(
                     Icons.sentiment_dissatisfied,
-                    color: Colors.grey[500],
-                    size: 48,
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.grey[400]
+                        : Colors.grey[500],
+                    size: 55,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -519,39 +540,30 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _getNoResultSubtitle(result),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: theme.textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     '${'Ticket No'}: ${widget.ticketData['ticketNumber']}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: theme.textTheme.bodySmall,
                   ),
                   if (widget.ticketData['date'] != null)
                     Text(
                       '${'requested_date'.tr()}: ${_formatDate(widget.ticketData['date'])}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: theme.textTheme.bodySmall,
                     ),
                   if (result.drawDate.isNotEmpty &&
                       result.responseType == ResponseType.previousLoser)
                     Text(
                       '${'Date checked'}: ${_formatDate(result.drawDate)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: theme.textTheme.bodySmall,
                     ),
                 ],
               ),
@@ -570,7 +582,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: theme.brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 5),
@@ -580,16 +594,20 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          color: Colors.grey[300],
+          color: theme.brightness == Brightness.dark
+              ? Colors.grey[700]
+              : Colors.grey[300],
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(),
+                CircularProgressIndicator(
+                  color: theme.primaryColor,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'checking_ticket'.tr(),
-                  style: const TextStyle(
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -606,9 +624,17 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     // Enhanced color scheme based on result type
     Color cardColor;
     if (result.responseType == ResponseType.previousWinner) {
-      cardColor = Colors.blue[500]!; // Different color for previous wins
+      cardColor = theme.brightness == Brightness.dark
+          ? Colors.blue[600]!
+          : Colors.blue[500]!;
     } else {
-      cardColor = result.isWinner ? Colors.green[500]! : Colors.red[500]!;
+      cardColor = result.isWinner
+          ? (theme.brightness == Brightness.dark
+              ? Colors.green[600]!
+              : Colors.green[500]!)
+          : (theme.brightness == Brightness.dark
+              ? Colors.red[600]!
+              : Colors.red[500]!);
     }
 
     return Container(
@@ -618,7 +644,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: theme.brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 5),
@@ -629,7 +657,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         key: _scratcherKey,
         brushSize: 60,
         threshold: 50,
-        color: Colors.grey,
+        color: theme.brightness == Brightness.dark
+            ? Colors.grey[800]!
+            : Colors.grey,
         image: Image.asset('assets/images/scrachcard.png'),
         onChange: (value) => _onScratchUpdate(value / 100),
         onThreshold: () {
@@ -803,9 +833,11 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   String _getNoResultSubtitle(TicketCheckResponseModel result) {
     switch (result.responseType) {
       case ResponseType.previousLoser:
-        return 'Not today’s result, and no prize in last result';
+        return 'Not todays result, and no prize in last result';
       case ResponseType.resultNotPublished:
-        return result.message.isNotEmpty ? result.message : 'result_not_published_yet'.tr();
+        return result.message.isNotEmpty
+            ? result.message
+            : 'result_not_published_yet'.tr();
       default:
         return 'result_not_published_yet'.tr();
     }
@@ -813,10 +845,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   Widget _buildBackgroundIcons(bool isWinner, ResponseType responseType) {
     Color? iconColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (responseType == ResponseType.previousWinner) {
-      iconColor = Colors.blue[300];
+      iconColor = isDark ? Colors.blue[400] : Colors.blue[300];
     } else {
-      iconColor = isWinner ? Colors.green[300] : Colors.red[300];
+      iconColor = isWinner
+          ? (isDark ? Colors.green[400] : Colors.green[300])
+          : (isDark ? Colors.red[400] : Colors.red[300]);
     }
 
     return Stack(

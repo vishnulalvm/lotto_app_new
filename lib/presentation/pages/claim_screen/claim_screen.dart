@@ -243,7 +243,6 @@ class ClaimScreen extends StatelessWidget {
             try {
               await launchUrl(url);
             } catch (e) {
-              debugPrint('Could not launch lottery website: $e');
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

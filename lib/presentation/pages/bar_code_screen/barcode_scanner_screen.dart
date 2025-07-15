@@ -67,7 +67,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         });
       }
     } catch (e) {
-      debugPrint('Error restarting camera: $e');
       // Try to recreate the controller if restart fails
       try {
         cameraController.dispose();
@@ -78,7 +77,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           _isNavigatingAway = false;
         });
       } catch (e) {
-        debugPrint('Error recreating camera controller: $e');
+        // Handle controller recreation error silently
       }
     }
   }
@@ -101,15 +100,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         isProcessing = false;
       });
 
+      // Store context values before async operation
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final theme = Theme.of(context);
+      
       // Restart the scanner to enable scanning again with new date
       await _restartScanner();
 
       // Show feedback to user
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('date_updated_scanner_ready'.tr()),
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: theme.primaryColor,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -126,13 +129,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       // Start the scanner again
       await cameraController.start();
     } catch (e) {
-      debugPrint('Error restarting scanner: $e');
       // If restart fails, try to dispose and recreate the controller
       try {
         cameraController.dispose();
         cameraController = MobileScannerController();
       } catch (e) {
-        debugPrint('Error recreating scanner controller: $e');
+        // Handle controller recreation error silently
       }
     }
   }
@@ -162,7 +164,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         }
       }
     } catch (e) {
-      debugPrint('Error stopping camera before navigation: $e');
       // Navigate anyway even if camera stop fails
       if (mounted) {
         if (extra != null) {
@@ -452,8 +453,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image != null) {
-        debugPrint('Image picked from gallery: ${image.path}');
-
         // Show processing state
         setState(() {
           isProcessing = true;
@@ -507,8 +506,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       setState(() {
         isProcessing = false;
       });
-
-      debugPrint('Error scanning barcode from image: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart'; // Add this dependency
+import 'package:share_plus/share_plus.dart';
 import 'package:lotto_app/data/models/news_screen/news_model.dart';
 import 'package:lotto_app/presentation/blocs/news_screen/news_bloc.dart';
 import 'package:lotto_app/presentation/blocs/news_screen/news_event.dart';

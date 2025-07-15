@@ -670,7 +670,7 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
             Text(
               'loading_videos'.tr(),
               style: TextStyle(
-                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                 fontSize: AppResponsive.fontSize(context, 16),
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.5,

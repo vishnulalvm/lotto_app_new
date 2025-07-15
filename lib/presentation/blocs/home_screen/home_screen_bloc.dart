@@ -288,9 +288,6 @@ class HomeScreenResultsBloc
         // Compare only the date part (year, month, day)
         return _isSameDay(resultDate, selectedDate);
       } catch (e) {
-        // Log the error for debugging
-        print(
-            'Error parsing date for result ${result.id}: ${result.date} - Error: $e');
         // If date parsing fails, exclude this result from filtered results
         return false;
       }
@@ -315,19 +312,4 @@ class HomeScreenResultsBloc
         date1.day == date2.day;
   }
 
-  // Debug method to print all available dates (useful for testing)
-  void debugPrintAvailableDates() {
-    if (_cachedResults != null) {
-      print('Available lottery result dates:');
-      for (var result in _cachedResults!.results) {
-        try {
-          final date = result.dateTime;
-          print(
-              '- ${result.lotteryName}: ${date.toString()} (${result.formattedDate})');
-        } catch (e) {
-          print('- ${result.lotteryName}: Error parsing date ${result.date}');
-        }
-      }
-    }
-  }
 }

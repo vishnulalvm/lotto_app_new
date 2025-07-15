@@ -50,7 +50,6 @@ class CachedHomeScreenModel extends HiveObject {
         updates: CachedUpdatesModel.fromApiModel(apiModel.updates),
       );
     } catch (e) {
-      print('Error converting API model to cached model: $e');
       rethrow;
     }
   }
@@ -145,7 +144,6 @@ class CachedHomeScreenResultModel extends HiveObject {
         isBumper: apiModel.isBumper,
       );
     } catch (e) {
-      print('Error converting result model for ${apiModel.lotteryName}: $e');
       rethrow;
     }
   }

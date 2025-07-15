@@ -100,7 +100,7 @@ class RateUsDialog extends StatelessWidget {
         await markUserRated();
       }
     } catch (e) {
-      debugPrint('Error launching Play Store: $e');
+      // Handle Play Store launch error silently
     }
   }
 

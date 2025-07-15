@@ -39,7 +39,6 @@ class HiveService {
         _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
         _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
       } catch (e) {
-        print('Cache schema mismatch detected, clearing old cache: $e');
         // Clear existing boxes if there's a schema mismatch
         await Hive.deleteBoxFromDisk(_homeScreenBoxName);
         await Hive.deleteBoxFromDisk(_userPreferencesBoxName);
@@ -49,14 +48,9 @@ class HiveService {
         _homeScreenBox = await Hive.openBox<CachedHomeScreenModel>(_homeScreenBoxName);
         _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
         _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
-        print('Cache cleared and reinitialized due to schema changes');
       }
       
-      print('Hive initialization completed successfully');
-      print('Home screen box opened: ${_homeScreenBox.isOpen}');
-      
     } catch (e) {
-      print('Error initializing Hive: $e');
       rethrow;
     }
   }

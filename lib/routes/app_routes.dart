@@ -14,5 +14,7 @@ class RouteNames {
   static const String claimScreen = 'claimScreen';
   static const String lottoPointsScreen = 'lottoPoints';
   static const String liveVideoScreen = 'liveVideoScreen';
+  static const String probabilityBarcodeScanner = 'probability_barcode_scanner';
+  static const String scratchCardScreen = 'scratch_card_screen';
   // Add more route names as needed
 }

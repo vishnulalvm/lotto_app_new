@@ -14,4 +14,5 @@ class ApiConstants {
   static const String news = '/results/news/';
   static const String predict = '/results/predict/';
   static const String liveVideos = '/results/live-videos/';
+  static const String lotteryPercentage = '/results/lottery-percentage/';
 }

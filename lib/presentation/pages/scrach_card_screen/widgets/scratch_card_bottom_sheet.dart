@@ -19,6 +19,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -26,7 +27,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
         color: theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: isDark 
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 5,
             spreadRadius: 0,
             offset: const Offset(0, -3),
@@ -45,12 +48,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
             width: 40,
             margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: isDark ? Colors.grey[600] : Colors.grey[300],
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-
-          const SizedBox(height: 16),
 
           // Ticket details
           _buildTicketDetails(theme),
@@ -60,10 +61,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
           // Action buttons based on response type
           _buildActionButtons(context, theme),
 
-          // const SizedBox(height: 16),
-
           // Divider
-          Divider(color: Colors.grey[300]),
+          Divider(
+            color: isDark ? Colors.grey[600] : Colors.grey[300],
+          ),
 
           const SizedBox(height: 12),
 
@@ -75,12 +76,16 @@ class ScratchCardBottomSheet extends StatelessWidget {
   }
 
   Widget _buildTicketDetails(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(
+          color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
+        ),
       ),
       child: Column(
         children: [
@@ -186,6 +191,8 @@ class ScratchCardBottomSheet extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    
     switch (result.responseType) {
       case ResponseType.currentWinner:
         return Column(
@@ -194,7 +201,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
             ElevatedButton(
               onPressed: () => _launchClaimProcess(context, result),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[600],
+                backgroundColor: isDark ? Colors.green[600] : Colors.green[600],
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
@@ -218,9 +225,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
             OutlinedButton(
               onPressed: () => _navigateToResultDetails(context, result),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red[600],
+                foregroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: Colors.red[600]!),
+                side: BorderSide(color: theme.primaryColor),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -247,7 +254,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
             ElevatedButton(
               onPressed: () => _launchClaimProcess(context, result),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
+                backgroundColor: isDark ? Colors.blue[600] : Colors.blue[600],
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
@@ -271,9 +278,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
             OutlinedButton(
               onPressed: () => _navigateToResultDetails(context, result),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red[600],
+                foregroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: Colors.red[600]!),
+                side: BorderSide(color: theme.primaryColor),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -354,15 +361,19 @@ class ScratchCardBottomSheet extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.amber[50],
+                color: isDark 
+                    ? Colors.amber[900]!.withValues(alpha: 0.3)
+                    : Colors.amber[50],
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber[200]!),
+                border: Border.all(
+                  color: isDark ? Colors.amber[600]! : Colors.amber[200]!,
+                ),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.info_outline,
-                    color: Colors.amber[700],
+                    color: isDark ? Colors.amber[400] : Colors.amber[700],
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -372,7 +383,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
                           ? result.message
                           : 'result_will_be_published_soon'.tr(),
                       style: TextStyle(
-                        color: Colors.amber[800],
+                        color: isDark ? Colors.amber[300] : Colors.amber[800],
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -385,7 +396,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
             ElevatedButton(
               onPressed: onCheckAgain,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber[600],
+                backgroundColor: isDark ? Colors.amber[600] : Colors.amber[600],
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
@@ -409,9 +420,11 @@ class ScratchCardBottomSheet extends StatelessWidget {
             OutlinedButton(
               onPressed: () => context.go('/'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.amber[600],
+                foregroundColor: isDark ? Colors.amber[400] : Colors.amber[600],
                 minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: Colors.amber[600]!),
+                side: BorderSide(
+                  color: isDark ? Colors.amber[400]! : Colors.amber[600]!,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -435,13 +448,11 @@ class ScratchCardBottomSheet extends StatelessWidget {
       case ResponseType.unknown:
         return Column(
           children: [
-            // primary action - see full results
-
-            // First button as ElevatedButton
+            // Primary action - see full results
             ElevatedButton(
               onPressed: () => _navigateToResultDetails(context, result),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
+                backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
@@ -462,7 +473,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-// Second button as OutlinedButton
+            // Secondary action - Home
             OutlinedButton(
               onPressed: () => context.go('/'),
               style: OutlinedButton.styleFrom(
@@ -529,14 +540,20 @@ class ScratchCardBottomSheet extends StatelessWidget {
   void _launchClaimProcess(
       BuildContext context, TicketCheckResponseModel result) {
     final isPreviousWin = result.responseType == ResponseType.previousWinner;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(isPreviousWin
-              ? 'previous_prize_claim'.tr()
-              : 'prize_claim_process'.tr()),
+          backgroundColor: theme.dialogTheme.backgroundColor,
+          title: Text(
+            isPreviousWin
+                ? 'previous_prize_claim'.tr()
+                : 'prize_claim_process'.tr(),
+            style: theme.textTheme.titleLarge,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -544,21 +561,27 @@ class ScratchCardBottomSheet extends StatelessWidget {
               children: [
                 Text(
                   '${'congratulations_winning'.tr()} ${result.formattedPrize}!',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 if (isPreviousWin) ...[
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: isDark 
+                          ? Colors.blue[900]!.withValues(alpha: 0.3)
+                          : Colors.blue[50],
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.blue[200]!),
+                      border: Border.all(
+                        color: isDark ? Colors.blue[600]! : Colors.blue[200]!,
+                      ),
                     ),
                     child: Text(
                       'previous_win_note'.tr(),
                       style: TextStyle(
-                        color: Colors.blue[800],
+                        color: isDark ? Colors.blue[300] : Colors.blue[800],
                         fontSize: 12,
                       ),
                     ),
@@ -567,17 +590,33 @@ class ScratchCardBottomSheet extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'to_claim_prize'.tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                Text('• ${'visit_district_collectorate'.tr()}'),
-                Text('• ${'bring_winning_ticket'.tr()}'),
-                Text('• ${'carry_valid_id'.tr()}'),
-                Text('• ${'fill_claim_form'.tr()}'),
+                Text(
+                  '• ${'visit_district_collectorate'.tr()}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Text(
+                  '• ${'bring_winning_ticket'.tr()}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Text(
+                  '• ${'carry_valid_id'.tr()}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Text(
+                  '• ${'fill_claim_form'.tr()}',
+                  style: theme.textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'bank_details_required'.tr(),
-                  style: const TextStyle(fontStyle: FontStyle.italic),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ],
             ),
@@ -585,6 +624,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.textTheme.bodyMedium?.color,
+              ),
               child: Text('got_it'.tr()),
             ),
             ElevatedButton(
@@ -592,6 +634,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
                 Navigator.of(context).pop();
                 _launchKeralaLotteryWebsite(context);
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
               child: Text('visit_website'.tr()),
             ),
           ],

@@ -75,7 +75,7 @@ class _LotteryResultDetailsScreenState
     try {
       await SavedResultsService.init();
     } catch (e) {
-      print('Error initializing SavedResultsService: $e');
+      // Handle SavedResultsService initialization error silently
     }
   }
 
@@ -239,7 +239,6 @@ class _LotteryResultDetailsScreenState
         fontSize: 16.0,
       );
     } catch (e) {
-      print('Error showing toast: $e');
       // Fallback to SnackBar if toast fails
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -500,7 +499,6 @@ class _LotteryResultDetailsScreenState
         );
       }
     } catch (e) {
-      print(e);
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -753,11 +751,6 @@ class _LotteryResultDetailsScreenState
   }
 
   Widget _buildLoadedContent(ThemeData theme, LotteryResultModel result) {
-    print('Filtered numbers: ${_filteredLotteryNumbers.length}');
-    print('All numbers: ${_allLotteryNumbers.length}');
-    print('Search query: $_searchQuery');
-    print('Is search active: $_isSearchActive');
-    print('Ticket keys: ${_ticketGlobalKeys.keys.join(', ')}');
     return RefreshIndicator(
       onRefresh: () async {
         if (widget.uniqueId != null) {

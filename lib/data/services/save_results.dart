@@ -37,7 +37,6 @@ class SavedResultsService {
       await box.put(result.uniqueId, savedResult);
       return true;
     } catch (e) {
-      print('Error saving lottery result: $e');
       return false;
     }
   }
@@ -56,7 +55,6 @@ class SavedResultsService {
       await box.put(result.uniqueId, savedResult);
       return true;
     } catch (e) {
-      print('Error saving lottery result: $e');
       return false;
     }
   }
@@ -68,7 +66,6 @@ class SavedResultsService {
       await box.delete(uniqueId);
       return true;
     } catch (e) {
-      print('Error removing saved result: $e');
       return false;
     }
   }
@@ -79,7 +76,6 @@ class SavedResultsService {
       final box = _getBox;
       return box.containsKey(uniqueId);
     } catch (e) {
-      print('Error checking if result is saved: $e');
       return false;
     }
   }
@@ -91,7 +87,6 @@ class SavedResultsService {
       return box.values.toList()
         ..sort((a, b) => b.savedAt.compareTo(a.savedAt)); // Sort by newest first
     } catch (e) {
-      print('Error getting saved results: $e');
       return [];
     }
   }
@@ -102,7 +97,6 @@ class SavedResultsService {
       final box = _getBox;
       return box.get(uniqueId);
     } catch (e) {
-      print('Error getting saved result: $e');
       return null;
     }
   }
@@ -119,7 +113,6 @@ class SavedResultsService {
       }
       return false;
     } catch (e) {
-      print('Error toggling favorite: $e');
       return false;
     }
   }
@@ -131,7 +124,6 @@ class SavedResultsService {
       return box.values.where((result) => result.isFavorite).toList()
         ..sort((a, b) => b.savedAt.compareTo(a.savedAt));
     } catch (e) {
-      print('Error getting favorite results: $e');
       return [];
     }
   }
@@ -143,7 +135,6 @@ class SavedResultsService {
       await box.clear();
       return true;
     } catch (e) {
-      print('Error clearing saved results: $e');
       return false;
     }
   }
@@ -154,7 +145,6 @@ class SavedResultsService {
       final box = _getBox;
       return box.length;
     } catch (e) {
-      print('Error getting saved results count: $e');
       return 0;
     }
   }

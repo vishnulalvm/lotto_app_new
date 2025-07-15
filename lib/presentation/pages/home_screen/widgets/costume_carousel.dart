@@ -165,13 +165,13 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Loading...',
                 style: TextStyle(
-                  color: endColor.withOpacity(0.8),
+                  color: endColor.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -197,9 +197,9 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Colors.white.withOpacity(0.8),
+                  Colors.white.withValues(alpha: 0.8),
                   (widget.gradientStartColor ?? Colors.pink.shade100)
-                      .withOpacity(0.6),
+                      .withValues(alpha: 0.6),
                 ],
               ),
             ),

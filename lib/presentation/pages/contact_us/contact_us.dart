@@ -103,7 +103,7 @@ class ContactBottomSheet extends StatelessWidget {
     try {
       await launchUrl(launchUri);
     } catch (e) {
-      debugPrint('Could not launch phone call: $e');
+      // Handle phone call launch error silently
     }
   }
 
@@ -114,7 +114,7 @@ class ContactBottomSheet extends StatelessWidget {
     try {
       await launchUrl(whatsappUri);
     } catch (e) {
-      debugPrint('Could not launch WhatsApp: $e');
+      // Handle WhatsApp launch error silently
     }
   }
 }

@@ -84,7 +84,6 @@ class HomeScreenResultsRepository {
         await _fetchAndCacheFromNetwork();
       } catch (e) {
         // Silent fail for background refresh
-        print('Background refresh failed: $e');
       }
     });
   }

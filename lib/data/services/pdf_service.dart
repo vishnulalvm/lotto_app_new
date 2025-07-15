@@ -21,7 +21,6 @@ class PdfService {
       final file = await _savePdfToFile(pdf, result);
       await _sharePdf(file, result);
     } catch (e) {
-      print('Exception in generateAndShareLotteryResult: $e');
       throw Exception('Failed to generate and share the PDF result: $e');
     }
   }
@@ -36,9 +35,8 @@ class PdfService {
 
         _notoSansRegular = pw.Font.ttf(regularFontData);
         _notoSansBold = pw.Font.ttf(boldFontData);
-        print('Custom fonts loaded successfully.');
       } catch (e) {
-        print('Failed to load custom fonts, using library default: $e');
+        // Use default fonts if custom fonts fail to load
         _notoSansRegular = pw.Font.helvetica();
         _notoSansBold = pw.Font.helveticaBold();
       }
@@ -375,7 +373,7 @@ class PdfService {
 
       // Render remaining numbers as a flowing table
       widgets.add(
-        pw.Table.fromTextArray(
+        pw.TableHelper.fromTextArray(
           data: rows,
           cellStyle: _safeTextStyle(fontSize: 10),
           cellAlignment: pw.Alignment.center,
@@ -437,12 +435,13 @@ class PdfService {
   }
 
   static Future<void> _sharePdf(File file, LotteryResultModel result) async {
-    await Share.shareXFiles(
-      [XFile(file.path)],
+    final params = ShareParams(
+      files: [XFile(file.path)],
       text: _sanitizeText(
           'Kerala Lottery Result: ${result.lotteryName} - Draw ${result.drawNumber}'),
       subject: _sanitizeText('Lottery Result - ${result.drawNumber}'),
     );
+    await SharePlus.instance.share(params);
   }
 
   static Future<Uint8List> generateLotteryResultPdfBytes(

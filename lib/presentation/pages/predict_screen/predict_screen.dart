@@ -31,7 +31,8 @@ class _PredictScreenState extends State<PredictScreen>
     '5th',
     '6th',
     '7th',
-    '8th'
+    '8th',
+    '9th'
   ];
 final List<Map<String, String>> lotteryTypes = [
   {'value': 'SAMRUDHI', 'label_key': 'samrudhi_sunday'},
