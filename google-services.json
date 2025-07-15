@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "415297086750",
+    "project_id": "lotto-app-f3440",
+    "storage_bucket": "lotto-app-f3440.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:415297086750:android:ece7231eb0902bb4c9550f",
+        "android_client_info": {
+          "package_name": "app.solidapps.lotto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-_0XAIEF1c7WEmB2UXaY-j1CyxHaDIIA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

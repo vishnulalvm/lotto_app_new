@@ -66,9 +66,20 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB>
     super.dispose();
   }
 
+  // Cache gradient colors to avoid recalculation
+  List<Color>? _cachedGradientColors;
+  double _lastGradientProgress = -1;
+  
   // Dynamic red gradient colors that shift based on animation
   List<Color> _getAnimatedGradientColors() {
     final progress = _gradientAnimation.value;
+    
+    // Return cached colors if progress hasn't changed significantly
+    if (_cachedGradientColors != null && 
+        (_lastGradientProgress - progress).abs() < 0.01) {
+      return _cachedGradientColors!;
+    }
+    
     final isDark = widget.theme.brightness == Brightness.dark;
     
     // Use your theme's red colors for gradient
@@ -77,12 +88,15 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB>
     final deepRed = isDark ? const Color(0xFFD32F2F) : const Color(0xFFB71C1C);
     
     // Create a smooth looping red gradient effect
-    return [
+    _cachedGradientColors = [
       Color.lerp(primaryRed, lightRed, progress)!,
       Color.lerp(lightRed, deepRed, progress)!,
       Color.lerp(deepRed, primaryRed, (progress + 0.5) % 1.0)!,
       Color.lerp(primaryRed, lightRed, (progress + 0.5) % 1.0)!,
     ];
+    
+    _lastGradientProgress = progress;
+    return _cachedGradientColors!;
   }
 
   @override
@@ -93,20 +107,19 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB>
         return AnimatedBuilder(
           animation: Listenable.merge([_glowAnimation, _gradientAnimation]),
           builder: (context, child) {
+            // Cache theme colors to avoid repeated lookups
+            final isDark = widget.theme.brightness == Brightness.dark;
+            final primaryRed = isDark ? const Color(0xFFFF5252) : Colors.red;
+            final lightRed = isDark ? const Color(0xFFFF8A80) : const Color(0xFFFF5252);
+            
             return AnimatedGradientBorder(
               borderSize: 4,
               glowSize: 2,
               gradientColors: [
                 Colors.transparent,
-                (widget.theme.brightness == Brightness.dark 
-                    ? const Color(0xFFFF5252) 
-                    : Colors.red).withValues(alpha: 0.3),
-                (widget.theme.brightness == Brightness.dark 
-                    ? const Color(0xFFFF8A80) 
-                    : const Color(0xFFFF5252)).withValues(alpha: 0.6),
-                (widget.theme.brightness == Brightness.dark 
-                    ? const Color(0xFFFF5252) 
-                    : Colors.red).withValues(alpha: 0.8),
+                primaryRed.withValues(alpha: 0.3),
+                lightRed.withValues(alpha: 0.6),
+                primaryRed.withValues(alpha: 0.8),
                 Colors.transparent,
               ],
               animationProgress: _glowAnimation.value,
@@ -123,16 +136,12 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (widget.theme.brightness == Brightness.dark 
-                          ? const Color(0xFFFF5252) 
-                          : Colors.red).withValues(alpha: 0.3),
+                      color: primaryRed.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                     BoxShadow(
-                      color: (widget.theme.brightness == Brightness.dark 
-                          ? const Color(0xFFFF8A80) 
-                          : const Color(0xFFFF5252)).withValues(alpha: 0.2),
+                      color: lightRed.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),

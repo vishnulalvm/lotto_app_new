@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   bool isLoading = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Track login screen view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AnalyticsService.trackScreenView(
+        screenName: 'login_screen',
+        screenClass: 'LoginScreen',
+        parameters: {
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+    });
+  }
   String? phoneErrorText; // For showing validation errors
 
   // Language data
@@ -86,6 +103,16 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (nameController.text.isEmpty || phoneController.text.isEmpty) {
+      // Track failed login attempt
+      AnalyticsService.trackUserEngagement(
+        action: 'login_attempt',
+        category: 'authentication',
+        label: 'validation_failed',
+        parameters: {
+          'error_type': 'empty_fields',
+        },
+      );
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('please_fill_all_fields'.tr())),
       );
@@ -93,11 +120,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (!_isValidPhoneNumber(phoneController.text)) {
+      // Track failed login attempt
+      AnalyticsService.trackUserEngagement(
+        action: 'login_attempt',
+        category: 'authentication',
+        label: 'validation_failed',
+        parameters: {
+          'error_type': 'invalid_phone',
+        },
+      );
+      
       setState(() {
         phoneErrorText = 'Please enter a valid 10-digit mobile number';
       });
       return;
     }
+
+    // Track successful login attempt
+    AnalyticsService.trackLogin(
+      loginMethod: 'phone_number',
+      success: true,
+    );
 
     context.read<AuthBloc>().add(
           AuthAutoSignInRequested(

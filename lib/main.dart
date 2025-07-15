@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:lotto_app/core/constants/theme/app_theme.dart';
+import 'firebase_options.dart';
 import 'package:lotto_app/data/datasource/api/auth_screen/auth_api_service.dart';
 import 'package:lotto_app/data/datasource/api/home_screen/home_screen_api.dart';
 import 'package:lotto_app/data/datasource/api/news_screen/news_api_service.dart';
@@ -25,6 +27,7 @@ import 'package:lotto_app/data/services/cache_manager.dart';
 import 'package:lotto_app/data/services/save_results.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
@@ -48,6 +51,14 @@ import 'package:lotto_app/routes/route_names.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Firebase Analytics
+  await AnalyticsService.initialize();
 
   // Initialize Hive database
   await HiveService.init();
@@ -172,6 +183,10 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeState.materialThemeMode, // Use the bloc state
             routerConfig: AppRouter.router,
+            // Add Firebase Analytics observer
+            builder: (context, child) {
+              return child ?? const SizedBox();
+            },
             // Easy Localization setup with Tamil support
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: const [

@@ -16,6 +16,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart'
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,19 @@ class _HomeScreenState extends State<HomeScreen>
     // Add observer for app lifecycle changes
     WidgetsBinding.instance.addObserver(this);
 
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AnalyticsService.trackScreenView(
+        screenName: 'home_screen',
+        screenClass: 'HomeScreen',
+        parameters: {
+          'is_first_visit': true,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+      AnalyticsService.trackSessionStart();
+    });
+
     // Load data immediately
     _loadLotteryResultsWithCache();
 
@@ -66,10 +80,34 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.addListener(_onScroll);
 
     _showLanguageDialogIfNeeded();
+    
+    // Preload common assets for better performance
+    _preloadCommonAssets();
+  }
+  
+  /// Preload common assets to improve initial load performance
+  void _preloadCommonAssets() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Preload fallback carousel images
+      const fallbackImages = [
+        'assets/images/five.jpeg',
+        'assets/images/four.jpeg',
+        'assets/images/seven.jpeg',
+        'assets/images/six.jpeg',
+        'assets/images/tree.jpeg',
+      ];
+      
+      for (final assetPath in fallbackImages) {
+        precacheImage(AssetImage(assetPath), context);
+      }
+    });
   }
 
   @override
   void dispose() {
+    // Track session end
+    AnalyticsService.trackSessionEnd();
+    
     WidgetsBinding.instance.removeObserver(this);
     _periodicRefreshTimer?.cancel();
     _scrollController.removeListener(_onScroll);
@@ -117,6 +155,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _loadLotteryResults() {
+    // Track user action
+    AnalyticsService.trackUserEngagement(
+      action: 'load_lottery_results',
+      category: 'data_refresh',
+      label: 'manual_refresh',
+    );
+    
     context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
   }
 
@@ -413,6 +458,14 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     // Replace _buildCarousel() with the custom widget
                     BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                      buildWhen: (previous, current) {
+                        // Only rebuild if images actually changed
+                        if (previous is HomeScreenResultsLoaded && 
+                            current is HomeScreenResultsLoaded) {
+                          return previous.data.updates.allImages != current.data.updates.allImages;
+                        }
+                        return previous.runtimeType != current.runtimeType;
+                      },
                       builder: (context, state) {
                         List<String> carouselImages = [];
 
@@ -472,6 +525,14 @@ class _HomeScreenState extends State<HomeScreen>
       //   onPressed: () => context.go('/notifications'),
       // ),
       title: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+        buildWhen: (previous, current) {
+          // Only rebuild when offline status changes
+          if (previous is HomeScreenResultsLoaded && 
+              current is HomeScreenResultsLoaded) {
+            return previous.isOffline != current.isOffline;
+          }
+          return previous.runtimeType != current.runtimeType;
+        },
         builder: (context, state) {
           // Show offline indicator when offline
           if (state is HomeScreenResultsLoaded && state.isOffline) {
@@ -488,9 +549,9 @@ class _HomeScreenState extends State<HomeScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.wifi_off,
-                    size: AppResponsive.fontSize(context, 16),
+                    size: 16,
                     color: Colors.white,
                   ),
                   SizedBox(width: AppResponsive.spacing(context, 8)),
@@ -711,6 +772,17 @@ class _HomeScreenState extends State<HomeScreen>
     return InkWell(
       onTap: () {
         if (item['route'] != null) {
+          // Track navigation analytics
+          AnalyticsService.trackUserEngagement(
+            action: 'navigation_tap',
+            category: 'navigation',
+            label: item['label'],
+            parameters: {
+              'destination': item['route'],
+              'feature': item['label'],
+            },
+          );
+          
           context.go(item['route']);
         }
       },
@@ -754,6 +826,17 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildResultsSection(ThemeData theme) {
     return BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+      buildWhen: (previous, current) {
+        // Only rebuild if the actual data changed, not just loading states
+        if (previous is HomeScreenResultsLoaded && 
+            current is HomeScreenResultsLoaded) {
+          return previous.data.results != current.data.results ||
+                 previous.isOffline != current.isOffline ||
+                 previous.isFiltered != current.isFiltered ||
+                 previous.filteredDate != current.filteredDate;
+        }
+        return true;
+      },
       builder: (context, state) {
         if (state is HomeScreenResultsLoading) {
           return Container(
@@ -972,6 +1055,17 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           child: InkWell(
             onTap: () {
+              // Track lottery result view
+              AnalyticsService.trackLotteryEvent(
+                eventType: 'result_view',
+                lotteryName: result.getFormattedTitle(context),
+                resultDate: result.formattedDate,
+                additionalParams: {
+                  'unique_id': result.uniqueId,
+                  'source': 'home_screen_card',
+                },
+              );
+              
               context.go('/result-details', extra: result.uniqueId);
             },
             borderRadius:
@@ -1103,6 +1197,17 @@ class _HomeScreenState extends State<HomeScreen>
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
                       onPressed: () {
+                        // Track see more button analytics
+                        AnalyticsService.trackLotteryEvent(
+                          eventType: 'see_more_pressed',
+                          lotteryName: result.getFormattedTitle(context),
+                          resultDate: result.formattedDate,
+                          additionalParams: {
+                            'unique_id': result.uniqueId,
+                            'source': 'see_more_button',
+                          },
+                        );
+                        
                         context.go('/result-details', extra: result.uniqueId);
                       },
                       style: ElevatedButton.styleFrom(
@@ -1351,15 +1456,30 @@ class _HomeScreenState extends State<HomeScreen>
       groupedResults[dateCategory]!.add(result);
     }
 
-    return Column(
-      children: [
-        ...indicators,
+    // Use CustomScrollView with SliverList for better performance
+    return CustomScrollView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        if (indicators.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Column(children: indicators),
+          ),
         ...groupedResults.entries.map((entry) {
-          return Column(
-            children: [
-              _buildDateDivider(entry.key, theme),
-              ...entry.value.map((result) => _buildResultCard(result, theme)),
-            ],
+          return SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (index == 0) {
+                  return _buildDateDivider(entry.key, theme);
+                }
+                final resultIndex = index - 1;
+                if (resultIndex < entry.value.length) {
+                  return _buildResultCard(entry.value[resultIndex], theme);
+                }
+                return null;
+              },
+              childCount: entry.value.length + 1, // +1 for date divider
+            ),
           );
         }),
       ],
