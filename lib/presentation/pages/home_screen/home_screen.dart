@@ -30,6 +30,8 @@ class _HomeScreenState extends State<HomeScreen>
   late ScrollController _scrollController;
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
+  late AnimationController _blinkAnimationController;
+  late Animation<double> _blinkAnimation;
   bool _isExpanded = true;
   bool _isScrollingDown = false;
   DateTime? _lastRefreshTime;
@@ -79,6 +81,23 @@ class _HomeScreenState extends State<HomeScreen>
     _fabAnimationController.forward();
     _scrollController.addListener(_onScroll);
 
+    // Initialize blink animation controller for live badge
+    _blinkAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    _blinkAnimation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _blinkAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start the blinking animation and repeat
+    _blinkAnimationController.repeat(reverse: true);
+
     _showLanguageDialogIfNeeded();
     
     // Preload common assets for better performance
@@ -113,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _fabAnimationController.dispose();
+    _blinkAnimationController.dispose();
     super.dispose();
   }
 
@@ -1262,35 +1282,73 @@ class _HomeScreenState extends State<HomeScreen>
           Positioned(
             top: 13,
             right: AppResponsive.spacing(context, 16),
-            child: Container(
-              padding:
-                  AppResponsive.padding(context, horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: result.isLive ? Colors.green : Colors.red,
-                borderRadius: BorderRadius.only(
-                  bottomLeft:
-                      Radius.circular(AppResponsive.spacing(context, 8)),
-                  bottomRight:
-                      Radius.circular(AppResponsive.spacing(context, 8)),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+            child: result.isLive
+                ? AnimatedBuilder(
+                    animation: _blinkAnimation,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _blinkAnimation.value,
+                        child: Container(
+                          padding: AppResponsive.padding(context,
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(
+                                  AppResponsive.spacing(context, 8)),
+                              bottomRight: Radius.circular(
+                                  AppResponsive.spacing(context, 8)),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'live_badge'.tr(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: AppResponsive.fontSize(context, 10),
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    padding: AppResponsive.padding(context,
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft:
+                            Radius.circular(AppResponsive.spacing(context, 8)),
+                        bottomRight:
+                            Radius.circular(AppResponsive.spacing(context, 8)),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'new_badge'.tr(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: AppResponsive.fontSize(context, 10),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: Text(
-                result.isLive ? 'live_badge'.tr() : 'new_badge'.tr(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: AppResponsive.fontSize(context, 10),
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
           ),
       ],
     );

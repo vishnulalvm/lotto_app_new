@@ -29,8 +29,12 @@ class LotteryResultDetailsScreen extends StatefulWidget {
 }
 
 class _LotteryResultDetailsScreenState
-    extends State<LotteryResultDetailsScreen> {
+    extends State<LotteryResultDetailsScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
+  
+  // Animation controllers for live indicator blinking
+  late AnimationController _blinkAnimationController;
+  late Animation<double> _blinkAnimation;
 
   // Store all lottery numbers with their categories
   final List<Map<String, dynamic>> _allLotteryNumbers = [];
@@ -56,6 +60,23 @@ class _LotteryResultDetailsScreenState
   @override
   void initState() {
     super.initState();
+
+    // Initialize blink animation controller for live indicator
+    _blinkAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    _blinkAnimation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _blinkAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start the blinking animation and repeat
+    _blinkAnimationController.repeat(reverse: true);
 
     // Initialize saved results service
     _initializeSavedResultsService();
@@ -90,6 +111,7 @@ class _LotteryResultDetailsScreenState
   @override
   void dispose() {
     _scrollController.dispose();
+    _blinkAnimationController.dispose();
     super.dispose();
   }
 
@@ -887,41 +909,49 @@ class _LotteryResultDetailsScreenState
           // Live indicator
           if (isLive) ...[
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
+            AnimatedBuilder(
+              animation: _blinkAnimation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _blinkAnimation.value,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'LIVE - Results updating',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'LIVE - Results updating',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         ],
