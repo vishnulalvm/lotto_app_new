@@ -312,5 +312,8 @@
   "analyzing_probability": "संभावना का विश्लेषण हो रहा है...",
   "analysis_error": "विश्लेषण त्रुटि",
   "failed_to_analyze_ticket": "टिकट का विश्लेषण करने में विफल। कृपया पुनः प्रयास करें.",
-  "lottery_name": "लॉटरी का नाम"
+  "lottery_name": "लॉटरी का नाम",
+  "notifications_enabled": "सूचनाएं सक्षम की गईं",
+  "notifications_disabled": "सूचनाएं अक्षम की गईं",
+  "error_saving_settings": "सेटिंग्स सहेजने में त्रुटि"
 }

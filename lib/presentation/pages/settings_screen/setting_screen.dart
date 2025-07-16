@@ -13,6 +13,7 @@ import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/presentation/pages/settings_screen/widgets/disclaimer_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,6 +23,55 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _notificationsEnabled = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSettings();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      });
+    } catch (e) {
+      // Handle error silently, use default value
+    }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('notifications_enabled', value);
+      setState(() {
+        _notificationsEnabled = value;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value ? 'notifications_enabled'.tr() : 'notifications_disabled'.tr(),
+            ),
+            backgroundColor: value ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('error_saving_settings'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _launchUrl(String url) async {
     try {
       final uri = Uri.parse(url);
@@ -243,6 +293,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(color: Colors.grey),
                         ),
                         onTap: () => _showLanguageDialog(context),
+                      ),
+                      _buildListTile(
+                        'notifications'.tr(),
+                        Icons.notifications_outlined,
+                        trailing: Switch(
+                          value: _notificationsEnabled,
+                          onChanged: _toggleNotifications,
+                          activeColor: theme.primaryColor,
+                        ),
+                        showArrow: false,
+                        onTap: () => _toggleNotifications(!_notificationsEnabled),
                       ),
                     ],
                     theme,

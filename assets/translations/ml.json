@@ -382,5 +382,8 @@
   "analyzing_probability": "സാധ്യത വിശകലനം ചെയ്യുന്നു...",
   "analysis_error": "വിശകലന പിശക്",
   "failed_to_analyze_ticket": "ടിക്കറ്റ് വിശകലനം ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
-  "lottery_name": "ലോട്ടറി നാമം"
+  "lottery_name": "ലോട്ടറി നാമം",
+  "notifications_enabled": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കി",
+  "notifications_disabled": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കിയിട്ടില്ല",
+  "error_saving_settings": "ക്രമീകരണങ്ങൾ സംരക്ഷിക്കുന്നതിൽ പിശക്"
 }

@@ -57,6 +57,10 @@ class _LotteryResultDetailsScreenState
   String _lastSearchQuery = '';
   bool _hasShownNoResultsToast = false;
 
+  // Shimmer effect state
+  Set<String> _newlyUpdatedTickets = {};
+  LotteryResultModel? _previousResult;
+
   @override
   void initState() {
     super.initState();
@@ -116,6 +120,9 @@ class _LotteryResultDetailsScreenState
   }
 
   void _initializeLotteryNumbers(LotteryResultModel result) {
+    // Track newly updated tickets for shimmer effect
+    _detectNewlyUpdatedTickets(result);
+    
     _allLotteryNumbers.clear();
 
     // Custom ordering: 1st prize, then consolation, then other prizes
@@ -163,6 +170,44 @@ class _LotteryResultDetailsScreenState
 
     // Initialize filtered list
     _filteredLotteryNumbers = List.from(_allLotteryNumbers);
+    
+    // Update previous result for next comparison
+    _previousResult = result;
+  }
+
+  void _detectNewlyUpdatedTickets(LotteryResultModel result) {
+    _newlyUpdatedTickets.clear();
+    
+    // Only track during live hours
+    if (!_isLiveHours) return;
+    
+    // If no previous result, consider all tickets as new (but don't shimmer on first load)
+    if (_previousResult == null) return;
+    
+    // Get all current ticket numbers
+    final currentTickets = <String>{};
+    for (final prize in result.prizes) {
+      for (final ticket in prize.ticketsWithLocation) {
+        currentTickets.add(ticket.ticketNumber);
+      }
+      for (final ticketNumber in prize.allTicketNumbers) {
+        currentTickets.add(ticketNumber);
+      }
+    }
+    
+    // Get all previous ticket numbers
+    final previousTickets = <String>{};
+    for (final prize in _previousResult!.prizes) {
+      for (final ticket in prize.ticketsWithLocation) {
+        previousTickets.add(ticket.ticketNumber);
+      }
+      for (final ticketNumber in prize.allTicketNumbers) {
+        previousTickets.add(ticketNumber);
+      }
+    }
+    
+    // Find newly added tickets
+    _newlyUpdatedTickets = currentTickets.difference(previousTickets);
   }
 
   void _addPrizeNumbers(PrizeModel prize) {
@@ -821,6 +866,8 @@ class _LotteryResultDetailsScreenState
                     : _allLotteryNumbers,
                 highlightedTicketNumber: _isSearchActive ? _searchQuery : '',
                 ticketGlobalKeys: _ticketGlobalKeys,
+                isLiveHours: _isLiveHours,
+                newlyUpdatedTickets: _newlyUpdatedTickets,
               ),
               const SizedBox(height: 6),
               _buildContactSection(theme),

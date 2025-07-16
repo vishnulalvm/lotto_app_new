@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DynamicPrizeSectionsWidget extends StatefulWidget {
   final LotteryResultModel result;
   final List<Map<String, dynamic>> allLotteryNumbers;
   final String highlightedTicketNumber; // Changed from int highlightedIndex
   final Map<String, GlobalKey> ticketGlobalKeys; // Add GlobalKeys for auto-scroll
+  final bool isLiveHours; // Add isLiveHours parameter
+  final Set<String> newlyUpdatedTickets; // Add set of newly updated tickets
 
   const DynamicPrizeSectionsWidget({
     super.key,
@@ -13,6 +16,8 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
     required this.allLotteryNumbers,
     required this.highlightedTicketNumber, // Updated parameter
     required this.ticketGlobalKeys, // Add GlobalKeys parameter
+    this.isLiveHours = false, // Default to false
+    this.newlyUpdatedTickets = const {}, // Default to empty set
   });
 
   @override
@@ -22,6 +27,44 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
 
 class _DynamicPrizeSectionsWidgetState
     extends State<DynamicPrizeSectionsWidget> {
+  
+  Set<String> _shimmeringTickets = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize shimmering tickets with newly updated ones
+    _shimmeringTickets = Set.from(widget.newlyUpdatedTickets);
+    
+    // If there are new tickets and we're in live hours, start shimmer effect
+    if (widget.isLiveHours && _shimmeringTickets.isNotEmpty) {
+      _startShimmerEffect();
+    }
+  }
+
+  @override
+  void didUpdateWidget(DynamicPrizeSectionsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if new tickets have been added
+    if (widget.isLiveHours && widget.newlyUpdatedTickets != oldWidget.newlyUpdatedTickets) {
+      _shimmeringTickets = Set.from(widget.newlyUpdatedTickets);
+      if (_shimmeringTickets.isNotEmpty) {
+        _startShimmerEffect();
+      }
+    }
+  }
+
+  void _startShimmerEffect() {
+    // Show shimmer for 2 seconds, then reveal the actual values
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _shimmeringTickets.clear();
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +164,7 @@ class _DynamicPrizeSectionsWidgetState
                     highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                     theme: theme,
                     variant: TicketVariant.withLocation,
+                    isShimmering: _shimmeringTickets.contains(ticket.ticketNumber),
                   );
                 }),
               ],
@@ -163,6 +207,7 @@ class _DynamicPrizeSectionsWidgetState
                       highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                       theme: theme,
                       variant: TicketVariant.singleLarge,
+                      isShimmering: _shimmeringTickets.contains(ticketNumbers.first),
                     );
                   }(),
               ],
@@ -196,6 +241,7 @@ class _DynamicPrizeSectionsWidgetState
                 highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                 theme: theme,
                 variant: TicketVariant.twoColumn,
+                isShimmering: _shimmeringTickets.contains(ticketNumber),
               ),
             );
           }).toList(),
@@ -259,6 +305,7 @@ class _DynamicPrizeSectionsWidgetState
                 highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                 theme: theme,
                 variant: TicketVariant.consolationGrid,
+                isShimmering: _shimmeringTickets.contains(number),
               ),
             );
           }).toList(),
@@ -290,6 +337,7 @@ class _DynamicPrizeSectionsWidgetState
                 highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
                 theme: theme,
                 variant: TicketVariant.standardGrid,
+                isShimmering: _shimmeringTickets.contains(number),
               ),
             );
           }).toList(),
@@ -351,6 +399,7 @@ class _HighlightedTicketWidget extends StatefulWidget {
   final String highlightedTicketNumber; // Changed from int highlightedIndex
   final ThemeData theme;
   final TicketVariant variant;
+  final bool isShimmering; // Add shimmer state
 
   const _HighlightedTicketWidget({
     super.key,
@@ -361,6 +410,7 @@ class _HighlightedTicketWidget extends StatefulWidget {
     required this.highlightedTicketNumber, // Updated parameter
     required this.theme,
     required this.variant,
+    this.isShimmering = false, // Default to false
   });
 
   @override
@@ -441,7 +491,7 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        return Transform.scale(
+        final content = Transform.scale(
           scale: _scaleAnimation.value,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 400),
@@ -489,6 +539,22 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
             ),
           ),
         );
+
+        // Wrap with shimmer effect if isShimmering is true
+        if (widget.isShimmering) {
+          return Shimmer.fromColors(
+            baseColor: widget.theme.brightness == Brightness.dark
+                ? Colors.grey[800]!
+                : Colors.grey[300]!,
+            highlightColor: widget.theme.brightness == Brightness.dark
+                ? Colors.grey[600]!
+                : Colors.grey[100]!,
+            period: const Duration(milliseconds: 1000),
+            child: content,
+          );
+        }
+
+        return content;
       },
     );
   }

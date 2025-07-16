@@ -434,5 +434,8 @@
   "analyzing_probability": "Analyzing probability...",
   "analysis_error": "Analysis Error",
   "failed_to_analyze_ticket": "Failed to analyze ticket. Please try again.",
-  "lottery_name": "Lottery Name"
+  "lottery_name": "Lottery Name",
+  "notifications_enabled": "Notifications enabled",
+  "notifications_disabled": "Notifications disabled",
+  "error_saving_settings": "Error saving settings"
 }

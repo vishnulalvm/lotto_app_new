@@ -43,6 +43,7 @@ dependencies:
   scratcher: ^2.5.0
   share_plus: ^11.0.0
   shared_preferences: ^2.5.3
+  shimmer: ^3.0.0
   timeago: ^3.7.0
   typewritertext: ^3.0.9
   url_launcher: ^6.3.1
