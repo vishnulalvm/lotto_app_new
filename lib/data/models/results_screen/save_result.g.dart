@@ -8,7 +8,7 @@ part of 'save_result.dart';
 
 class SavedLotteryResultAdapter extends TypeAdapter<SavedLotteryResult> {
   @override
-  final int typeId = 5;
+  final int typeId = 6;
 
   @override
   SavedLotteryResult read(BinaryReader reader) {

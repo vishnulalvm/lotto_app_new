@@ -385,5 +385,7 @@
   "lottery_name": "ലോട്ടറി നാമം",
   "notifications_enabled": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കി",
   "notifications_disabled": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കിയിട്ടില്ല",
-  "error_saving_settings": "ക്രമീകരണങ്ങൾ സംരക്ഷിക്കുന്നതിൽ പിശക്"
+  "error_saving_settings": "ക്രമീകരണങ്ങൾ സംരക്ഷിക്കുന്നതിൽ പിശക്",
+  "enabling_notifications": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കുന്നു...",
+  "disabling_notifications": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കുന്നത് നിർത്തുന്നു..."
 }

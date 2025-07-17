@@ -9,7 +9,7 @@ class SavedResultsService {
 
   // Initialize Hive box
   static Future<void> init() async {
-    if (!Hive.isAdapterRegistered(5)) {
+    if (!Hive.isAdapterRegistered(6)) {
       Hive.registerAdapter(SavedLotteryResultAdapter());
     }
     _box = await Hive.openBox<SavedLotteryResult>(_boxName);
@@ -55,7 +55,8 @@ class SavedResultsService {
       await box.put(result.uniqueId, savedResult);
       return true;
     } catch (e) {
-      return false;
+      print('Error saving lottery result: $e');
+      rethrow; // Re-throw to let the UI handle the error
     }
   }
 

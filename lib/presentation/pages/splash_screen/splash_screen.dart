@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lotto_app/data/services/hive_service.dart';
+import 'package:lotto_app/data/services/connectivity_service.dart';
+import 'package:lotto_app/data/services/cache_manager.dart';
+import 'package:lotto_app/data/services/save_results.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,11 +19,43 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // Check login status after a delay
-    Future.delayed(const Duration(seconds: 1), () {
-      _checkLoginStatus();
-    });
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Initialize services in background without blocking UI
+    try {
+      // Phase 1: Initialize Hive first (required for other services)
+      await HiveService.init();
+      
+      // Phase 2: Initialize services that depend on Hive
+      await Future.wait([
+        // Initialize connectivity service
+        ConnectivityService().initialize(),
+        // Initialize SavedResultsService (depends on Hive)
+        SavedResultsService.init(),
+      ]);
+      
+      // Phase 3: Initialize cache manager (synchronous)
+      CacheManager.initialize();
+      
+      // Phase 4: Initialize Firebase services (can be slower)
+      await Future.wait([
+        AnalyticsService.initialize(),
+        FirebaseMessagingService.initialize(),
+      ]);
+      
+      // Add minimum delay to show splash screen
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Check login status after services are initialized
+      await _checkLoginStatus();
+    } catch (e) {
+      // Handle initialization errors gracefully
+      // Still proceed to check login status
+      await Future.delayed(const Duration(seconds: 1));
+      await _checkLoginStatus();
+    }
   }
 
   Future<void> _checkLoginStatus() async {

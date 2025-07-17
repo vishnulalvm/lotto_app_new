@@ -4,7 +4,7 @@ import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 
 part 'save_result.g.dart';
 
-@HiveType(typeId: 5)
+@HiveType(typeId: 6)
 class SavedLotteryResult extends HiveObject {
   @HiveField(0)
   final String uniqueId;

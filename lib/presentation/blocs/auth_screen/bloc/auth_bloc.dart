@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
+import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
@@ -21,6 +22,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await repository.login(event.phoneNumber);
+      
+      // Register FCM token after successful login
+      await FirebaseMessagingService.registerToken(notificationsEnabled: true);
+      
       emit(AuthSuccess(
         phoneNumber: user.phoneNumber,
         name: user.name,
@@ -38,6 +43,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await repository.register(event.name, event.phoneNumber);
+      
+      // Register FCM token after successful registration
+      await FirebaseMessagingService.registerToken(notificationsEnabled: true);
+      
       emit(AuthSuccess(
         phoneNumber: user.phoneNumber,
         name: user.name,

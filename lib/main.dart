@@ -22,13 +22,9 @@ import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dar
 import 'package:lotto_app/data/repositories/predict_screen/predict_repository.dart';
 import 'package:lotto_app/data/repositories/probability_screen/probability_repository.dart';
 import 'package:lotto_app/data/repositories/live_video_screen/live_video_repository.dart';
-import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
-import 'package:lotto_app/data/services/cache_manager.dart';
-import 'package:lotto_app/data/services/save_results.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
-import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
@@ -51,27 +47,14 @@ import 'package:lotto_app/routes/route_names.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize only critical services synchronously
   await EasyLocalization.ensureInitialized();
-
-  // Initialize Firebase
+  
+  // Initialize Firebase core (required for other Firebase services)
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Initialize Firebase Analytics
-  await AnalyticsService.initialize();
-
-  // Initialize Hive database
-  await HiveService.init();
-
-  // Initialize connectivity service
-  await ConnectivityService().initialize();
-
-  // Initialize SavedResultsService
-  await SavedResultsService.init();
-
-  // Initialize cache manager
-  CacheManager.initialize();
 
   runApp(
     EasyLocalization(

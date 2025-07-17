@@ -437,5 +437,7 @@
   "lottery_name": "Lottery Name",
   "notifications_enabled": "Notifications enabled",
   "notifications_disabled": "Notifications disabled",
-  "error_saving_settings": "Error saving settings"
+  "error_saving_settings": "Error saving settings",
+  "enabling_notifications": "Enabling notifications...",
+  "disabling_notifications": "Disabling notifications..."
 }

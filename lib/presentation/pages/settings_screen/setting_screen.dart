@@ -14,6 +14,7 @@ import 'package:lotto_app/presentation/pages/settings_screen/widgets/disclaimer_
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -44,24 +45,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleNotifications(bool value) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('notifications_enabled', value);
-      setState(() {
-        _notificationsEnabled = value;
-      });
-      
+      // Show loading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              value ? 'notifications_enabled'.tr() : 'notifications_disabled'.tr(),
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(value ? 'enabling_notifications'.tr() : 'disabling_notifications'.tr()),
+              ],
             ),
-            backgroundColor: value ? Colors.green : Colors.orange,
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.blue,
           ),
         );
       }
+
+      // Update notification settings with Firebase
+      bool success = await FirebaseMessagingService.updateNotificationSettings(value);
+      
+      if (success) {
+        setState(() {
+          _notificationsEnabled = value;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                value ? 'notifications_enabled'.tr() : 'notifications_disabled'.tr(),
+              ),
+              backgroundColor: value ? Colors.green : Colors.orange,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('error_saving_settings'.tr()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('error_saving_settings'.tr()),
