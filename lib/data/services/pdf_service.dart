@@ -108,7 +108,7 @@ class PdfService {
         // 1️⃣ Move margin & format into PageTheme
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.symmetric(vertical: 20, horizontal: 25), // Reduced vertical margin
+          margin: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 15), // Reduced vertical margin
 
           // 2️⃣ Draw the watermark on every page
           buildBackground: (pw.Context context) {
@@ -208,24 +208,6 @@ class PdfService {
                 .expand((prize) => _buildClickableLowerTierPrizeWidgets(prize)),
           );
 
-          // 🔷 5️⃣ URL LINK
-          contentWidgets.add(pw.SizedBox(height: 20));
-          contentWidgets.add(
-            pw.Center(
-              child: pw.UrlLink(
-                destination: 'https://lottokeralalotteries.com/',
-                child: pw.Text(
-                  'Visit www.lottokeralalotteries.com',
-                  style: pw.TextStyle(
-                    font: _notoSansRegular,
-                    fontSize: 12,
-                    decoration: pw.TextDecoration.underline,
-                    color: PdfColors.blue,
-                  ),
-                ),
-              ),
-            ),
-          );
 
           return contentWidgets;
         },
@@ -239,54 +221,119 @@ class PdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
-        pw.Text(
-          'KERALA STATE LOTTERIES - RESULT',
-          style: _safeTextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+          children: [
+            pw.Text(
+              'KERALA LOTTERIES - RESULT BY LOTTO ',
+              style: _safeTextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              '${_sanitizeText(result.lotteryName.toUpperCase())} NO: ${_sanitizeText(result.drawNumber)}',
+              style: _safeTextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              'Date: ${_sanitizeText(result.formattedDate)}',
+              style: _safeTextStyle(fontSize: 11),
+            ),
+          ],
         ),
-        pw.SizedBox(height: 3), // Reduced spacing
-        pw.Text(
-          '${_sanitizeText(result.lotteryName.toUpperCase())} LOTTERY NO: ${_sanitizeText(result.drawNumber)} DRAW held on: ${_sanitizeText(result.formattedDate)}',
-          style: _safeTextStyle(fontSize: 11),
-          textAlign: pw.TextAlign.center,
-        ),
-        pw.SizedBox(height: 3), // Reduced spacing
+
         pw.Divider(thickness: 1, color: PdfColors.grey700),
-        pw.SizedBox(height: 10), // Reduced spacing
       ],
     );
   }
 
 
-  // NEW: Horizontal layout for 1st and 2nd prizes
+  // NEW: Grid layout for high tier prizes
   static pw.Widget _buildHorizontalHighTierPrize(PrizeModel prize) {
+    // Determine column count based on prize type
+    int columns;
+    if (prize.prizeType.toLowerCase() == '1st') {
+      columns = 1; // Single column for first prize
+    } else if (prize.prizeType.toLowerCase() == '2nd' || prize.prizeType.toLowerCase() == '3rd') {
+      columns = 2; // Two columns for 2nd and 3rd prizes
+    } else {
+      columns = 5; // Default for other high tier prizes
+    }
+
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 4),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          // Prize title and winning numbers on same line
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ', // Added colon at the end
-                style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: prize.ticketsWithLocation.map(
-                    (ticket) => pw.Text(
-                      '${_sanitizeText(ticket.ticketNumber)} (${_sanitizeText(ticket.location ?? 'N/A')})',
-                      style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                    ),
-                  ).toList(),
+          // Special layout for first prize - title and numbers side by side
+          if (prize.prizeType.toLowerCase() == '1st')
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ',
+                  style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
                 ),
-              ),
-            ],
-          ),
+                pw.Expanded(
+                  child: _buildTicketNumberGrid(prize.ticketsWithLocation, columns),
+                ),
+              ],
+            )
+          else ...[
+            // Regular layout for other prizes
+            pw.Text(
+              '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-',
+              style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
+            // pw.SizedBox(height: 1),
+            _buildTicketNumberGrid(prize.ticketsWithLocation, columns),
+          ],
         ],
       ),
+    );
+  }
+
+  // Helper method to build ticket number grid with configurable columns
+  static pw.Widget _buildTicketNumberGrid(List<dynamic> tickets, int columns) {
+    final ticketNumbers = tickets.map((ticket) => 
+      '${_sanitizeText(ticket.ticketNumber)} (${_sanitizeText(ticket.location ?? 'N/A')})'
+    ).toList();
+    
+    // Break numbers into rows
+    final rows = <List<String>>[];
+    for (var i = 0; i < ticketNumbers.length; i += columns) {
+      final row = ticketNumbers.sublist(
+        i,
+        min(i + columns, ticketNumbers.length),
+      );
+      // Pad incomplete rows with empty strings for alignment
+      while (row.length < columns) {
+        row.add('');
+      }
+      rows.add(row);
+    }
+
+    return pw.Table(
+      columnWidths: {
+        for (var c = 0; c < columns; c++)
+          c: pw.FractionColumnWidth(1 / columns),
+      },
+      border: pw.TableBorder.all(
+        width: 0.5,
+        color: PdfColors.grey300,
+      ),
+      children: rows.map((row) {
+        return pw.TableRow(
+          children: row.map((ticket) {
+            return pw.Padding(
+              padding: const pw.EdgeInsets.all(2.0),
+              child: pw.Center(
+                child: pw.Text(
+                  ticket,
+                  style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      }).toList(),
     );
   }
 
@@ -384,13 +431,13 @@ class PdfService {
     return pw.Column(
       children: [
         pw.Divider(thickness: 0.5, color: PdfColors.grey500),
-        pw.SizedBox(height: 2), // Further reduced spacing
+        // pw.SizedBox(height: 1), // Further reduced spacing
         pw.Text(
           'The prize winners are advised to verify the winning numbers with the results published in the Kerala Government Gazette and surrender the winning tickets within 90 days.',
           style: _safeTextStyle(fontSize: 9, color: PdfColors.grey700),
           textAlign: pw.TextAlign.center,
         ),
-        pw.SizedBox(height: 2), // Further reduced spacing
+        // pw.SizedBox(height: 2), // Further reduced spacing
         // Removed page number display
       ],
     );
