@@ -137,31 +137,78 @@ class PdfService {
         build: (pw.Context context) {
           final List<pw.Widget> contentWidgets = [];
 
-          // --- High Tier Prizes with Horizontal Layout for 1st, 2nd and 3rd ---
-          contentWidgets.addAll(
-            highTierPrizes.map((prize) {
-              if (prize.prizeType.toLowerCase() == '1st' || 
-                  prize.prizeType.toLowerCase() == '2nd' ||
-                  prize.prizeType.toLowerCase() == '3rd') {
-                return _buildClickableHorizontalHighTierPrize(prize);
-              } else {
-                return _buildClickableHighTierPrize(prize);
-              }
-            }),
-          );
-
-          // --- Consolation Prize ---
-          if (consolationPrize != null) {
-            contentWidgets
-                .add(_buildClickableConsolationPrize(consolationPrize));
+          // 🔷 1️⃣ FIRST PRIZE (Top)
+          final firstPrize = highTierPrizes.where(
+            (p) => p.prizeType.toLowerCase() == '1st',
+          ).firstOrNull;
+          if (firstPrize != null) {
+            contentWidgets.add(_buildClickableHorizontalHighTierPrize(firstPrize));
           }
-          // --- Lower Tier Prizes ---
+
+          // 🔷 2️⃣ CONSOLATION PRIZE (only series shown)
+          if (consolationPrize != null) {
+            contentWidgets.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 4),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'Consolation Prize Rs: ${_sanitizeText(consolationPrize.formattedPrizeAmount)}/- : ',
+                      style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.Expanded(
+                      child: pw.Wrap(
+                        spacing: 10,
+                        children: consolationPrize.seriesOnly
+                            .map((series) => pw.Text(series,
+                                style: _safeTextStyle(fontSize: 11)))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // 🔷 3️⃣ SECOND & THIRD PRIZES (in a single row)
+          final secondPrize = highTierPrizes.where(
+            (p) => p.prizeType.toLowerCase() == '2nd',
+          ).firstOrNull;
+          final thirdPrize = highTierPrizes.where(
+            (p) => p.prizeType.toLowerCase() == '3rd',
+          ).firstOrNull;
+          
+          if (secondPrize != null || thirdPrize != null) {
+            contentWidgets.add(
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  if (secondPrize != null)
+                    pw.Expanded(
+                      flex: 1,
+                      child: _buildClickableHorizontalHighTierPrize(secondPrize),
+                    ),
+                  if (secondPrize != null && thirdPrize != null)
+                    pw.SizedBox(width: 20), // Space between prizes
+                  if (thirdPrize != null)
+                    pw.Expanded(
+                      flex: 1,
+                      child: _buildClickableHorizontalHighTierPrize(thirdPrize),
+                    ),
+                ],
+              ),
+            );
+          }
+
+          // 🔷 4️⃣ LOWER TIER PRIZES
           contentWidgets.addAll(
             lowerTierPrizes
                 .expand((prize) => _buildClickableLowerTierPrizeWidgets(prize)),
           );
 
-          // --- Tappable Link at bottom ---
+          // 🔷 5️⃣ URL LINK
           contentWidgets.add(pw.SizedBox(height: 20));
           contentWidgets.add(
             pw.Center(
@@ -209,29 +256,6 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildHighTierPrize(PrizeModel prize) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 4),
-      child:
-          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        pw.Text(
-          '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-', // Added colon after Rs
-          style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-        ),
-        pw.SizedBox(height: 4),
-        ...prize.ticketsWithLocation.map(
-          (ticket) => pw.Padding(
-            padding: const pw.EdgeInsets.only(left: 20.0),
-            child: pw.Text(
-              '${_sanitizeText(ticket.ticketNumber)} (${_sanitizeText(ticket.location ?? 'N/A')})',
-              style:
-                  _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-            ),
-          ),
-        ),
-      ]),
-    );
-  }
 
   // NEW: Horizontal layout for 1st and 2nd prizes
   static pw.Widget _buildHorizontalHighTierPrize(PrizeModel prize) {
@@ -266,13 +290,6 @@ class PdfService {
     );
   }
 
-  // Clickable version of high tier prize
-  static pw.Widget _buildClickableHighTierPrize(PrizeModel prize) {
-    return pw.UrlLink(
-      destination: 'https://www.lottokeralalotteries.com',
-      child: _buildHighTierPrize(prize),
-    );
-  }
 
   // Clickable version of horizontal high tier prize
   static pw.Widget _buildClickableHorizontalHighTierPrize(PrizeModel prize) {
@@ -282,111 +299,70 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildConsolationPrize(PrizeModel prize) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 4),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          // Prize title and winning numbers on same line for space efficiency
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ', // Added colon at the end
-                style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Expanded(
-                child: pw.Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: prize.allTicketNumbers
-                      .map((number) => pw.Text(_sanitizeText(number),
-                          style: _safeTextStyle(fontSize: 11)))
-                      .toList(),
-                ),
-              ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
 
-  // Clickable version of consolation prize
-  static pw.Widget _buildClickableConsolationPrize(PrizeModel prize) {
-    return pw.UrlLink(
-      destination: 'https://www.lottokeralalotteries.com',
-      child: _buildConsolationPrize(prize),
-    );
-  }
 
   /// **NEW:** Returns a flat list of widgets for a single prize category.
 
   static List<pw.Widget> _buildLowerTierPrizeWidgets(PrizeModel prize) {
-// ← increased to 10 columns
     final widgets = <pw.Widget>[];
 
-    // Prize header - Horizontal layout with numbers starting immediately after colon
+    // Prize header
     widgets.add(
       pw.Padding(
         padding: const pw.EdgeInsets.only(top: 8.0, bottom: 5.0),
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              '${_sanitizeText(prize.prizeTypeFormatted)} – Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ',
-              style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold), // Keep title at 12
-            ),
-            pw.Expanded(
-              child: pw.Wrap(
-                spacing: 8,
-                runSpacing: 2,
-                children: prize.allTicketNumbers.take(12).map((number) => 
-                  pw.Text(
-                    _sanitizeText(number),
-                    style: _safeTextStyle(fontSize: 12), // Same size as title
-                  )
-                ).toList(),
-              ),
-            ),
-          ],
+        child: pw.Text(
+          '${_sanitizeText(prize.prizeTypeFormatted)} – Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-',
+          style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
         ),
       ),
     );
 
-    // If there are more than 12 numbers, show remaining in table format
-    if (prize.allTicketNumbers.length > 12) {
-      const int columns = 14;
-      final remainingNumbers = prize.allTicketNumbers.skip(12).toList();
-      
-      // Break remaining numbers into rows of `columns` count
-      final rows = <List<String>>[];
-      for (var i = 0; i < remainingNumbers.length; i += columns) {
-        rows.add(
-          remainingNumbers.sublist(
-            i,
-            min(i + columns, remainingNumbers.length),
-          ),
-        );
-      }
-
-      // Render remaining numbers as a flowing table
-      widgets.add(
-        pw.TableHelper.fromTextArray(
-          data: rows,
-          cellStyle: _safeTextStyle(fontSize: 10),
-          cellAlignment: pw.Alignment.center,
-          border: pw.TableBorder(
-            horizontalInside: pw.BorderSide(width: 0.2, color: PdfColors.grey400),
-          ),
-          columnWidths: {
-            for (var c = 0; c < columns; c++)
-              c: pw.FractionColumnWidth(1 / columns),
-          },
-        ),
+    // Grid layout for all numbers
+    const int columns = 15;
+    final allNumbers = prize.allTicketNumbers;
+    
+    // Break numbers into rows of `columns` count
+    final rows = <List<String>>[];
+    for (var i = 0; i < allNumbers.length; i += columns) {
+      final row = allNumbers.sublist(
+        i,
+        min(i + columns, allNumbers.length),
       );
+      // Pad incomplete rows with empty strings for alignment
+      while (row.length < columns) {
+        row.add('');
+      }
+      rows.add(row);
     }
+
+    // Create grid with clean alignment
+    widgets.add(
+      pw.Table(
+        columnWidths: {
+          for (var c = 0; c < columns; c++)
+            c: const pw.FractionColumnWidth(1 / 15),
+        },
+        border: pw.TableBorder.all(
+          width: 0.5,
+          color: PdfColors.grey300,
+        ),
+        children: rows.map((row) {
+          return pw.TableRow(
+            children: row.map((number) {
+              return pw.Padding(
+                padding: const pw.EdgeInsets.all(2.0),
+                child: pw.Center(
+                  child: pw.Text(
+                    _sanitizeText(number),
+                    style: _safeTextStyle(fontSize: 10),
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        }).toList(),
+      ),
+    );
 
     return widgets;
   }

@@ -290,3 +290,9 @@ class TicketModel {
     return ticketNumber;
   }
 }
+
+extension ConsolationSeriesExtension on PrizeModel {
+  List<String> get seriesOnly {
+    return allTicketNumbers.map((e) => e.substring(0, 2)).toSet().toList();
+  }
+}
