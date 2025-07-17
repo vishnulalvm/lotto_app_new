@@ -44,6 +44,20 @@ import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_bloc.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
 import 'package:lotto_app/routes/route_names.dart';
+// import 'package:lotto_app/data/services/firebase_messaging_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+
+// Top-level function for background message handling
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialize Firebase if not already initialized
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  if (kDebugMode) {
+    print('Background message received: ${message.messageId}');
+    print('Message data: ${message.data}');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +69,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  // Initialize Firebase Messaging Service
+  // await FirebaseMessagingService.initialize();
 
   runApp(
     EasyLocalization(

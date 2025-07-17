@@ -439,5 +439,11 @@
   "notifications_disabled": "Notifications disabled",
   "error_saving_settings": "Error saving settings",
   "enabling_notifications": "Enabling notifications...",
-  "disabling_notifications": "Disabling notifications..."
+  "disabling_notifications": "Disabling notifications...",
+  "scan_to_check_winning_chance": "Scan to check winning chance — ",
+  "smart_prediction": "smart prediction",
+  "not_a_guarantee": ", not a guarantee.",
+  "scan_another": "Scan Another",
+  "scanner_ready": "Scanner is ready for new scan",
+  "scanner_reset_error": "Error resetting scanner"
 }

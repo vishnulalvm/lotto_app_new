@@ -227,13 +227,37 @@ class _ProbabilityBarcodeScannerScreenState
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.primaryColor.withValues(alpha: 0.7),
+                            width: 1.5,
+                          ),
                         ),
-                        child: Text(
-                          'scan_lottery_ticket'.tr(),
+                        child: RichText(
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'scan_to_check_winning_chance'.tr(),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'smart_prediction'.tr(),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'not_a_guarantee'.tr(),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -329,8 +353,8 @@ class _ProbabilityBarcodeScannerScreenState
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isActive
-                    ? theme.primaryColor.withOpacity(0.2)
-                    : theme.primaryColor.withOpacity(0.1),
+                    ? theme.primaryColor.withValues(alpha: 0.2)
+                    : theme.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 border: isActive
                     ? Border.all(color: theme.primaryColor, width: 2)

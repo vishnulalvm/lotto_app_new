@@ -21,8 +21,8 @@ class FirebaseMessagingService {
     // Configure foreground message handling
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     
-    // Configure background message handling
-    FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessageTopLevel);
+    // Background message handling is set up in main.dart
+    // FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessageTopLevel);
     
     // Handle notification taps when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
@@ -220,9 +220,4 @@ class FirebaseMessagingService {
   }
 }
 
-/// Top-level function for handling background messages
-Future<void> _handleBackgroundMessageTopLevel(RemoteMessage message) async {
-  if (kDebugMode) {
-    print('Background message received: ${message.messageId}');
-  }
-}
+// Background message handler is now in main.dart

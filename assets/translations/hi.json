@@ -317,5 +317,11 @@
   "notifications_disabled": "सूचनाएं अक्षम की गईं",
   "error_saving_settings": "सेटिंग्स सहेजने में त्रुटि",
   "enabling_notifications": "सूचनाएं सक्षम की जा रही हैं...",
-  "disabling_notifications": "सूचनाएं अक्षम की जा रही हैं..."
+  "disabling_notifications": "सूचनाएं अक्षम की जा रही हैं...",
+  "scan_to_check_winning_chance": "जीतने की संभावना जांचने के लिए स्कैन करें — ",
+  "smart_prediction": "स्मार्ट भविष्यवाणी",
+  "not_a_guarantee": ", गारंटी नहीं है।",
+  "scan_another": "दूसरा स्कैन करें",
+  "scanner_ready": "स्कैनर नए स्कैन के लिए तैयार है",
+  "scanner_reset_error": "स्कैनर रीसेट करने में त्रुटि"
 }

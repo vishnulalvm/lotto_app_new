@@ -400,7 +400,12 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
   }
 
   void _handleScanAnother() {
+    _handleDialogClose();
+  }
+
+  void _handleDialogClose() {
     Navigator.of(context).pop();
+    // Always call the callback to reset the scanner
     if (widget.onScanAnother != null) {
       widget.onScanAnother!();
     }
@@ -416,193 +421,204 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
     final dialogWidth = min(size.width * 0.9, 450.0);
     final dialogHeight = min(size.height * 0.85, 600.0);
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: Container(
-            width: dialogWidth,
-            height: dialogHeight,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: probabilityTheme.color.withValues(alpha: 0.2),
-                  blurRadius: 40,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 15),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Header - reduced padding
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        probabilityTheme.title,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: probabilityTheme.color,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close, size: 18),
-                        style: IconButton.styleFrom(
-                          backgroundColor:
-                              theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                          padding: const EdgeInsets.all(6),
-                          minimumSize: const Size(32, 32),
-                        ),
-                      ),
-                    ],
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          // Call the callback to reset the scanner when dialog is dismissed
+          if (widget.onScanAnother != null) {
+            widget.onScanAnother!();
+          }
+        }
+      },
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              width: dialogWidth,
+              height: dialogHeight,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: probabilityTheme.color.withValues(alpha: 0.2),
+                    blurRadius: 40,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 15),
                   ),
-                ),
-
-                // Main content - reduced horizontal padding
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Header - reduced padding
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Probability display with fill
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Sparkles
-                            if (widget.probability >= 70) _buildSparkles(),
-
-                            // Main circular progress
-                            _buildCircularProgress(),
-                          ],
-                        ),
-                        // Lottery info in row format
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: probabilityTheme.backgroundColor,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: probabilityTheme.color.withValues(alpha: 0.2),
-                            ),
+                        Text(
+                          probabilityTheme.title,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: probabilityTheme.color,
                           ),
-                          child: Row(
-                            children: [
-                              // Lottery name
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'lottery_name'.tr(),
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        fontSize: 11,
-                                        color: theme.colorScheme.onSurface
-                                            .withValues(alpha: 0.6),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      widget.lotteryName.toUpperCase(),
-                                      style:
-                                          theme.textTheme.bodyMedium?.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: probabilityTheme.color,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Divider
-                              Container(
-                                width: 1,
-                                height: 35,
-                                color:
-                                    theme.colorScheme.outline.withValues(alpha: 0.2),
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                              ),
-
-                              // Ticket number
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'ticket_number'.tr(),
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        fontSize: 11,
-                                        color: theme.colorScheme.onSurface
-                                            .withValues(alpha: 0.6),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      widget.lotteryNumber,
-                                      style:
-                                          theme.textTheme.bodyMedium?.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'monospace',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                        ),
+                        IconButton(
+                          onPressed: _handleDialogClose,
+                          icon: const Icon(Icons.close, size: 18),
+                          style: IconButton.styleFrom(
+                            backgroundColor:
+                                theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.all(6),
+                            minimumSize: const Size(32, 32),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
 
-                // All emojis at bottom - reduced padding
-                _buildEmojiRow(),
+                  // Main content - reduced horizontal padding
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Probability display with fill
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Sparkles
+                              if (widget.probability >= 70) _buildSparkles(),
 
-                // Action button - moved after emoji section
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _handleScanAnother,
-                      icon: const Icon(Icons.qr_code_scanner, size: 18),
-                      label: Text(
-                        'scan_another'.tr(),
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: probabilityTheme.color,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
+                              // Main circular progress
+                              _buildCircularProgress(),
+                            ],
+                          ),
+                          // Lottery info in row format
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: probabilityTheme.backgroundColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: probabilityTheme.color.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Lottery name
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'lottery_name'.tr(),
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          fontSize: 11,
+                                          color: theme.colorScheme.onSurface
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.lotteryName.toUpperCase(),
+                                        style:
+                                            theme.textTheme.bodyMedium?.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: probabilityTheme.color,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Divider
+                                Container(
+                                  width: 1,
+                                  height: 35,
+                                  color:
+                                      theme.colorScheme.outline.withValues(alpha: 0.2),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 16),
+                                ),
+
+                                // Ticket number
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'ticket_number'.tr(),
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          fontSize: 11,
+                                          color: theme.colorScheme.onSurface
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.lotteryNumber,
+                                        style:
+                                            theme.textTheme.bodyMedium?.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ],
+
+                  // All emojis at bottom - reduced padding
+                  _buildEmojiRow(),
+
+                  // Action button - moved after emoji section
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _handleScanAnother,
+                        icon: const Icon(Icons.qr_code_scanner, size: 18),
+                        label: Text(
+                          'scan_another'.tr(),
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: probabilityTheme.color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

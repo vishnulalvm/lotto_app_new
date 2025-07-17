@@ -240,6 +240,9 @@ class PrizeModel {
       );
     }
     
+    // Sort ticket numbers in ascending order
+    allNumbers.sort();
+    
     return allNumbers;
   }
 

@@ -364,6 +364,12 @@
   "notifications_disabled": "அறிவிப்புகள் முடக்கப்பட்டன",
   "error_saving_settings": "அமைப்புகளை சேமிப்பதில் பிழை",
   "enabling_notifications": "அறிவிப்புகள் இயக்கப்படுகின்றன...",
-  "disabling_notifications": "அறிவிப்புகள் முடக்கப்படுகின்றன..."
+  "disabling_notifications": "அறிவிப்புகள் முடக்கப்படுகின்றன...",
+  "scan_to_check_winning_chance": "வெற்றி வாய்ப்பைச் சரிபார்க்க ஸ்கேன் செய்யவும் — ",
+  "smart_prediction": "ஸ்மார்ட் முன்னறிவிப்பு",
+  "not_a_guarantee": ", உத்தரவாதம் இல்லை।",
+  "scan_another": "மற்றொன்றை ஸ்கேன் செய்யவும்",
+  "scanner_ready": "ஸ்கேனர் புதிய ஸ்கேனுக்கு தயாராக உள்ளது",
+  "scanner_reset_error": "ஸ்கேனர் மீட்டமைப்பதில் பிழை"
 
 }

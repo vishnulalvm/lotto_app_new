@@ -387,5 +387,11 @@
   "notifications_disabled": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കിയിട്ടില്ല",
   "error_saving_settings": "ക്രമീകരണങ്ങൾ സംരക്ഷിക്കുന്നതിൽ പിശക്",
   "enabling_notifications": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കുന്നു...",
-  "disabling_notifications": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കുന്നത് നിർത്തുന്നു..."
+  "disabling_notifications": "അറിയിപ്പുകൾ പ്രാപ്തമാക്കുന്നത് നിർത്തുന്നു...",
+  "scan_to_check_winning_chance": "വിജയ സാധ്യത പരിശോധിക്കാൻ സ്കാൻ ചെയ്യുക — ",
+  "smart_prediction": "സ്മാർട്ട് പ്രവചനം",
+  "not_a_guarantee": ", ഗ്യാരന്റിയല്ല.",
+  "scan_another": "മറ്റൊന്ന് സ്കാൻ ചെയ്യുക",
+  "scanner_ready": "സ്കാനർ പുതിയ സ്കാനിനായി തയ്യാറാണ്",
+  "scanner_reset_error": "സ്കാനർ പുനഃസജ്ജമാക്കുന്നതിൽ പിശക്"
 }
