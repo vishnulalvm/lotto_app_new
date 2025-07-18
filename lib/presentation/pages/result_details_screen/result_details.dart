@@ -28,10 +28,10 @@ class LotteryResultDetailsScreen extends StatefulWidget {
       _LotteryResultDetailsScreenState();
 }
 
-class _LotteryResultDetailsScreenState
-    extends State<LotteryResultDetailsScreen> with TickerProviderStateMixin {
+class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
+    with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  
+
   // Animation controllers for live indicator blinking
   late AnimationController _blinkAnimationController;
   late Animation<double> _blinkAnimation;
@@ -50,6 +50,8 @@ class _LotteryResultDetailsScreenState
   bool _isGeneratingPdf = false;
   // Save state tracking
   bool _isSaved = false;
+  // Refresh state tracking
+  bool _isRefreshing = false;
 
   // Auto-scroll functionality
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
@@ -70,7 +72,7 @@ class _LotteryResultDetailsScreenState
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _blinkAnimation = Tween<double>(
       begin: 0.3,
       end: 1.0,
@@ -78,7 +80,7 @@ class _LotteryResultDetailsScreenState
       parent: _blinkAnimationController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Start the blinking animation and repeat
     _blinkAnimationController.repeat(reverse: true);
 
@@ -122,7 +124,7 @@ class _LotteryResultDetailsScreenState
   void _initializeLotteryNumbers(LotteryResultModel result) {
     // Track newly updated tickets for shimmer effect
     _detectNewlyUpdatedTickets(result);
-    
+
     _allLotteryNumbers.clear();
 
     // Custom ordering: 1st prize, then consolation, then other prizes
@@ -170,20 +172,20 @@ class _LotteryResultDetailsScreenState
 
     // Initialize filtered list
     _filteredLotteryNumbers = List.from(_allLotteryNumbers);
-    
+
     // Update previous result for next comparison
     _previousResult = result;
   }
 
   void _detectNewlyUpdatedTickets(LotteryResultModel result) {
     _newlyUpdatedTickets.clear();
-    
+
     // Only track during live hours
     if (!_isLiveHours) return;
-    
+
     // If no previous result, consider all tickets as new (but don't shimmer on first load)
     if (_previousResult == null) return;
-    
+
     // Get all current ticket numbers
     final currentTickets = <String>{};
     for (final prize in result.prizes) {
@@ -194,7 +196,7 @@ class _LotteryResultDetailsScreenState
         currentTickets.add(ticketNumber);
       }
     }
-    
+
     // Get all previous ticket numbers
     final previousTickets = <String>{};
     for (final prize in _previousResult!.prizes) {
@@ -205,7 +207,7 @@ class _LotteryResultDetailsScreenState
         previousTickets.add(ticketNumber);
       }
     }
-    
+
     // Find newly added tickets
     _newlyUpdatedTickets = currentTickets.difference(previousTickets);
   }
@@ -522,8 +524,9 @@ class _LotteryResultDetailsScreenState
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final resultDate = DateTime.parse(result.date);
-    final resultDateOnly = DateTime(resultDate.year, resultDate.month, resultDate.day);
-    
+    final resultDateOnly =
+        DateTime(resultDate.year, resultDate.month, resultDate.day);
+
     return resultDateOnly == today && _isLiveHours;
   }
 
@@ -796,8 +799,29 @@ class _LotteryResultDetailsScreenState
                   child: CircularProgressIndicator(),
                 );
               } else if (state is LotteryResultDetailsError) {
+                // Reset refresh state on error
+                if (_isRefreshing) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _isRefreshing = false;
+                      });
+                    }
+                  });
+                }
                 return _buildErrorWidget(theme, state.message);
               } else if (state is LotteryResultDetailsLoaded) {
+                // Reset refresh state when data is loaded
+                if (_isRefreshing) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _isRefreshing = false;
+                      });
+                    }
+                  });
+                }
+                
                 // Initialize lottery numbers
                 _initializeLotteryNumbers(state.data.result);
 
@@ -807,23 +831,137 @@ class _LotteryResultDetailsScreenState
               }
             },
           ),
-          // Add FloatingSearchBar only when data is loaded
+          // Add FloatingSearchBar or refresh button based on live hours
           BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
             builder: (context, state) {
               if (state is LotteryResultDetailsLoaded &&
                   _allLotteryNumbers.isNotEmpty) {
-                return FloatingSearchBar(
-                  hintText: 'Eg. PV409930,',
-                  onChanged: (query) {
-                    // Implement real-time search
-                    _performSearch(query);
-                  },
-                  onSubmitted: (query) {
-                    // Implement search on submit
-                    _performSearch(query);
-                  },
-                  bottomPadding: 20.0,
-                );
+                if (_isLiveHours) {
+                  // Show refresh button during live hours
+                  return Positioned(
+                    bottom: 20,
+                    left: 16,
+                    right: 16,
+                    child: FloatingActionButton.extended(
+                      onPressed: _isRefreshing ? null : () {
+                        if (widget.uniqueId != null) {
+                          setState(() {
+                            _isRefreshing = true;
+                          });
+                          context.read<LotteryResultDetailsBloc>().add(
+                                RefreshLotteryResultDetailsEvent(
+                                    widget.uniqueId!),
+                              );
+                        }
+                      },
+                      backgroundColor: _isRefreshing ? theme.colorScheme.surface : theme.primaryColor,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      elevation: 4,
+                      icon: _isRefreshing 
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.refresh,
+                            size: 24, color: Colors.white),
+                      label: Text(
+                        _isRefreshing ? 'Refreshing...' : 'Refresh',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: _isRefreshing ? theme.colorScheme.onSurface : Colors.white),
+                      ),
+                      tooltip: _isRefreshing ? 'Refreshing results...' : 'Refresh results',
+                    ),
+                  );
+                } else {
+                  // Show search bar during non-live hours
+                  return FloatingSearchBar(
+                    hintText: 'Eg. PV409930,',
+                    onChanged: (query) {
+                      // Implement real-time search
+                      _performSearch(query);
+                    },
+                    onSubmitted: (query) {
+                      // Implement search on submit
+                      _performSearch(query);
+                    },
+                    bottomPadding: 20.0,
+                  );
+                }
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          // Fixed live indicator at top of screen
+          BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+            builder: (context, state) {
+              if (state is LotteryResultDetailsLoaded) {
+                final isLive = _isResultLive(state.data.result);
+                
+                if (isLive) {
+                  return Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                        child: AnimatedBuilder(
+                          animation: _blinkAnimation,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _blinkAnimation.value,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'LIVE - Results updating',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                }
               }
               return const SizedBox.shrink();
             },
@@ -846,7 +984,12 @@ class _LotteryResultDetailsScreenState
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+          padding: EdgeInsets.only(
+            top: _isResultLive(result) ? 56.0 : 8.0, // Add top padding when live indicator is shown
+            bottom: 8.0,
+            left: 8.0,
+            right: 8.0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -914,8 +1057,6 @@ class _LotteryResultDetailsScreenState
   }
 
   Widget _buildHeaderSection(ThemeData theme, LotteryResultModel result) {
-    final isLive = _isResultLive(result);
-    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
@@ -927,7 +1068,8 @@ class _LotteryResultDetailsScreenState
                 children: [
                   Icon(Icons.calendar_today,
                       size: 18,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                   const SizedBox(width: 4),
                   Text(
                     result.formattedDate,
@@ -941,7 +1083,8 @@ class _LotteryResultDetailsScreenState
                 children: [
                   Icon(Icons.tag,
                       size: 18,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                   const SizedBox(width: 4),
                   Text(
                     result.formattedDrawNumber,
@@ -953,54 +1096,7 @@ class _LotteryResultDetailsScreenState
               ),
             ],
           ),
-          // Live indicator
-          if (isLive) ...[
-            const SizedBox(height: 8),
-            AnimatedBuilder(
-              animation: _blinkAnimation,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _blinkAnimation.value,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'LIVE - Results updating',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+          // Live indicator moved to fixed position at top
         ],
       ),
     );
@@ -1048,7 +1144,8 @@ class _LotteryResultDetailsScreenState
   }
 
   Future<void> _launchOfficialWebsite() async {
-    final Uri url = Uri.parse('https://statelottery.kerala.gov.in/index.php/lottery-result-view');
+    final Uri url = Uri.parse(
+        'https://statelottery.kerala.gov.in/index.php/lottery-result-view');
 
     try {
       if (await canLaunchUrl(url)) {
