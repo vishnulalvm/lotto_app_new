@@ -128,15 +128,15 @@ class PdfService {
                 // Watermark
                 pw.Center(
                   child: pw.Opacity(
-                    opacity: 0.15,
+                    opacity: 0.2,
                     child: pw.Text(
                       'LOTTO',
                       style: pw.TextStyle(
                         font: _notoSansBold, // your loaded bold font
                         fontFallback: [_notoSansRegular!], // ensures ₹ renders
-                        fontSize: 100,
+                        fontSize: 120,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.grey500,
+                        color: PdfColors.grey600,
                       ),
                     ),
                   ),
@@ -173,7 +173,7 @@ class PdfService {
                       padding: const pw.EdgeInsets.only(left: 8.0),
                       child: pw.Text(
                         'Consolation Prize Rs: ${_sanitizeText(consolationPrize.formattedPrizeAmount)}/- : ',
-                        style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                        style: _safeTextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
                       ),
                     ),
                     pw.Expanded(
@@ -181,7 +181,7 @@ class PdfService {
                         spacing: 10,
                         children: consolationPrize.seriesOnly
                             .map((series) => pw.Text(series,
-                                style: _safeTextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)))
+                                style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)))
                             .toList(),
                       ),
                     ),
@@ -249,11 +249,11 @@ class PdfService {
             ),
             pw.Text(
               '${_sanitizeText(result.lotteryName.toUpperCase())} NO: ${_sanitizeText(result.drawNumber)}',
-              style: _safeTextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+              style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
             pw.Text(
               'Date: ${_sanitizeText(result.formattedDate)}',
-              style: _safeTextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+              style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
           ],
         ),
@@ -290,7 +290,7 @@ class PdfService {
                   padding: const pw.EdgeInsets.only(left: 8.0,bottom: 2.0),
                   child: pw.Text(
                     '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-: ',
-                    style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                    style: _safeTextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
                   ),
                 ),
                 pw.Expanded(
@@ -304,7 +304,7 @@ class PdfService {
               padding: const pw.EdgeInsets.only(left: 8.0),
               child: pw.Text(
                 '${_sanitizeText(prize.prizeTypeFormatted)} Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-',
-                style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                style: _safeTextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
               ),
             ),
             // pw.SizedBox(height: 1),
@@ -348,11 +348,11 @@ class PdfService {
         return pw.TableRow(
           children: row.map((ticket) {
             return pw.Padding(
-              padding: const pw.EdgeInsets.all(2.0),
+              padding: const pw.EdgeInsets.all(0),
               child: pw.Center(
                 child: pw.Text(
                   ticket,
-                  style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  style: _safeTextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
                 ),
               ),
             );
@@ -384,7 +384,7 @@ class PdfService {
         padding: const pw.EdgeInsets.only(top: 2.0, bottom: 2.0, left: 8.0),
         child: pw.Text(
           '${_sanitizeText(prize.prizeTypeFormatted)} – Rs: ${_sanitizeText(prize.formattedPrizeAmount)}/-',
-          style: _safeTextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          style: _safeTextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
         ),
       ),
     );
@@ -422,11 +422,11 @@ class PdfService {
           return pw.TableRow(
             children: row.map((number) {
               return pw.Padding(
-                padding: const pw.EdgeInsets.all(2.0),
+                padding: const pw.EdgeInsets.all(0),
                 child: pw.Center(
                   child: pw.Text(
                     _sanitizeText(number),
-                    style: _safeTextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    style: _safeTextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
                   ),
                 ),
               );
@@ -459,7 +459,7 @@ class PdfService {
         // pw.SizedBox(height: 1), // Further reduced spacing
         pw.Text(
           'The prize winners are advised to verify the winning numbers with the results published in the Kerala Government Gazette and surrender the winning tickets within 90 days.',
-          style: _safeTextStyle(fontSize: 9, color: PdfColors.grey700),
+          style: _safeTextStyle(fontSize: 10, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold),
           textAlign: pw.TextAlign.center,
         ),
         // pw.SizedBox(height: 2), // Further reduced spacing
