@@ -27,7 +27,7 @@ class ProbabilityUseCase {
     } else if (upperCaseNumber.startsWith('P')) {
       return 'karunya plus';
     } else if (upperCaseNumber.startsWith('R')) {
-      return 'suvarna_keralam';
+      return 'suvarna keralam';
     } else if (upperCaseNumber.startsWith('K')) {
       return 'karunya';
     } else if (upperCaseNumber.startsWith('M')) {
