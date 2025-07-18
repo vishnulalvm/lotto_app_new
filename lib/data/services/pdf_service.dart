@@ -271,7 +271,7 @@ class PdfService {
     if (prize.prizeType.toLowerCase() == '1st') {
       columns = 1; // Single column for first prize
     } else if (prize.prizeType.toLowerCase() == '2nd' || prize.prizeType.toLowerCase() == '3rd') {
-      columns = 2; // Two columns for 2nd and 3rd prizes
+      columns = 1; // Single column for 2nd and 3rd prizes
     } else {
       columns = 5; // Default for other high tier prizes
     }
