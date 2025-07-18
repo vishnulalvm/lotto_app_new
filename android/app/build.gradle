@@ -17,12 +17,13 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "app.solidapps.lotto"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35  // Updated to 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17  
-        targetCompatibility = JavaVersion.VERSION_17  
+        targetCompatibility = JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled = true  
     }
 
     kotlinOptions {
@@ -35,7 +36,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35  // Updated to 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -60,4 +61,12 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// 🔥 CRITICAL: Add Firebase dependencies
+dependencies {
+    implementation 'com.google.firebase:firebase-messaging:23.4.1'
+    implementation 'com.google.firebase:firebase-analytics:21.5.0'
+    implementation 'androidx.work:work-runtime:2.9.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.2'
 }

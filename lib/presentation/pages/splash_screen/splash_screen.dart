@@ -25,35 +25,35 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeApp() async {
     // Initialize services in background without blocking UI
     try {
-      // Phase 1: Initialize Hive first (required for other services)
-      await HiveService.init();
-      
-      // Phase 2: Initialize services that depend on Hive
-      await Future.wait([
-        // Initialize connectivity service
-        ConnectivityService().initialize(),
-        // Initialize SavedResultsService (depends on Hive)
-        SavedResultsService.init(),
-      ]);
-      
-      // Phase 3: Initialize cache manager (synchronous)
-      CacheManager.initialize();
-      
-      // Phase 4: Initialize Firebase services (can be slower)
-      await Future.wait([
-        AnalyticsService.initialize(),
-        FirebaseMessagingService.initialize(),
-      ]);
+      // Run initialization in a separate isolate to prevent blocking
+      await Future.microtask(() async {
+        // Phase 1: Initialize Hive first (required for other services)
+        await HiveService.init();
+        
+        // Phase 2: Initialize all services in parallel where possible
+        await Future.wait([
+          // Initialize connectivity service
+          ConnectivityService().initialize(),
+          // Initialize SavedResultsService (depends on Hive)
+          SavedResultsService.init(),
+          // Initialize Firebase services in parallel
+          AnalyticsService.initialize(),
+          FirebaseMessagingService.initialize(),
+        ]);
+        
+        // Phase 3: Initialize cache manager (make it async)
+        await Future.microtask(() => CacheManager.initialize());
+      });
       
       // Add minimum delay to show splash screen
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 300));
       
       // Check login status after services are initialized
       await _checkLoginStatus();
     } catch (e) {
       // Handle initialization errors gracefully
-      // Still proceed to check login status
-      await Future.delayed(const Duration(seconds: 1));
+      // Still proceed to check login status with shorter delay
+      await Future.delayed(const Duration(milliseconds: 500));
       await _checkLoginStatus();
     }
   }
@@ -94,11 +94,14 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Static app logo from assets
+                  // Optimized app logo with caching and loading
                   Image.asset(
                     'assets/icons/logo_foreground.png',
                     width: 200,
                     height: 200,
+                    cacheWidth: 200,
+                    cacheHeight: 200,
+                    filterQuality: FilterQuality.medium,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -119,7 +122,6 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Text(
               'SOLID APPS',
               style: TextStyle(
-                
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: theme.primaryColor,

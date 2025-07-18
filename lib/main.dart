@@ -47,11 +47,32 @@ import 'package:lotto_app/routes/route_names.dart';
 // import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// Add this function to create notification channel
+Future<void> createNotificationChannel() async {
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'default_channel', // This must match your AndroidManifest.xml
+    'Default Notifications',
+    description: 'Channel for default notifications',
+    importance: Importance.high,
+  );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+}
 
 // Top-level function for background message handling
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialize Firebase if not already initialized
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print('Handling background message: ${message.messageId}');
+  print('Message data: ${message.data}');
+  print('Message notification: ${message.notification?.title}');
   
   if (kDebugMode) {
     print('Background message received: ${message.messageId}');
@@ -62,19 +83,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize only critical services synchronously
-  await EasyLocalization.ensureInitialized();
+  // Initialize critical services in parallel
+  await Future.wait([
+    EasyLocalization.ensureInitialized(),
+    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+  ]);
   
-  // Initialize Firebase core (required for other Firebase services)
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  // Set up background message handler
+  // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
-  // Initialize Firebase Messaging Service
-  // await FirebaseMessagingService.initialize();
+  // Create notification channel
+  await createNotificationChannel();
 
   runApp(
     EasyLocalization(

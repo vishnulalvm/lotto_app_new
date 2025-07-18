@@ -1,5 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/data/datasource/api/notification/fcm_api_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
@@ -12,6 +12,8 @@ class FirebaseMessagingService {
   
   /// Initialize Firebase messaging
   static Future<void> initialize() async {
+    print("🔥 Starting Firebase Messaging initialization...");
+    
     // Request notification permissions
     await _requestPermissions();
     
@@ -21,24 +23,26 @@ class FirebaseMessagingService {
     // Configure foreground message handling
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     
-    // Background message handling is set up in main.dart
-    // FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessageTopLevel);
-    
     // Handle notification taps when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
     
     // Handle notification tap when app is terminated
     final initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
+      print("📱 App opened from terminated state by notification: ${initialMessage.messageId}");
       _handleNotificationTap(initialMessage);
     }
     
     // Listen for token refresh
     _firebaseMessaging.onTokenRefresh.listen(_onTokenRefresh);
+    
+    print("✅ Firebase Messaging initialization complete!");
   }
   
   /// Request notification permissions
   static Future<void> _requestPermissions() async {
+    print("🔔 Requesting notification permissions...");
+    
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       announcement: false,
@@ -49,23 +53,34 @@ class FirebaseMessagingService {
       sound: true,
     );
     
-    if (kDebugMode) {
-      print('Notification permission granted: ${settings.authorizationStatus}');
+    print('🔔 Notification permission status: ${settings.authorizationStatus}');
+    
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('✅ User granted notification permissions');
+    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+      print('⚠️ User granted provisional notification permissions');
+    } else {
+      print('❌ User declined or has not accepted notification permissions');
     }
   }
   
   /// Get FCM token
   static Future<String?> _getToken() async {
     try {
+      print("🔑 Getting FCM token...");
       _currentToken = await _firebaseMessaging.getToken();
-      if (kDebugMode) {
-        print('FCM Token: $_currentToken');
+      
+      if (_currentToken != null) {
+        print('✅ FCM Token received: ${_currentToken!.substring(0, 20)}...');
+        print('📋 Full FCM Token: $_currentToken');
+        print('🧪 Test this token at: https://console.firebase.google.com/project/lotto-app-f3440/messaging');
+      } else {
+        print('❌ Failed to get FCM token');
       }
+      
       return _currentToken;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error getting FCM token: $e');
-      }
+      print('❌ Error getting FCM token: $e');
       return null;
     }
   }
@@ -78,9 +93,7 @@ class FirebaseMessagingService {
     try {
       final token = _currentToken ?? await _getToken();
       if (token == null) {
-        if (kDebugMode) {
-          print('No FCM token available');
-        }
+        print('❌ No FCM token available for registration');
         return false;
       }
       
@@ -89,11 +102,15 @@ class FirebaseMessagingService {
       final name = await userService.getUserName();
       
       if (phoneNumber == null) {
-        if (kDebugMode) {
-          print('No user logged in');
-        }
+        print('❌ No user logged in for token registration');
         return false;
       }
+      
+      print('📤 Registering FCM token with backend...');
+      print('📱 Token: ${token.substring(0, 20)}...');
+      print('📞 Phone: $phoneNumber');
+      print('👤 Name: $name');
+      print('🔔 Notifications enabled: $notificationsEnabled');
       
       await _fcmApiService.registerFcmToken(
         fcmToken: token,
@@ -106,14 +123,10 @@ class FirebaseMessagingService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notifications_enabled', notificationsEnabled);
       
-      if (kDebugMode) {
-        print('FCM token registered successfully');
-      }
+      print('✅ FCM token registered successfully with backend');
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error registering FCM token: $e');
-      }
+      print('❌ Error registering FCM token: $e');
       return false;
     }
   }
@@ -123,9 +136,7 @@ class FirebaseMessagingService {
     try {
       final token = _currentToken ?? await _getToken();
       if (token == null) {
-        if (kDebugMode) {
-          print('No FCM token available');
-        }
+        print('❌ No FCM token available for settings update');
         return false;
       }
       
@@ -134,11 +145,11 @@ class FirebaseMessagingService {
       final name = await userService.getUserName();
       
       if (phoneNumber == null) {
-        if (kDebugMode) {
-          print('No user logged in');
-        }
+        print('❌ No user logged in for settings update');
         return false;
       }
+      
+      print('⚙️ Updating notification settings: $enabled');
       
       await _fcmApiService.updateNotificationSettings(
         fcmToken: token,
@@ -151,58 +162,63 @@ class FirebaseMessagingService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notifications_enabled', enabled);
       
-      if (kDebugMode) {
-        print('Notification settings updated successfully');
-      }
+      print('✅ Notification settings updated successfully');
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error updating notification settings: $e');
-      }
+      print('❌ Error updating notification settings: $e');
       return false;
     }
   }
   
   /// Handle foreground messages
   static void _handleForegroundMessage(RemoteMessage message) {
-    if (kDebugMode) {
-      print('Handling foreground message: ${message.messageId}');
-      print('Message data: ${message.data}');
-      print('Message notification: ${message.notification?.title}');
+    print('📱 === FOREGROUND MESSAGE RECEIVED ===');
+    print('🆔 Message ID: ${message.messageId}');
+    print('📤 From: ${message.from}');
+    print('⏰ Sent time: ${message.sentTime}');
+    print('📊 Data: ${message.data}');
+    
+    if (message.notification != null) {
+      print('🔔 Notification:');
+      print('   📰 Title: ${message.notification?.title}');
+      print('   📝 Body: ${message.notification?.body}');
+      print('   🖼️ Image: ${message.notification?.apple?.imageUrl ?? message.notification?.android?.imageUrl ?? 'none'}');
+    } else {
+      print('🔔 No notification payload (data-only message)');
     }
+    
+    // Handle notification type
+    final notificationType = message.data['type'];
+    print('🏷️ Notification type: $notificationType');
     
     // You can show a local notification here or handle it as needed
     // For now, we'll just log it
   }
   
-  /// Handle background messages
-  // static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-  //   if (kDebugMode) {
-  //     print('Handling background message: ${message.messageId}');
-  //   }
-    
-  //   // Handle the background message
-  //   // This function must be a top-level function
-  // }
-  
   /// Handle notification tap
   static void _handleNotificationTap(RemoteMessage message) {
-    if (kDebugMode) {
-      print('Notification tapped: ${message.messageId}');
-    }
+    print('👆 === NOTIFICATION TAPPED ===');
+    print('🆔 Message ID: ${message.messageId}');
+    print('📊 Data: ${message.data}');
     
     // Handle navigation based on notification data
     final notificationType = message.data['type'];
     
     switch (notificationType) {
       case 'live_result_starts':
-        
+        print('🎯 Navigating to live results...');
         // Navigate to live results or home screen
         break;
       case 'result_published':
+        print('🎉 Navigating to result details...');
         // Navigate to specific result details
         break;
+      case 'test':
+        print('🧪 Test notification tapped');
+        // Handle test notification
+        break;
       default:
+        print('🏠 Navigating to home screen...');
         // Navigate to home screen
         break;
     }
@@ -210,14 +226,31 @@ class FirebaseMessagingService {
   
   /// Handle token refresh
   static void _onTokenRefresh(String token) {
-    if (kDebugMode) {
-      print('FCM Token refreshed: $token');
-    }
+    print('🔄 === FCM TOKEN REFRESHED ===');
+    print('🆕 New token: ${token.substring(0, 20)}...');
+    print('📋 Full new token: $token');
+    
     _currentToken = token;
     
     // Re-register with the new token
+    print('📤 Re-registering new token with backend...');
     registerToken();
   }
 }
 
-// Background message handler is now in main.dart
+// Background message handler should be in main.dart
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('🔄 === BACKGROUND MESSAGE RECEIVED ===');
+  print('🆔 Message ID: ${message.messageId}');
+  print('📊 Data: ${message.data}');
+  
+  if (message.notification != null) {
+    print('🔔 Background notification:');
+    print('   📰 Title: ${message.notification?.title}');
+    print('   📝 Body: ${message.notification?.body}');
+  }
+  
+  // Handle the background message
+  // This function must be a top-level function
+}
