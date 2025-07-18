@@ -17,6 +17,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart'
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -134,6 +135,32 @@ class _HomeScreenState extends State<HomeScreen>
     _fabAnimationController.dispose();
     _blinkAnimationController.dispose();
     super.dispose();
+  }
+
+  // Method to show interstitial ad and navigate
+  Future<void> _showInterstitialAdAndNavigate(String route) async {
+    try {
+      if (AdMobService.instance.isInterstitialAdLoaded) {
+        await AdMobService.instance.showInterstitialAd(
+          onAdDismissed: () {
+            // Navigate after ad is dismissed
+            if (mounted) {
+              context.go(route);
+            }
+          },
+        );
+      } else {
+        // If no ad is loaded, navigate directly
+        if (mounted) {
+          context.go(route);
+        }
+      }
+    } catch (e) {
+      // If ad fails, navigate directly
+      if (mounted) {
+        context.go(route);
+      }
+    }
   }
 
   void _showLanguageDialogIfNeeded() async {
@@ -803,7 +830,12 @@ class _HomeScreenState extends State<HomeScreen>
             },
           );
           
-          context.go(item['route']);
+          // Show interstitial ad before navigating to predict screen
+          if (item['route'] == '/Predict') {
+            _showInterstitialAdAndNavigate(item['route']);
+          } else {
+            context.go(item['route']);
+          }
         }
       },
       child: Column(

@@ -25,6 +25,7 @@ import 'package:lotto_app/data/repositories/live_video_screen/live_video_reposit
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
@@ -87,6 +88,7 @@ void main() async {
   await Future.wait([
     EasyLocalization.ensureInitialized(),
     Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+    AdMobService.initialize(),
   ]);
   
   // Set up background message handler after Firebase is initialized
@@ -94,6 +96,9 @@ void main() async {
   
   // Create notification channel
   await createNotificationChannel();
+  
+  // Preload ads
+  AdMobService.instance.preloadAds();
 
   runApp(
     EasyLocalization(

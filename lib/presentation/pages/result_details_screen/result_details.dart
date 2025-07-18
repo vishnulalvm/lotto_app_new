@@ -14,6 +14,8 @@ import 'package:lotto_app/presentation/pages/result_details_screen/widgets/dynam
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
+import 'dart:async';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
   final String? uniqueId;
@@ -52,6 +54,10 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   bool _isSaved = false;
   // Refresh state tracking
   bool _isRefreshing = false;
+  
+  // Ad state tracking
+  bool _hasShownRewardedAd = false;
+  bool _isRewardedAdReady = false;
 
   // Auto-scroll functionality
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
@@ -96,6 +102,16 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       // Check if result is already saved
       _checkIfSaved();
     }
+
+    // Check if rewarded ad is ready
+    _checkRewardedAdStatus();
+
+    // Show rewarded ad after 5 seconds if not shown yet
+    Timer(const Duration(seconds: 5), () {
+      if (mounted && !_hasShownRewardedAd) {
+        _showRewardedAdIfReady();
+      }
+    });
   }
 
   Future<void> _initializeSavedResultsService() async {
@@ -773,6 +789,68 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 Icon(Icons.error, color: Colors.white),
                 SizedBox(width: 8),
                 Expanded(child: Text('Failed to share: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // Ad Methods
+  void _checkRewardedAdStatus() {
+    setState(() {
+      _isRewardedAdReady = AdMobService.instance.isRewardedAdLoaded;
+    });
+  }
+
+  void _showRewardedAdIfReady() {
+    if (_isRewardedAdReady && !_hasShownRewardedAd) {
+      _showRewardedAd();
+    }
+  }
+
+  Future<void> _showRewardedAd() async {
+    if (!_isRewardedAdReady || _hasShownRewardedAd) return;
+
+    try {
+      await AdMobService.instance.showRewardedAd(
+        onUserEarnedReward: (ad, reward) {
+          // User earned reward
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.star, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Thanks for watching! You earned ${reward.amount} ${reward.type}'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        onAdDismissed: () {
+          setState(() {
+            _hasShownRewardedAd = true;
+            _isRewardedAdReady = false;
+          });
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Ad failed to load'),
               ],
             ),
             backgroundColor: Colors.red,

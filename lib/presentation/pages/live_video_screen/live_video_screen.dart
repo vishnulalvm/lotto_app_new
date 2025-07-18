@@ -235,9 +235,10 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
           if (state is LiveVideoError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('${'error_prefix'.tr()}${state.message}'),
+                content: Text('error_prefix'.tr()),
                 backgroundColor: Colors.red,
                 action: SnackBarAction(
+                  
                   label: 'retry'.tr(),
                   textColor: Colors.white,
                   onPressed: () =>
@@ -702,15 +703,7 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(
-              color: theme.textTheme.bodyMedium?.color,
-              fontSize: AppResponsive.fontSize(context, 14),
-            ),
-            textAlign: TextAlign.center,
-          ),
+    
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () =>
