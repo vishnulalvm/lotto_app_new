@@ -7,6 +7,7 @@ import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -171,6 +172,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 duration: const Duration(milliseconds: 300),
                 content: Text(state.message)),
           );
+          
+          // Enable notifications after successful sign-in
+          FirebaseMessagingService.updateNotificationSettings(true).then((success) {
+            if (success) {
+              print('✅ Notification settings enabled after sign-in');
+            } else {
+              print('❌ Failed to enable notification settings after sign-in');
+            }
+          }).catchError((error) {
+            print('❌ Error enabling notification settings: $error');
+          });
+          
           context.go('/'); // Navigate to home page
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(

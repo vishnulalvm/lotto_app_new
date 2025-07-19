@@ -15,5 +15,5 @@ class ApiConstants {
   static const String predict = '/results/predict/';
   static const String liveVideos = '/results/live-videos/';
   static const String lotteryPercentage = '/results/lottery-percentage/';
-  static const String fcmRegister = '/users/fcm/register/';
+  static const String fcmRegister = '/results/fcm/register/';
 }

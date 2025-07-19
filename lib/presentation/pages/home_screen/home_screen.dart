@@ -17,7 +17,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart'
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
-import 'package:lotto_app/data/services/admob_service.dart';
+// import 'package:lotto_app/data/services/admob_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -137,31 +137,31 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  // Method to show interstitial ad and navigate
-  Future<void> _showInterstitialAdAndNavigate(String route) async {
-    try {
-      if (AdMobService.instance.isInterstitialAdLoaded) {
-        await AdMobService.instance.showInterstitialAd(
-          onAdDismissed: () {
-            // Navigate after ad is dismissed
-            if (mounted) {
-              context.go(route);
-            }
-          },
-        );
-      } else {
-        // If no ad is loaded, navigate directly
-        if (mounted) {
-          context.go(route);
-        }
-      }
-    } catch (e) {
-      // If ad fails, navigate directly
-      if (mounted) {
-        context.go(route);
-      }
-    }
-  }
+  // Method to show interstitial ad and navigate (commented out - AdMob account not ready)
+  // Future<void> _showInterstitialAdAndNavigate(String route) async {
+  //   try {
+  //     if (AdMobService.instance.isInterstitialAdLoaded) {
+  //       await AdMobService.instance.showInterstitialAd(
+  //         onAdDismissed: () {
+  //           // Navigate after ad is dismissed
+  //           if (mounted) {
+  //             context.go(route);
+  //           }
+  //         },
+  //       );
+  //     } else {
+  //       // If no ad is loaded, navigate directly
+  //       if (mounted) {
+  //         context.go(route);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     // If ad fails, navigate directly
+  //     if (mounted) {
+  //       context.go(route);
+  //     }
+  //   }
+  // }
 
   void _showLanguageDialogIfNeeded() async {
     // Wait a bit for the home screen to settle
@@ -830,12 +830,15 @@ class _HomeScreenState extends State<HomeScreen>
             },
           );
           
-          // Show interstitial ad before navigating to predict screen
-          if (item['route'] == '/Predict') {
-            _showInterstitialAdAndNavigate(item['route']);
-          } else {
-            context.go(item['route']);
-          }
+          // Show interstitial ad before navigating to predict screen (commented out - AdMob account not ready)
+          // if (item['route'] == '/Predict') {
+          //   _showInterstitialAdAndNavigate(item['route']);
+          // } else {
+          //   context.go(item['route']);
+          // }
+          
+          // Direct navigation without ads
+          context.go(item['route']);
         }
       },
       child: Column(
@@ -1118,7 +1121,10 @@ class _HomeScreenState extends State<HomeScreen>
                 },
               );
               
-              context.go('/result-details', extra: result.uniqueId);
+              context.go('/result-details', extra: {
+                'uniqueId': result.uniqueId,
+                'isNew': result.isNew,
+              });
             },
             borderRadius:
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
@@ -1260,7 +1266,10 @@ class _HomeScreenState extends State<HomeScreen>
                           },
                         );
                         
-                        context.go('/result-details', extra: result.uniqueId);
+                        context.go('/result-details', extra: {
+                          'uniqueId': result.uniqueId,
+                          'isNew': result.isNew,
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.brightness == Brightness.light

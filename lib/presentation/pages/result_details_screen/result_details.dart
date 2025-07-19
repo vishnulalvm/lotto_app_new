@@ -14,15 +14,17 @@ import 'package:lotto_app/presentation/pages/result_details_screen/widgets/dynam
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:lotto_app/data/services/admob_service.dart';
+// import 'package:lotto_app/data/services/admob_service.dart';
 import 'dart:async';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
   final String? uniqueId;
+  final bool isNew;
 
   const LotteryResultDetailsScreen({
     super.key,
     this.uniqueId,
+    this.isNew = false,
   });
 
   @override
@@ -55,9 +57,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   // Refresh state tracking
   bool _isRefreshing = false;
   
-  // Ad state tracking
-  bool _hasShownRewardedAd = false;
-  bool _isRewardedAdReady = false;
+  // Ad state tracking (commented out - AdMob account not ready)
+  // bool _hasShownRewardedAd = false;
+  // bool _isRewardedAdReady = false;
 
   // Auto-scroll functionality
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
@@ -103,15 +105,15 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       _checkIfSaved();
     }
 
-    // Check if rewarded ad is ready
-    _checkRewardedAdStatus();
+    // Check if rewarded ad is ready (commented out - AdMob account not ready)
+    // _checkRewardedAdStatus();
 
-    // Show rewarded ad after 5 seconds if not shown yet
-    Timer(const Duration(seconds: 5), () {
-      if (mounted && !_hasShownRewardedAd) {
-        _showRewardedAdIfReady();
-      }
-    });
+    // Show rewarded ad after 5 seconds if not shown yet (commented out - AdMob account not ready)
+    // Timer(const Duration(seconds: 5), () {
+    //   if (mounted && !_hasShownRewardedAd) {
+    //     _showRewardedAdIfReady();
+    //   }
+    // });
   }
 
   Future<void> _initializeSavedResultsService() async {
@@ -532,7 +534,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   // Helper method to check if it's live hours
   bool get _isLiveHours {
     final now = DateTime.now();
-    return now.hour >= 15 && now.hour < 16;
+    return (now.hour >= 15 && now.hour < 16) || 
+           (now.hour == 16 && now.minute <= 20);
   }
 
   // Helper method to check if result is today's and live
@@ -799,67 +802,67 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     }
   }
 
-  // Ad Methods
-  void _checkRewardedAdStatus() {
-    setState(() {
-      _isRewardedAdReady = AdMobService.instance.isRewardedAdLoaded;
-    });
-  }
+  // Ad Methods (commented out - AdMob account not ready)
+  // void _checkRewardedAdStatus() {
+  //   setState(() {
+  //     _isRewardedAdReady = AdMobService.instance.isRewardedAdLoaded;
+  //   });
+  // }
 
-  void _showRewardedAdIfReady() {
-    if (_isRewardedAdReady && !_hasShownRewardedAd) {
-      _showRewardedAd();
-    }
-  }
+  // void _showRewardedAdIfReady() {
+  //   if (_isRewardedAdReady && !_hasShownRewardedAd) {
+  //     _showRewardedAd();
+  //   }
+  // }
 
-  Future<void> _showRewardedAd() async {
-    if (!_isRewardedAdReady || _hasShownRewardedAd) return;
+  // Future<void> _showRewardedAd() async {
+  //   if (!_isRewardedAdReady || _hasShownRewardedAd) return;
 
-    try {
-      await AdMobService.instance.showRewardedAd(
-        onUserEarnedReward: (ad, reward) {
-          // User earned reward
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.star, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Thanks for watching! You earned ${reward.amount} ${reward.type}'),
-                  ],
-                ),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        },
-        onAdDismissed: () {
-          setState(() {
-            _hasShownRewardedAd = true;
-            _isRewardedAdReady = false;
-          });
-        },
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Ad failed to load'),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
+  //   try {
+  //     await AdMobService.instance.showRewardedAd(
+  //       onUserEarnedReward: (ad, reward) {
+  //         // User earned reward
+  //         if (mounted) {
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             SnackBar(
+  //               content: Row(
+  //                 children: [
+  //                   Icon(Icons.star, color: Colors.white),
+  //                   SizedBox(width: 8),
+  //                   Text('Thanks for watching! You earned ${reward.amount} ${reward.type}'),
+  //                 ],
+  //               ),
+  //               backgroundColor: Colors.green,
+  //               duration: Duration(seconds: 3),
+  //             ),
+  //           );
+  //         }
+  //       },
+  //       onAdDismissed: () {
+  //         setState(() {
+  //           _hasShownRewardedAd = true;
+  //           _isRewardedAdReady = false;
+  //         });
+  //       },
+  //     );
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Row(
+  //             children: [
+  //               Icon(Icons.error, color: Colors.white),
+  //               SizedBox(width: 8),
+  //               Text('Ad failed to load'),
+  //             ],
+  //           ),
+  //           backgroundColor: Colors.red,
+  //           duration: Duration(seconds: 2),
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -914,8 +917,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
             builder: (context, state) {
               if (state is LotteryResultDetailsLoaded &&
                   _allLotteryNumbers.isNotEmpty) {
-                if (_isLiveHours) {
-                  // Show refresh button during live hours
+                if (widget.isNew && _isLiveHours) {
+                  // Show refresh button only for new lottery during live hours
                   return Positioned(
                     bottom: 20,
                     left: 16,

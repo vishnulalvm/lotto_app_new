@@ -4,17 +4,14 @@ import 'package:lotto_app/presentation/pages/lotto_point_screen/lotto_point_scre
 import 'package:lotto_app/presentation/pages/probility_screen/probability_barcode_scanner.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/scratch_card_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:lotto_app/presentation/pages/ad_dialog/ad_dialog.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/barcode_scanner_screen.dart';
 import 'package:lotto_app/presentation/pages/claim_screen/claim_screen.dart';
 import 'package:lotto_app/presentation/pages/home_screen/home_screen.dart';
 import 'package:lotto_app/presentation/pages/login_screen/login_screen.dart';
 import 'package:lotto_app/presentation/pages/news_screen/news_screen.dart';
-import 'package:lotto_app/presentation/pages/notification_screen/notification_screen.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/predict_screen.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/result_details.dart';
 import 'package:lotto_app/presentation/pages/save_result_screen/save_result_screen.dart';
-import 'package:lotto_app/presentation/pages/search_screen/search_screen.dart';
 import 'package:lotto_app/presentation/pages/settings_screen/setting_screen.dart';
 import 'package:lotto_app/presentation/pages/splash_screen/splash_screen.dart';
 import 'package:lotto_app/presentation/pages/live_video_screen/live_video_screen.dart';
@@ -76,19 +73,30 @@ class AppRouter {
             builder: (context, state) => const HomeScreen(),
             routes: [
               // Result screens
-              GoRoute(
-                path: 'rewarded-ad/:title',
-                name: RouteNames.rewardedAd,
-                builder: (context, state) => RewardedAdScreen(
-                  resultTitle:
-                      Uri.decodeComponent(state.pathParameters['title'] ?? ''),
-                ),
-              ),
+              // GoRoute(
+              //   path: 'rewarded-ad/:title',
+              //   name: RouteNames.rewardedAd,
+              //   builder: (context, state) => RewardedAdScreen(
+              //     resultTitle:
+              //         Uri.decodeComponent(state.pathParameters['title'] ?? ''),
+              //   ),
+              // ),
               GoRoute(
                 path: '/result-details',
                 builder: (context, state) {
-                  final uniqueId = state.extra as String?;
-                  return LotteryResultDetailsScreen(uniqueId: uniqueId ?? "");
+                  if (state.extra is Map) {
+                    final extra = state.extra as Map<String, dynamic>;
+                    final uniqueId = extra['uniqueId'] as String?;
+                    final isNew = extra['isNew'] as bool? ?? false;
+                    return LotteryResultDetailsScreen(
+                      uniqueId: uniqueId ?? "",
+                      isNew: isNew,
+                    );
+                  } else {
+                    // Backward compatibility for string-only extra
+                    final uniqueId = state.extra as String?;
+                    return LotteryResultDetailsScreen(uniqueId: uniqueId ?? "");
+                  }
                 },
               ),
 
@@ -111,7 +119,8 @@ class AppRouter {
               GoRoute(
                 path: '/probability_barcode-scanner',
                 name: RouteNames.probabilityBarcodeScanner,
-                builder: (context, state) => const ProbabilityBarcodeScannerScreen(),
+                builder: (context, state) =>
+                    const ProbabilityBarcodeScannerScreen(),
               ),
               GoRoute(
                 path: '/result/scratch',
@@ -122,20 +131,11 @@ class AppRouter {
                 },
               ),
               GoRoute(
-                path: 'notifications',
-                name: RouteNames.notifications,
-                builder: (context, state) => const NotificationScreen(),
-              ),
-              GoRoute(
                 path: 'predict',
                 name: RouteNames.predict,
                 builder: (context, state) => const PredictScreen(),
               ),
-              GoRoute(
-                path: 'search',
-                name: RouteNames.search,
-                builder: (context, state) => const SearchScreen(),
-              ),
+
               GoRoute(
                 path: 'claim',
                 name: RouteNames.claimScreen,

@@ -25,7 +25,6 @@ import 'package:lotto_app/data/repositories/live_video_screen/live_video_reposit
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
-import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
@@ -49,6 +48,13 @@ import 'package:lotto_app/routes/route_names.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:async';
+
+// Singleton connectivity service to avoid multiple instances
+ConnectivityService? _connectivityServiceInstance;
+ConnectivityService _getConnectivityService() {
+  return _connectivityServiceInstance ??= ConnectivityService();
+}
 
 // Add this function to create notification channel
 Future<void> createNotificationChannel() async {
@@ -57,6 +63,11 @@ Future<void> createNotificationChannel() async {
     'Default Notifications',
     description: 'Channel for default notifications',
     importance: Importance.high,
+    playSound: true,
+    enableLights: true,
+    enableVibration: true,
+    showBadge: true,
+
   );
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -71,34 +82,25 @@ Future<void> createNotificationChannel() async {
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialize Firebase if not already initialized
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print('Handling background message: ${message.messageId}');
-  print('Message data: ${message.data}');
-  print('Message notification: ${message.notification?.title}');
   
   if (kDebugMode) {
-    print('Background message received: ${message.messageId}');
-    print('Message data: ${message.data}');
+    debugPrint('🔔 Background message received: ${message.messageId}');
+    debugPrint('📱 Message data: ${message.data}');
+    debugPrint('🔔 Message notification: ${message.notification?.title}');
   }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize critical services in parallel
+  // Initialize only the most critical services for app startup
   await Future.wait([
     EasyLocalization.ensureInitialized(),
     Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
-    AdMobService.initialize(),
   ]);
   
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
-  // Create notification channel
-  await createNotificationChannel();
-  
-  // Preload ads
-  AdMobService.instance.preloadAds();
 
   runApp(
     EasyLocalization(
@@ -122,7 +124,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        // Add ThemeBloc to the providers
+        // Critical BLoCs - loaded immediately
         BlocProvider(
           create: (context) =>
               ThemeBloc(themeService: ThemeService())..add(ThemeInitialized()),
@@ -141,24 +143,27 @@ class MyApp extends StatelessWidget {
               HomeScreenResultsRepository(
                 HomeScreenResultsApiService(),
                 HomeScreenCacheRepositoryImpl(),
-                ConnectivityService(),
+                _getConnectivityService(),
               ),
             ),
-            ConnectivityService(),
+            _getConnectivityService(),
           ),
         ),
+        // Non-critical BLoCs - lazy loaded
         BlocProvider(
+          lazy: true,
           create: (context) => LotteryResultDetailsBloc(
             LotteryResultDetailsUseCase(
               LotteryResultDetailsRepository(
                 LotteryResultDetailsApiService(),
                 ResultDetailsCacheRepositoryImpl(),
-                ConnectivityService(),
+                _getConnectivityService(),
               ),
             ),
           ),
         ),
         BlocProvider(
+          lazy: true,
           create: (context) => TicketCheckBloc(
             TicketCheckUseCase(
               TicketCheckRepository(
@@ -168,6 +173,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         BlocProvider(
+          lazy: true,
           create: (context) => NewsBloc(
             newsUseCase: NewsUseCase(
               NewsRepositoryImpl(
@@ -177,6 +183,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         BlocProvider(
+          lazy: true,
           create: (context) => PredictBloc(
             PredictUseCase(
               PredictRepositoryImpl(
@@ -186,6 +193,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         BlocProvider(
+          lazy: true,
           create: (context) => LiveVideoBloc(
             LiveVideoUseCase(
               LiveVideoRepositoryImpl(
@@ -195,6 +203,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         BlocProvider(
+          lazy: true,
           create: (context) => ProbabilityBloc(
             useCase: ProbabilityUseCase(
               repository: ProbabilityRepositoryImpl(
