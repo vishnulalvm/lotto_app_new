@@ -25,6 +25,7 @@ import 'package:lotto_app/data/repositories/live_video_screen/live_video_reposit
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/data/services/app_update_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
@@ -44,45 +45,30 @@ import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_bloc.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
 import 'package:lotto_app/routes/route_names.dart';
-// import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 
-// Singleton connectivity service to avoid multiple instances
+// Singleton services to avoid multiple instances
 ConnectivityService? _connectivityServiceInstance;
 ConnectivityService _getConnectivityService() {
   return _connectivityServiceInstance ??= ConnectivityService();
 }
 
-// Add this function to create notification channel
-Future<void> createNotificationChannel() async {
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'default_channel', // This must match your AndroidManifest.xml
-    'Default Notifications',
-    description: 'Channel for default notifications',
-    importance: Importance.high,
-    playSound: true,
-    enableLights: true,
-    enableVibration: true,
-    showBadge: true,
-
-  );
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
-}
+// Lazy service creation to improve startup performance
+final AuthApiService _authApiService = AuthApiService();
+final UserService _userService = UserService();
+final HomeScreenResultsApiService _homeScreenApiService =
+    HomeScreenResultsApiService();
+final HomeScreenCacheRepositoryImpl _homeScreenCacheRepo =
+    HomeScreenCacheRepositoryImpl();
+final ThemeService _themeService = ThemeService();
 
 // Top-level function for background message handling
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialize Firebase if not already initialized
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   if (kDebugMode) {
     debugPrint('🔔 Background message received: ${message.messageId}');
     debugPrint('📱 Message data: ${message.data}');
@@ -92,15 +78,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize only the most critical services for app startup
   await Future.wait([
     EasyLocalization.ensureInitialized(),
     Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
   ]);
-  
+
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Initialize app update service (non-blocking)
+  AppUpdateService().initialize().catchError((error) {
+    if (kDebugMode) {
+      debugPrint('❌ Failed to initialize app update service: $error');
+    }
+  });
 
   runApp(
     EasyLocalization(
@@ -127,13 +120,13 @@ class MyApp extends StatelessWidget {
         // Critical BLoCs - loaded immediately
         BlocProvider(
           create: (context) =>
-              ThemeBloc(themeService: ThemeService())..add(ThemeInitialized()),
+              ThemeBloc(themeService: _themeService)..add(ThemeInitialized()),
         ),
         BlocProvider(
           create: (context) => AuthBloc(
             repository: AuthRepository(
-              apiService: AuthApiService(),
-              userService: UserService(),
+              apiService: _authApiService,
+              userService: _userService,
             ),
           ),
         ),
@@ -141,8 +134,8 @@ class MyApp extends StatelessWidget {
           create: (context) => HomeScreenResultsBloc(
             HomeScreenResultsUseCase(
               HomeScreenResultsRepository(
-                HomeScreenResultsApiService(),
-                HomeScreenCacheRepositoryImpl(),
+                _homeScreenApiService,
+                _homeScreenCacheRepo,
                 _getConnectivityService(),
               ),
             ),

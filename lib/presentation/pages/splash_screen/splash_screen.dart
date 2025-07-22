@@ -25,12 +25,31 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _scaleController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  bool _hasPreloadedImages = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _initializeApp();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Move precache to didChangeDependencies where MediaQuery is available
+    if (!_hasPreloadedImages) {
+      _precacheImages();
+      _hasPreloadedImages = true;
+    }
+  }
+
+  void _precacheImages() {
+    // Precache logo to improve initial loading
+    precacheImage(
+      const AssetImage('assets/icons/logo_foreground.png'),
+      context,
+    );
   }
 
   void _initializeAnimations() {
@@ -58,31 +77,30 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       // Phase 1: Critical services only
       await HiveService.init();
-      
+
       // Phase 2: Essential services in parallel
       await Future.wait([
         ConnectivityService().initialize(),
         SavedResultsService.init(),
       ]);
-      
+
       // Phase 3: Navigate early to prevent UI blocking
       await Future.delayed(const Duration(milliseconds: 1500));
       await _checkLoginStatus();
-      
+
       // Phase 4: Initialize remaining services in background after navigation
       unawaited(_initializeBackgroundServices());
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('🚨 Splash screen initialization error: $e');
       }
-      
+
       // Still proceed to navigate
       await Future.delayed(const Duration(milliseconds: 1000));
       await _checkLoginStatus();
     }
   }
-  
+
   /// Initialize heavy services in background after navigation
   Future<void> _initializeBackgroundServices() async {
     try {
@@ -92,9 +110,9 @@ class _SplashScreenState extends State<SplashScreen>
         FirebaseMessagingService.initialize(),
         _initializeAdMobServices(),
       ]);
-      
+
       CacheManager.initialize();
-      
+
       if (kDebugMode) {
         debugPrint('✅ Background services initialized');
       }
@@ -109,10 +127,10 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       // Initialize AdMob service
       await AdMobService.initialize();
-      
+
       // Create notification channel in parallel
       unawaited(_createNotificationChannel());
-      
+
       // Preload ads with longer delay to prevent blocking
       unawaited(Future.delayed(const Duration(seconds: 3), () {
         AdMobService.instance.preloadAds();
@@ -137,7 +155,8 @@ class _SplashScreenState extends State<SplashScreen>
           FlutterLocalNotificationsPlugin();
 
       await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     } catch (e) {
       if (kDebugMode) {
@@ -158,21 +177,21 @@ class _SplashScreenState extends State<SplashScreen>
       if (kDebugMode) {
         debugPrint('🔍 Checking login status...');
       }
-      
+
       final prefs = await SharedPreferences.getInstance();
       final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-      
+
       if (kDebugMode) {
         debugPrint('🔑 Login status: $isLoggedIn');
       }
-      
+
       if (!mounted) {
         if (kDebugMode) {
           debugPrint('⚠️ Widget not mounted, skipping navigation');
         }
         return;
       }
-      
+
       if (isLoggedIn) {
         if (kDebugMode) {
           debugPrint('🏠 Navigating to home screen');
@@ -184,7 +203,7 @@ class _SplashScreenState extends State<SplashScreen>
         }
         context.go('/login');
       }
-      
+
       if (kDebugMode) {
         debugPrint('✅ Navigation completed from splash screen');
       }
@@ -192,7 +211,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (kDebugMode) {
         debugPrint('🚨 Error in _checkLoginStatus: $e');
       }
-      
+
       if (mounted) {
         if (kDebugMode) {
           debugPrint('🔄 Fallback navigation to login');
@@ -223,9 +242,11 @@ class _SplashScreenState extends State<SplashScreen>
                         'assets/icons/logo_foreground.png',
                         width: 200,
                         height: 200,
-                        cacheWidth: 200,
-                        cacheHeight: 200,
-                        filterQuality: FilterQuality.medium,
+                        cacheWidth: 400, // 2x for better quality on high DPI
+                        cacheHeight: 400,
+                        filterQuality: FilterQuality.low, // Faster loading
+                        fit: BoxFit.contain,
+                        isAntiAlias: true,
                       ),
                     ),
                     const SizedBox(height: 24),
