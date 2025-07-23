@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +34,10 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _fabAnimation;
   late AnimationController _blinkAnimationController;
   late Animation<double> _blinkAnimation;
+  late AnimationController _rotationAnimationController;
+  late Animation<double> _rotationAnimation;
+  late AnimationController _shimmerAnimationController;
+  late Animation<double> _shimmerAnimation;
   bool _isExpanded = true;
   bool _isScrollingDown = false;
   DateTime? _lastRefreshTime;
@@ -99,6 +104,37 @@ class _HomeScreenState extends State<HomeScreen>
     // Start the blinking animation and repeat
     _blinkAnimationController.repeat(reverse: true);
 
+    // Initialize rotation animation controller for lotto points icon
+    _rotationAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500), // 1.5 second per rotation
+      vsync: this,
+    );
+    
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 3.0, // 3 full rotations (3 turns = 1080 degrees)
+    ).animate(CurvedAnimation(
+      parent: _rotationAnimationController,
+      curve: Curves.easeInOutCubic,
+    ));
+    
+    // Initialize shimmer animation controller for glance effect
+    _shimmerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000), // 2 second shimmer
+      vsync: this,
+    );
+    
+    _shimmerAnimation = Tween<double>(
+      begin: -1.0,
+      end: 2.0, // Move across the button
+    ).animate(CurvedAnimation(
+      parent: _shimmerAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start animations when app opens - repeat for more visibility
+    _startAttentionAnimations();
+
     _showLanguageDialogIfNeeded();
     
     // Preload common assets for better performance
@@ -134,6 +170,8 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.dispose();
     _fabAnimationController.dispose();
     _blinkAnimationController.dispose();
+    _rotationAnimationController.dispose();
+    _shimmerAnimationController.dispose();
     super.dispose();
   }
 
@@ -162,6 +200,44 @@ class _HomeScreenState extends State<HomeScreen>
   //     }
   //   }
   // }
+
+  /// Start attention-grabbing animations for lotto points button
+  void _startAttentionAnimations() async {
+    // Delay the start slightly for better UX
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    if (mounted) {
+      // Start both animations simultaneously
+      _rotationAnimationController.forward();
+      _shimmerAnimationController.forward();
+      
+      // Listen for rotation completion to repeat
+      _rotationAnimationController.addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          // Wait a bit then repeat (3 times total)
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              _rotationAnimationController.reset();
+              _rotationAnimationController.forward();
+            }
+          });
+        }
+      });
+      
+      // Listen for shimmer completion to repeat
+      _shimmerAnimationController.addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          // Wait a bit then repeat
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              _shimmerAnimationController.reset();
+              _shimmerAnimationController.forward();
+            }
+          });
+        }
+      });
+    }
+  }
 
   void _showLanguageDialogIfNeeded() async {
     // Wait a bit for the home screen to settle
@@ -634,39 +710,82 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           child: GestureDetector(
             onTap: () => context.go('/lottoPoints'),
-            child: Container(
-              height: AppResponsive.fontSize(context, 26),
-              padding: EdgeInsets.symmetric(
-                horizontal: AppResponsive.spacing(context, 6),
-                vertical: AppResponsive.spacing(context, 4),
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 204, 61, 25), // Gold
-                    Color.fromARGB(255, 206, 71, 4), // Light Gold
-                    Color.fromARGB(255, 229, 92, 38), // Gold
+            child: AnimatedBuilder(
+              animation: _shimmerAnimation,
+              builder: (context, child) {
+                return Stack(
+                  children: [
+                    // Original button
+                    Container(
+                      height: AppResponsive.fontSize(context, 26),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppResponsive.spacing(context, 6),
+                        vertical: AppResponsive.spacing(context, 4),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color.fromARGB(255, 204, 61, 25), // Gold
+                            Color.fromARGB(255, 206, 71, 4), // Light Gold
+                            Color.fromARGB(255, 229, 92, 38), // Gold
+                          ],
+                          stops: [0.0, 0.5, 1.0],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 18),
+                        ),
+                        border: Border.all(
+                          color: Color(0xFFFFE55C).withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                    // Shimmer overlay
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 18),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.white.withValues(alpha: 0.4),
+                                Colors.transparent,
+                              ],
+                              stops: [0.0, 0.5, 1.0],
+                              begin: Alignment(_shimmerAnimation.value - 1, 0),
+                              end: Alignment(_shimmerAnimation.value, 0),
+                              transform: GradientRotation(math.pi / 4), // 45 degree angle
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
-                  stops: [0.0, 0.5, 1.0],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(
-                  AppResponsive.spacing(context, 18),
-                ),
-                border: Border.all(
-                  color: Color(0xFFFFE55C).withValues(alpha: 0.5),
-                  width: 1,
-                ),
-              ),
+                );
+              },
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/icons/lotto_points.png',
-                    width: AppResponsive.fontSize(context, 14),
-                    height: AppResponsive.fontSize(context, 14),
-                    fit: BoxFit.contain,
+                  AnimatedBuilder(
+                    animation: _rotationAnimation,
+                    builder: (context, child) {
+                      return Transform.rotate(
+                        angle: _rotationAnimation.value * 2 * math.pi, // Convert to radians (3 full rotations)
+                        child: child,
+                      );
+                    },
+                    child: Image.asset(
+                      'assets/icons/lotto_points.png',
+                      width: AppResponsive.fontSize(context, 14),
+                      height: AppResponsive.fontSize(context, 14),
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   SizedBox(width: AppResponsive.spacing(context, 4)),
                   BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(

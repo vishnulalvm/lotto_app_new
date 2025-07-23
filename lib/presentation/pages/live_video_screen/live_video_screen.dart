@@ -12,6 +12,7 @@ import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.d
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_event.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_state.dart';
 import 'package:lotto_app/presentation/pages/live_video_screen/widgets/video_player_widget.dart';
+import 'package:lotto_app/presentation/widgets/native_ad_video_widget.dart';
 
 class LiveVideoScreen extends StatefulWidget {
   const LiveVideoScreen({super.key});
@@ -306,8 +307,20 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
       return _buildEmptyState(theme);
     }
 
+    List<Widget> videoWidgets = [];
+    
+    for (int i = 0; i < videos.length; i++) {
+      // Add video card
+      videoWidgets.add(_buildVideoCard(videos[i], theme));
+      
+      // Add native ad after every 2 videos (but not after the last one)
+      if ((i + 1) % 2 == 0 && i < videos.length - 1) {
+        videoWidgets.add(const NativeAdVideoWidget());
+      }
+    }
+
     return Column(
-      children: videos.map((video) => _buildVideoCard(video, theme)).toList(),
+      children: videoWidgets,
     );
   }
 

@@ -324,5 +324,10 @@
   "not_a_guarantee": ", गारंटी नहीं है।",
   "scan_another": "दूसरा स्कैन करें",
   "scanner_ready": "स्कैनर नए स्कैन के लिए तैयार है",
-  "scanner_reset_error": "स्कैनर रीसेट करने में त्रुटि"
+  "scanner_reset_error": "स्कैनर रीसेट करने में त्रुटि",
+  "sponsored": "प्रायोजित",
+  "sponsored_content": "प्रायोजित सामग्री",
+  "promoted": "प्रचारित",
+  "discover_amazing_products": "आपके लिए तैयार किए गए अद्भुत उत्पादों और सेवाओं की खोज करें",
+  "learn_more": "और जानें"
 }

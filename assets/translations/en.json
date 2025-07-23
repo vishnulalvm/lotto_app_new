@@ -446,5 +446,10 @@
   "not_a_guarantee": ", not a guarantee.",
   "scan_another": "Scan Another",
   "scanner_ready": "Scanner is ready for new scan",
-  "scanner_reset_error": "Error resetting scanner"
+  "scanner_reset_error": "Error resetting scanner",
+  "sponsored": "Sponsored",
+  "sponsored_content": "Sponsored Content",
+  "promoted": "Promoted",
+  "discover_amazing_products": "Discover amazing products and services tailored for you",
+  "learn_more": "Learn More"
 }
