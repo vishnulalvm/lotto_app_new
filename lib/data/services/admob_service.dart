@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdMobService {
@@ -11,11 +12,13 @@ class AdMobService {
   static const String _testRewardedAdUnitId = 'ca-app-pub-3940256099942544/5224354917';
   static const String _testInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   static const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+  static const String _testNativeAdUnitId = 'ca-app-pub-3940256099942544/2247696110';
 
   // Production Ad Unit IDs (to be updated when you create your AdMob account)
   static const String _prodRewardedAdUnitId = 'ca-app-pub-3940256099942544/5224354917';
   static const String _prodInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   static const String _prodBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+  static const String _prodNativeAdUnitId = 'ca-app-pub-3940256099942544/2247696110';
 
   // Ad instances
   RewardedAd? _rewardedAd;
@@ -51,6 +54,10 @@ class AdMobService {
 
   String get bannerAdUnitId {
     return kDebugMode ? _testBannerAdUnitId : _prodBannerAdUnitId;
+  }
+
+  String get nativeAdUnitId {
+    return kDebugMode ? _testNativeAdUnitId : _prodNativeAdUnitId;
   }
 
   // Rewarded Ad Methods
@@ -263,6 +270,47 @@ class AdMobService {
     disposeRewardedAd();
     disposeInterstitialAd();
     disposeBannerAd();
+  }
+
+  // Native Ad Methods
+  NativeAd createNativeAd({
+    required NativeAdListener listener,
+    NativeTemplateStyle? templateStyle,
+  }) {
+    return NativeAd(
+      adUnitId: nativeAdUnitId,
+      listener: listener,
+      request: const AdRequest(),
+      nativeTemplateStyle: templateStyle ?? NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 10.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: Colors.blue,
+          style: NativeTemplateFontStyle.monospace,
+          size: 16.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black87,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black54,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.italic,
+          size: 14.0,
+        ),
+        tertiaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black45,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.normal,
+          size: 12.0,
+        ),
+      ),
+    );
   }
 
   // Preload ads

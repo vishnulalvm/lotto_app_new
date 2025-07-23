@@ -110,11 +110,11 @@ class _HomeScreenState extends State<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Preload fallback carousel images
       const fallbackImages = [
-        'assets/images/five.jpeg',
-        'assets/images/four.jpeg',
-        'assets/images/seven.jpeg',
-        'assets/images/six.jpeg',
-        'assets/images/tree.jpeg',
+        'assets/images/bhagyadhara.jpg',
+        'assets/images/dhanalakshmi.jpg',
+        'assets/images/karunya-plus.jpg',
+        'assets/images/karunya.jpg',
+        'assets/images/sthreesakthi.jpg',
       ];
       
       for (final assetPath in fallbackImages) {
@@ -531,11 +531,11 @@ class _HomeScreenState extends State<HomeScreen>
                           autoPlay: true,
                           autoPlayInterval: const Duration(seconds: 4),
                           fallbackImages: const [
-                            'assets/images/five.jpeg',
-                            'assets/images/four.jpeg',
-                            'assets/images/seven.jpeg',
-                            'assets/images/six.jpeg',
-                            'assets/images/tree.jpeg',
+                            'assets/images/sthreesakthi.jpg',
+                            'assets/images/bhagyadhara.jpg',
+                            'assets/images/karunya-plus.jpg',
+                            'assets/images/karunya.jpg',
+                            'assets/images/suvarnna-keralam.jpg',
                           ],
                         );
                       },

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
+import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_event.dart';
+import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_state.dart';
 import 'package:lotto_app/presentation/pages/lotto_point_screen/widget/backgrond.dart';
+import 'package:lotto_app/presentation/widgets/native_ad_widget.dart';
 
 class LottoPointsScreen extends StatefulWidget {
   const LottoPointsScreen({super.key});
@@ -14,85 +20,59 @@ class LottoPointsScreen extends StatefulWidget {
 class _LottoPointsScreenState extends State<LottoPointsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final int totalPoints = 1250;
+  final UserService _userService = UserService();
+
+  // Dummy data for redeem options
+  final List<Map<String, dynamic>> redeemOptions = [
+    {
+      'name': 'BHAGYATHARA LOTTERY',
+      'image': 'assets/images/bhagyadhara.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+    {
+      'name': 'DHANALEKSHMI LOTTERY',
+      'image': 'assets/images/dhanalakshmi.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+    {
+      'name': 'KARUNYA PLUS LOTTERY',
+      'image': 'assets/images/karunya-plus.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+    {
+      'name': 'KARUNYA LOTTERY',
+      'image': 'assets/images/karunya.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+    {
+      'name': 'SAMRUDHI LOTTERY',
+      'image': 'assets/images/samrudhi.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+       {
+      'name': 'STHREE SAKTHI LOTTERY',
+      'image': 'assets/images/sthreesakthi.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+           {
+      'name': 'SUVARNA KERALAM LOTTERY',
+      'image': 'assets/images/suvarnna-keralam.jpg',
+      'points': 1000,
+      'price': '₹50'
+    },
+    
+  ];
 
   // Animation variables
   late AnimationController _animationController;
   late Animation<double> _pointsAnimation;
   int _lastAddedPoints = 0;
-
-  // Dummy data for point history
-  final List<Map<String, dynamic>> pointHistory = [
-    {
-      'lottery': 'Akshaya AK 620',
-      'points': 50,
-      'date': '2024-06-08',
-      'type': 'earned',
-      'description': 'ticket_purchase_bonus'.tr()
-    },
-    {
-      'lottery': 'Win Win 520',
-      'points': 25,
-      'date': '2024-06-07',
-      'type': 'earned',
-      'description': 'daily_login_bonus'.tr()
-    },
-    {
-      'lottery': 'Karunya Plus KN 520',
-      'points': 100,
-      'date': '2024-06-06',
-      'type': 'earned',
-      'description': 'referral_bonus'.tr()
-    },
-    {
-      'lottery': 'Nirmal NR 385',
-      'points': 75,
-      'date': '2024-06-05',
-      'type': 'earned',
-      'description': 'prediction_bonus'.tr()
-    },
-    {
-      'lottery': 'Pournami RN 645',
-      'points': 30,
-      'date': '2024-06-03',
-      'type': 'earned',
-      'description': 'news_reading_bonus'.tr()
-    },
-  ];
-
-  // Dummy data for redeem options
-  final List<Map<String, dynamic>> redeemOptions = [
-    {
-      'name': 'Akshaya AK 621',
-      'image': 'assets/images/five.jpeg',
-      'points': 500,
-      'price': '₹80'
-    },
-    {
-      'name': 'Win Win 521',
-      'image': 'assets/images/four.jpeg',
-      'points': 400,
-      'price': '₹30'
-    },
-    {
-      'name': 'Karunya Plus KN 521',
-      'image': 'assets/images/seven.jpeg',
-      'points': 600,
-      'price': '₹40'
-    },
-    {
-      'name': 'Nirmal NR 386',
-      'image': 'assets/images/six.jpeg',
-      'points': 450,
-      'price': '₹40'
-    },
-    {
-      'name': 'Pournami RN 646',
-      'image': 'assets/images/tree.jpeg',
-      'points': 550,
-      'price': '₹40'
-    },
-  ];
 
   @override
   void initState() {
@@ -105,13 +85,33 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       vsync: this,
     );
 
-    // Get the last added points (most recent earned points)
-    _lastAddedPoints = _getLastAddedPoints();
+    // Initialize animation with default values
+    _pointsAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
 
+    // Fetch user points data
+    _fetchUserPoints();
+  }
+
+  Future<void> _fetchUserPoints() async {
+    final phoneNumber = await _userService.getPhoneNumber();
+    if (phoneNumber != null && mounted) {
+      context.read<UserPointsBloc>().add(
+            FetchUserPointsEvent(phoneNumber: phoneNumber),
+          );
+    }
+  }
+
+  void _startPointsAnimation(int totalPoints, int lastAddedPoints) {
     // Calculate starting points (total - last added)
-    int startingPoints = totalPoints - _lastAddedPoints;
+    int startingPoints = totalPoints - lastAddedPoints;
 
-    // Create animation from starting points to total points
+    // Update animation values
     _pointsAnimation = Tween<double>(
       begin: startingPoints.toDouble(),
       end: totalPoints.toDouble(),
@@ -120,22 +120,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       curve: Curves.easeInOut,
     ));
 
-    // Start animation when screen opens
-    _startPointsAnimation();
-  }
-
-  int _getLastAddedPoints() {
-    // Find the most recent earned points from history
-    for (var item in pointHistory) {
-      if (item['type'] == 'earned') {
-        return item['points'] as int;
-      }
-    }
-    return 0; // Fallback if no earned points found
-  }
-
-  void _startPointsAnimation() {
-    // Add a small delay before starting animation
+    // Reset and start animation
+    _animationController.reset();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         _animationController.forward();
@@ -156,18 +142,33 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return [
-            _buildSliverAppBar(theme),
-          ];
+      body: BlocConsumer<UserPointsBloc, UserPointsState>(
+        listener: (context, state) {
+          if (state is UserPointsLoaded) {
+            // Update last added points and start animation
+            final history = state.userPoints.data.history;
+            _lastAddedPoints =
+                history.isNotEmpty ? history.first.pointsEarned : 0;
+            _startPointsAnimation(
+                state.userPoints.data.totalPoints, _lastAddedPoints);
+          }
         },
-        body: _buildTabBarView(theme),
+        builder: (context, state) {
+          return NestedScrollView(
+            headerSliverBuilder:
+                (BuildContext context, bool innerBoxIsScrolled) {
+              return [
+                _buildSliverAppBar(theme, state),
+              ];
+            },
+            body: _buildTabBarView(theme, state),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSliverAppBar(ThemeData theme) {
+  Widget _buildSliverAppBar(ThemeData theme, UserPointsState state) {
     return SliverAppBar(
       expandedHeight: AppResponsive.height(context, 25),
       floating: false,
@@ -206,27 +207,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedBuilder(
-                        animation: _pointsAnimation,
-                        builder: (context, child) {
-                          return AnimatedFlipCounter(
-                            value: _pointsAnimation.value.round(),
-                            duration: const Duration(milliseconds: 300),
-                            textStyle: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 55),
-                              fontWeight: FontWeight.bold,
-                              color: theme.primaryColor,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                      _buildPointsDisplay(theme, state),
                     ],
                   ),
                 ),
@@ -307,29 +288,168 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  Widget _buildTabBarView(ThemeData theme) {
+  Widget _buildPointsDisplay(ThemeData theme, UserPointsState state) {
+    if (state is UserPointsLoading) {
+      return CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+      );
+    } else if (state is UserPointsError) {
+      return Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: AppResponsive.fontSize(context, 40),
+          ),
+          SizedBox(height: AppResponsive.spacing(context, 8)),
+          Text(
+            'Error loading points',
+            style: TextStyle(
+              fontSize: AppResponsive.fontSize(context, 16),
+              color: Colors.red,
+            ),
+          ),
+          TextButton(
+            onPressed: _fetchUserPoints,
+            child: Text('Retry'),
+          ),
+        ],
+      );
+    } else if (state is UserPointsLoaded || state is UserPointsRefreshing) {
+      return AnimatedBuilder(
+        animation: _pointsAnimation,
+        builder: (context, child) {
+          return AnimatedFlipCounter(
+            value: _pointsAnimation.value.round(),
+            duration: const Duration(milliseconds: 300),
+            textStyle: TextStyle(
+              fontSize: AppResponsive.fontSize(context, 55),
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } else {
+      return Text(
+        '0',
+        style: TextStyle(
+          fontSize: AppResponsive.fontSize(context, 55),
+          fontWeight: FontWeight.bold,
+          color: theme.primaryColor,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildTabBarView(ThemeData theme, UserPointsState state) {
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildRedeemTab(theme),
-        _buildHistoryTab(theme),
+        _buildRedeemTab(theme, state),
+        _buildHistoryTab(theme, state),
       ],
     );
   }
 
-  Widget _buildHistoryTab(ThemeData theme) {
-    return ListView.builder(
-      padding: AppResponsive.padding(context, horizontal: 16, vertical: 16),
-      itemCount: pointHistory.length,
-      itemBuilder: (context, index) {
-        final item = pointHistory[index];
-        return _buildHistoryCard(item, theme);
-      },
-    );
+  Widget _buildHistoryTab(ThemeData theme, UserPointsState state) {
+    if (state is UserPointsLoading) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (state is UserPointsError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 50, color: Colors.red),
+            SizedBox(height: 16),
+            Text('Error loading history', style: TextStyle(fontSize: 16)),
+            TextButton(
+              onPressed: _fetchUserPoints,
+              child: Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    } else if (state is UserPointsLoaded || state is UserPointsRefreshing) {
+      final history = state is UserPointsLoaded
+          ? state.userPoints.data.history
+          : (state as UserPointsRefreshing).userPoints.data.history;
+
+      if (history.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.history,
+                size: 50,
+                color: theme.disabledColor,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No points history available',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.disabledColor,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return RefreshIndicator(
+        onRefresh: () async {
+          await _fetchUserPoints();
+        },
+        child: ListView.builder(
+          padding: AppResponsive.padding(context, horizontal: 16, vertical: 16),
+          itemCount: history.length,
+          itemBuilder: (context, index) {
+            final item = history[index];
+            return _buildHistoryCard(item, theme);
+          },
+        ),
+      );
+    } else {
+      return const Center(child: Text('No data available'));
+    }
   }
 
-  Widget _buildHistoryCard(Map<String, dynamic> item, ThemeData theme) {
-    final isEarned = item['type'] == 'earned';
+  Widget _buildHistoryCard(dynamic item, ThemeData theme) {
+    // Handle both old format (Map) and new format (PointHistoryItem)
+    final String lotteryName;
+    final String date;
+    final int points;
+    final bool isEarned;
+
+    if (item is Map<String, dynamic>) {
+      // Old format (for backward compatibility)
+      lotteryName = item['lottery'] ?? '';
+      date = item['date'] ?? '';
+      points = item['points'] ?? 0;
+      isEarned = item['type'] == 'earned' || points > 0;
+    } else {
+      // New format (PointHistoryItem) - API only returns earned points
+      lotteryName = item.lotteryName;
+      date = item.date;
+      points = item.pointsEarned;
+      isEarned = points > 0; // Consider negative points as spent
+    }
 
     return Card(
       color: theme.cardTheme.color,
@@ -369,7 +489,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['lottery'],
+                    lotteryName,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontSize: AppResponsive.fontSize(context, 16),
                       fontWeight: FontWeight.bold,
@@ -377,7 +497,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ),
                   SizedBox(height: AppResponsive.spacing(context, 4)),
                   Text(
-                    item['date'],
+                    date,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: AppResponsive.fontSize(context, 12),
                       color: theme.textTheme.bodySmall?.color
@@ -404,7 +524,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     BorderRadius.circular(AppResponsive.spacing(context, 20)),
               ),
               child: Text(
-                '${isEarned ? '+' : '-'}${item['points']}',
+                '${isEarned ? '+' : '-'}$points',
                 style: TextStyle(
                   fontSize: AppResponsive.fontSize(context, 14),
                   fontWeight: FontWeight.bold,
@@ -418,134 +538,292 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  Widget _buildRedeemTab(ThemeData theme) {
+  Widget _buildRedeemTab(ThemeData theme, UserPointsState state) {
+    int totalPoints = 0;
+
+    if (state is UserPointsLoaded) {
+      totalPoints = state.userPoints.data.totalPoints;
+    } else if (state is UserPointsRefreshing) {
+      totalPoints = state.userPoints.data.totalPoints;
+    }
+
     return Padding(
       padding: AppResponsive.padding(
         context,
         horizontal: 10,
+        vertical: 15,
       ),
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.85,
-          crossAxisSpacing: AppResponsive.spacing(context, 8),
-          mainAxisSpacing: AppResponsive.spacing(context, 8),
-        ),
-        itemCount: redeemOptions.length,
-        itemBuilder: (context, index) {
-          final item = redeemOptions[index];
-          return _buildRedeemCard(item, theme);
-        },
+      child: CustomScrollView(
+        slivers: [
+          SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.65, // Increased height to prevent overflow
+              crossAxisSpacing: AppResponsive.spacing(context, 8),
+              mainAxisSpacing: AppResponsive.spacing(context, 8),
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                // Calculate actual redeem item index considering ads
+                final adsCount = (index + 1) ~/ 3; // Number of ads before this position
+                final redeemIndex = index - adsCount;
+                
+                // Check if this position should show an ad
+                if ((index + 1) % 3 == 0 && index < (redeemOptions.length + (redeemOptions.length ~/ 2))) {
+                  return _buildNativeAdCard(theme, key: ValueKey('ad_$index'));
+                }
+                
+                // Show redeem card if we have one
+                if (redeemIndex < redeemOptions.length) {
+                  return _buildRedeemCard(
+                    redeemOptions[redeemIndex], 
+                    theme, 
+                    totalPoints,
+                    key: ValueKey('redeem_$redeemIndex'),
+                  );
+                }
+                
+                // Return empty container if no more items
+                return const SizedBox.shrink();
+              },
+              childCount: redeemOptions.length + (redeemOptions.length ~/ 2), // Redeem cards + ads
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildRedeemCard(Map<String, dynamic> item, ThemeData theme) {
+  Widget _buildNativeAdCard(ThemeData theme, {Key? key}) {
+    return NativeAdWidget(
+      key: key,
+      height: AppResponsive.height(context, 30), // Slightly taller for grid
+      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+      margin: EdgeInsets.zero, // No margin as grid handles spacing
+    );
+  }
+
+  Widget _buildRedeemCard(
+      Map<String, dynamic> item, ThemeData theme, int totalPoints, {Key? key}) {
     final canRedeem = totalPoints >= item['points'];
 
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: theme.cardTheme.elevation,
-      shape: RoundedRectangleBorder(
+    return Container(
+      key: key,
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
-        side: BorderSide(
-          color: canRedeem ? theme.primaryColor : theme.dividerTheme.color!,
-          width: canRedeem ? .50 : .5,
+        border: Border.all(
+          color: canRedeem 
+              ? theme.primaryColor.withValues(alpha: 0.3)
+              : (theme.dividerTheme.color ?? theme.colorScheme.outline).withValues(alpha: 0.3),
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: canRedeem 
+                ? theme.primaryColor.withValues(alpha: 0.05)
+                : Colors.transparent,
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: canRedeem ? () => _showComingSoonDialog() : null,
-        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
-        child: Padding(
-          padding: AppResponsive.padding(context, horizontal: 12, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Lottery Image - smaller size
-              Container(
-                height: AppResponsive.height(context, 8),
-                decoration: BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(AppResponsive.spacing(context, 8)),
-                  image: DecorationImage(
-                    image: AssetImage(item['image']),
-                    fit: BoxFit.cover,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canRedeem ? () => _showComingSoonDialog() : null,
+          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          child: Padding(
+            padding: AppResponsive.padding(context, horizontal: 12, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                // Lottery Image with modern styling
+                Container(
+                  height: AppResponsive.height(context, 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 10)),
+                    image: DecorationImage(
+                      image: AssetImage(item['image']),
+                      fit: BoxFit.cover,
                     ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: AppResponsive.spacing(context, 8)),
-
-              // Lottery Name
-              Text(
-                item['name'],
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              // Price
-              Text(
-                '${'price'.tr()}${item['price']}',
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 13),
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green,
-                ),
-              ),
-
-              const Spacer(),
-
-              // Large Points Button
-              SizedBox(
-                width: double.infinity,
-                height: AppResponsive.height(context, 4),
-                child: ElevatedButton(
-                  onPressed: canRedeem ? () => _showComingSoonDialog() : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        canRedeem ? theme.primaryColor : theme.disabledColor,
-                    foregroundColor: Colors.white,
-                    elevation: canRedeem ? 2.0 : 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 8)),
-                    ),
-                    disabledBackgroundColor: theme.disabledColor,
-                    disabledForegroundColor: theme.textTheme.bodyMedium?.color
-                        ?.withValues(alpha: 0.6),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.monetization_on,
-                        size: AppResponsive.fontSize(context, 16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
-                      SizedBox(width: AppResponsive.spacing(context, 6)),
+                    ],
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 10)),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.08),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: AppResponsive.spacing(context, 10)),
+
+                // Content section - takes remaining space
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Lottery Name (Primary text)
                       Text(
-                        '${item['points']}${'points'.tr()}',
-                        style: TextStyle(
+                        item['name'],
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontSize: AppResponsive.fontSize(context, 14),
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      SizedBox(height: AppResponsive.spacing(context, 4)),
+
+                      // Price (Secondary text)
+                      Row(
+                        children: [
+                          Text(
+                            'Price: ',
+                            style: TextStyle(
+                              fontSize: AppResponsive.fontSize(context, 11),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            item['price'],
+                            style: TextStyle(
+                              fontSize: AppResponsive.fontSize(context, 12),
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green[600],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: AppResponsive.spacing(context, 6)),
+
+                      // Redeem feature information
+                      Container(
+                        padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 6)),
+                          border: Border.all(
+                            color: theme.primaryColor.withValues(alpha: 0.15),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: AppResponsive.fontSize(context, 12),
+                              color: theme.primaryColor.withValues(alpha: 0.8),
+                            ),
+                            SizedBox(width: AppResponsive.spacing(context, 4)),
+                            Expanded(
+                              child: Text(
+                                'Use your points to get this lottery ticket',
+                                style: TextStyle(
+                                  fontSize: AppResponsive.fontSize(context, 10),
+                                  color: theme.primaryColor.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Call to Action Button - pinned to bottom
+                      Container(
+                        width: double.infinity,
+                        height: AppResponsive.height(context, 3.8),
+                        decoration: BoxDecoration(
+                          gradient: canRedeem 
+                              ? LinearGradient(
+                                  colors: [
+                                    theme.primaryColor,
+                                    theme.primaryColor.withValues(alpha: 0.8),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          color: canRedeem ? null : theme.disabledColor,
+                          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                          boxShadow: canRedeem ? [
+                            BoxShadow(
+                              color: theme.primaryColor.withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ] : null,
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: canRedeem ? () => _showComingSoonDialog() : null,
+                            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.redeem,
+                                    size: AppResponsive.fontSize(context, 14),
+                                    color: canRedeem ? Colors.white : 
+                                        theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                                  ),
+                                  SizedBox(width: AppResponsive.spacing(context, 6)),
+                                  Text(
+                                    'Redeem ${item['points']} pts',
+                                    style: TextStyle(
+                                      fontSize: AppResponsive.fontSize(context, 12),
+                                      fontWeight: FontWeight.w700,
+                                      color: canRedeem ? Colors.white : 
+                                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                                      letterSpacing: 0.1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

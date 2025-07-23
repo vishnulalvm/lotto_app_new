@@ -44,6 +44,7 @@ import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dar
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_bloc.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/routes/route_names.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -204,6 +205,10 @@ class MyApp extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        BlocProvider(
+          lazy: true,
+          create: (context) => UserPointsBloc(),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
