@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
+import 'package:lotto_app/presentation/pages/lotto_point_screen/widget/backgrond.dart';
 
 class LottoPointsScreen extends StatefulWidget {
   const LottoPointsScreen({super.key});
@@ -14,7 +15,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final int totalPoints = 1250;
-  
+
   // Animation variables
   late AnimationController _animationController;
   late Animation<double> _pointsAnimation;
@@ -97,19 +98,19 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
+
     // Initialize animation controller
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     // Get the last added points (most recent earned points)
     _lastAddedPoints = _getLastAddedPoints();
-    
+
     // Calculate starting points (total - last added)
     int startingPoints = totalPoints - _lastAddedPoints;
-    
+
     // Create animation from starting points to total points
     _pointsAnimation = Tween<double>(
       begin: startingPoints.toDouble(),
@@ -118,7 +119,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Start animation when screen opens
     _startPointsAnimation();
   }
@@ -152,7 +153,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: NestedScrollView(
@@ -189,34 +190,22 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
-                (theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor)
-                    .withValues(alpha: 0.8),
-              ],
-            ),
-          ),
+        background: LotteryBackgroundPattern(
+          brightness: theme.brightness,
+          primaryColor: theme.primaryColor,
+          backgroundColor: theme.appBarTheme.backgroundColor ??
+              theme.scaffoldBackgroundColor,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(height: AppResponsive.spacing(context, 40)),
                 Container(
-                  padding: AppResponsive.padding(context, horizontal: 20, vertical: 10),
+                  padding: AppResponsive.padding(context,
+                      horizontal: 20, vertical: 10),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.monetization_on,
-                        color: theme.primaryColor,
-                        size: AppResponsive.fontSize(context, 32),
-                      ),
-                      SizedBox(width: AppResponsive.spacing(context, 7)),
                       AnimatedBuilder(
                         animation: _pointsAnimation,
                         builder: (context, child) {
@@ -242,14 +231,19 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ),
                 ),
                 // Show the last added points with animation
-                if (_animationController.isAnimating || _animationController.isCompleted)
+                if (_animationController.isAnimating ||
+                    _animationController.isCompleted)
                   Container(
-                    margin: EdgeInsets.only(top: AppResponsive.spacing(context, 8)),
-                    padding: AppResponsive.padding(context, horizontal: 12, vertical: 6),
+                    margin:
+                        EdgeInsets.only(top: AppResponsive.spacing(context, 8)),
+                    padding: AppResponsive.padding(context,
+                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 12)),
-                      border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 12)),
+                      border: Border.all(
+                          color: Colors.green.withValues(alpha: 0.3)),
                     ),
                     child: AnimatedBuilder(
                       animation: _animationController,
@@ -265,7 +259,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                                 color: Colors.green,
                                 size: AppResponsive.fontSize(context, 16),
                               ),
-                              SizedBox(width: AppResponsive.spacing(context, 4)),
+                              SizedBox(
+                                  width: AppResponsive.spacing(context, 4)),
                               Text(
                                 '+$_lastAddedPoints${'points'.tr()} added',
                                 style: TextStyle(
@@ -300,12 +295,12 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         ),
         tabs: [
           Tab(
-            icon: Icon(Icons.history),
-            text: 'points_history'.tr(),
-          ),
-          Tab(
             icon: Icon(Icons.redeem),
             text: 'redeem_points'.tr(),
+          ),
+          Tab(
+            icon: Icon(Icons.history),
+            text: 'points_history'.tr(),
           ),
         ],
       ),
@@ -316,8 +311,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildHistoryTab(theme),
         _buildRedeemTab(theme),
+        _buildHistoryTab(theme),
       ],
     );
   }
@@ -335,7 +330,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
   Widget _buildHistoryCard(Map<String, dynamic> item, ThemeData theme) {
     final isEarned = item['type'] == 'earned';
-    
+
     return Card(
       color: theme.cardTheme.color,
       margin: AppResponsive.margin(context, vertical: 6),
@@ -350,9 +345,13 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               width: AppResponsive.width(context, 12),
               height: AppResponsive.width(context, 12),
               decoration: BoxDecoration(
-                color: isEarned 
-                    ? (theme.brightness == Brightness.light ? Colors.green[50] : Colors.green.withValues(alpha: 0.2))
-                    : (theme.brightness == Brightness.light ? Colors.red[50] : Colors.red.withValues(alpha: 0.2)),
+                color: isEarned
+                    ? (theme.brightness == Brightness.light
+                        ? Colors.green[50]
+                        : Colors.green.withValues(alpha: 0.2))
+                    : (theme.brightness == Brightness.light
+                        ? Colors.red[50]
+                        : Colors.red.withValues(alpha: 0.2)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -361,9 +360,9 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 size: AppResponsive.fontSize(context, 20),
               ),
             ),
-            
+
             SizedBox(width: AppResponsive.spacing(context, 16)),
-            
+
             // Content
             Expanded(
               child: Column(
@@ -381,21 +380,28 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     item['date'],
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: AppResponsive.fontSize(context, 12),
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: theme.textTheme.bodySmall?.color
+                          ?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             // Points
             Container(
-              padding: AppResponsive.padding(context, horizontal: 12, vertical: 6),
+              padding:
+                  AppResponsive.padding(context, horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isEarned 
-                    ? (theme.brightness == Brightness.light ? Colors.green[100] : Colors.green.withValues(alpha: 0.3))
-                    : (theme.brightness == Brightness.light ? Colors.red[100] : Colors.red.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 20)),
+                color: isEarned
+                    ? (theme.brightness == Brightness.light
+                        ? Colors.green[100]
+                        : Colors.green.withValues(alpha: 0.3))
+                    : (theme.brightness == Brightness.light
+                        ? Colors.red[100]
+                        : Colors.red.withValues(alpha: 0.3)),
+                borderRadius:
+                    BorderRadius.circular(AppResponsive.spacing(context, 20)),
               ),
               child: Text(
                 '${isEarned ? '+' : '-'}${item['points']}',
@@ -414,7 +420,10 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
   Widget _buildRedeemTab(ThemeData theme) {
     return Padding(
-      padding: AppResponsive.padding(context, horizontal: 12, ),
+      padding: AppResponsive.padding(
+        context,
+        horizontal: 10,
+      ),
       child: GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
@@ -433,16 +442,14 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
   Widget _buildRedeemCard(Map<String, dynamic> item, ThemeData theme) {
     final canRedeem = totalPoints >= item['points'];
-    
+
     return Card(
       color: theme.cardTheme.color,
       elevation: theme.cardTheme.elevation,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
         side: BorderSide(
-          color: canRedeem 
-              ? theme.primaryColor
-              : theme.dividerTheme.color!,
+          color: canRedeem ? theme.primaryColor : theme.dividerTheme.color!,
           width: canRedeem ? .50 : .5,
         ),
       ),
@@ -458,7 +465,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               Container(
                 height: AppResponsive.height(context, 8),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                  borderRadius:
+                      BorderRadius.circular(AppResponsive.spacing(context, 8)),
                   image: DecorationImage(
                     image: AssetImage(item['image']),
                     fit: BoxFit.cover,
@@ -472,9 +480,9 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ],
                 ),
               ),
-              
+
               SizedBox(height: AppResponsive.spacing(context, 8)),
-              
+
               // Lottery Name
               Text(
                 item['name'],
@@ -485,7 +493,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               // Price
               Text(
                 '${'price'.tr()}${item['price']}',
@@ -495,9 +503,9 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   color: Colors.green,
                 ),
               ),
-              
+
               const Spacer(),
-              
+
               // Large Points Button
               SizedBox(
                 width: double.infinity,
@@ -505,16 +513,17 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 child: ElevatedButton(
                   onPressed: canRedeem ? () => _showComingSoonDialog() : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: canRedeem 
-                        ? theme.primaryColor
-                        : theme.disabledColor,
+                    backgroundColor:
+                        canRedeem ? theme.primaryColor : theme.disabledColor,
                     foregroundColor: Colors.white,
                     elevation: canRedeem ? 2.0 : 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 8)),
                     ),
                     disabledBackgroundColor: theme.disabledColor,
-                    disabledForegroundColor: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    disabledForegroundColor: theme.textTheme.bodyMedium?.color
+                        ?.withValues(alpha: 0.6),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -551,7 +560,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         return AlertDialog(
           backgroundColor: theme.dialogTheme.backgroundColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+            borderRadius:
+                BorderRadius.circular(AppResponsive.spacing(context, 16)),
           ),
           title: Row(
             children: [

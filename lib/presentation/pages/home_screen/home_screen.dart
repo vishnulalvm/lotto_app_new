@@ -628,74 +628,73 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       actions: [
         // Beautiful Coin Button
-        // Padding(
-        //   padding: EdgeInsets.symmetric(
-        //     horizontal: AppResponsive.spacing(context, 4),
-        //   ),
-        //   child: GestureDetector(
-        //     onTap: () => context.go('/lottoPoints'),
-        //     child: Container(
-        //       height: AppResponsive.fontSize(context, 26),
-        //       padding: EdgeInsets.symmetric(
-        //         horizontal: AppResponsive.spacing(context, 6),
-        //         vertical: AppResponsive.spacing(context, 4),
-        //       ),
-        //       decoration: BoxDecoration(
-        //         gradient: LinearGradient(
-        //           colors: [
-        //             Color.fromARGB(255, 204, 61, 25), // Gold
-        //             Color.fromARGB(255, 206, 71, 4), // Light Gold
-        //             Color.fromARGB(255, 229, 92, 38), // Gold
-        //           ],
-        //           stops: [0.0, 0.5, 1.0],
-        //           begin: Alignment.topLeft,
-        //           end: Alignment.bottomRight,
-        //         ),
-        //         borderRadius: BorderRadius.circular(
-        //           AppResponsive.spacing(context, 18),
-        //         ),
-        //         border: Border.all(
-        //           color: Color(0xFFFFE55C).withValues(alpha: 0.5),
-        //           width: 1,
-        //         ),
-        //       ),
-        //       child: Row(
-        //         mainAxisSize: MainAxisSize.min,
-        //         children: [
-        //           Icon(
-        //             Icons.monetization_on,
-        //             color: Color(0xFF8B4513), // Brown color for contrast
-        //             size: AppResponsive.fontSize(context, 14),
-        //           ),
-        //           SizedBox(width: AppResponsive.spacing(context, 4)),
-        //           BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-        //             builder: (context, state) {
-        //               String pointsText = '0';
-        //               if (state is HomeScreenResultsLoaded) {
-        //                 pointsText = _formatPoints(state.data.totalPoints);
-        //               }
-        //               return Text(
-        //                 pointsText,
-        //                 style: TextStyle(
-        //                   fontSize: AppResponsive.fontSize(context, 10),
-        //                   fontWeight: FontWeight.bold,
-        //                   color: Colors.white,
-        //                   shadows: [
-        //                     Shadow(
-        //                       color: Colors.white.withValues(alpha: 0.5),
-        //                       offset: Offset(0, 1),
-        //                       blurRadius: 2,
-        //                     ),
-        //                   ],
-        //                 ),
-        //               );
-        //             },
-        //           ),
-        //         ],
-        //       ),
-        //     ),
-        //   ),
-        // ),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppResponsive.spacing(context, 4),
+          ),
+          child: GestureDetector(
+            onTap: () => context.go('/lottoPoints'),
+            child: Container(
+              height: AppResponsive.fontSize(context, 26),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppResponsive.spacing(context, 6),
+                vertical: AppResponsive.spacing(context, 4),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 204, 61, 25), // Gold
+                    Color.fromARGB(255, 206, 71, 4), // Light Gold
+                    Color.fromARGB(255, 229, 92, 38), // Gold
+                  ],
+                  stops: [0.0, 0.5, 1.0],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(
+                  AppResponsive.spacing(context, 18),
+                ),
+                border: Border.all(
+                  color: Color(0xFFFFE55C).withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/icons/lotto_points.png',
+                    width: AppResponsive.fontSize(context, 14),
+                    height: AppResponsive.fontSize(context, 14),
+                    fit: BoxFit.contain,
+                  ),
+                  SizedBox(width: AppResponsive.spacing(context, 4)),
+                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                    builder: (context, state) {
+                      if (state is HomeScreenResultsLoaded) {
+                      }
+                      return Text(
+                        "Points",
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 10),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
 
         PopupMenuButton<String>(
           icon: Icon(
