@@ -8,6 +8,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/presentation/widgets/native_ad_home_widget.dart';
 
 class LotteryResultsSection extends StatelessWidget {
   final VoidCallback onLoadLotteryResults;
@@ -224,6 +225,54 @@ class LotteryResultsSection extends StatelessWidget {
               Expanded(child: Divider(color: theme.dividerTheme.color)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdDivider(ThemeData theme, BuildContext context) {
+    return Container(
+      color: Colors.transparent,
+      child: Padding(
+        padding: AppResponsive.padding(context, horizontal: 24, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Divider(
+                color: theme.dividerTheme.color?.withValues(alpha: 0.5),
+                thickness: 1,
+              ),
+            ),
+            Padding(
+              padding: AppResponsive.padding(context, horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.ads_click,
+                    size: AppResponsive.fontSize(context, 12),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  SizedBox(width: AppResponsive.spacing(context, 6)),
+                  Text(
+                    'sponsored'.tr(),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontSize: AppResponsive.fontSize(context, 11),
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Divider(
+                color: theme.dividerTheme.color?.withValues(alpha: 0.5),
+                thickness: 1,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -625,14 +674,42 @@ class LotteryResultsSection extends StatelessWidget {
     // Group results by date category
     final groupedResults = _groupResultsByDate(data.results);
 
-    // Build widgets for each date group
+    // Build widgets with proper ad placement: date divider → result cards → ad
+    int resultCardCount = 0;
+    bool isFirstDateGroup = true;
+    
     for (final entry in groupedResults.entries) {
-      // Add date divider
+      // Add date divider first
       widgets.add(_buildDateDivider(entry.key, theme, context));
       
-      // Add result cards
+      // Add result cards for this date
       for (final result in entry.value) {
         widgets.add(_buildResultCard(result, theme, context));
+        resultCardCount++;
+        
+        bool shouldInsertAd = false;
+        
+        // For the first date group, show ad after all its result cards are added
+        if (isFirstDateGroup && result == entry.value.last) {
+          shouldInsertAd = true;
+        }
+        // For subsequent cards, show ad after every 5th result card
+        else if (!isFirstDateGroup && resultCardCount % 5 == 0) {
+          shouldInsertAd = true;
+        }
+        
+        // Insert ad if conditions are met and not at the very end
+        if (shouldInsertAd && 
+            !(entry == groupedResults.entries.last && 
+              result == entry.value.last)) {
+          widgets.add(_buildAdDivider(theme, context));
+          widgets.add(const NativeAdHomeWidget());
+        }
+      }
+      
+      // Mark that we've processed the first date group
+      if (isFirstDateGroup) {
+        isFirstDateGroup = false;
       }
     }
 

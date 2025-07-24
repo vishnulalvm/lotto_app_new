@@ -56,6 +56,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
 
   List<ContentItem> _createMixedContent(List<NewsModel> newsList) {
     List<ContentItem> content = [];
+    bool isFirstNews = true;
     
     for (int i = 0; i < newsList.length; i++) {
       // Add news item
@@ -65,11 +66,25 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
         newsModel: newsList[i],
       ));
       
-      // Add ad after every news item
-      content.add(ContentItem(
-        id: 'ad_$i',
-        type: ContentType.ad,
-      ));
+      bool shouldInsertAd = false;
+      
+      // For the first news item, show ad after it
+      if (isFirstNews) {
+        shouldInsertAd = true;
+        isFirstNews = false;
+      }
+      // For subsequent news items, show ad after every 5th news item
+      else if ((i + 1) % 5 == 0) {
+        shouldInsertAd = true;
+      }
+      
+      // Insert ad if conditions are met and not after the last news item
+      if (shouldInsertAd && i < newsList.length - 1) {
+        content.add(ContentItem(
+          id: 'ad_$i',
+          type: ContentType.ad,
+        ));
+      }
     }
     
     return content;

@@ -565,16 +565,37 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 // Calculate actual redeem item index considering ads
-                final adsCount = (index + 1) ~/ 3; // Number of ads before this position
-                final redeemIndex = index - adsCount;
+                int redeemIndex = index;
+                int adsCount = 0;
+                
+                // Count ads that appear before this position
+                // First ad after position 1 (index 1), then every 5th redeem item
+                if (index > 1) {
+                  // After the first ad at index 1, count subsequent ads every 5 redeem items
+                  final remainingIndex = index - 2; // Subtract first redeem item and first ad
+                  adsCount = 1 + (remainingIndex ~/ 6); // 1 first ad + ads every 6 positions (5 redeems + 1 ad)
+                } else if (index == 1) {
+                  adsCount = 1; // First ad at index 1
+                }
+                
+                redeemIndex = index - adsCount;
                 
                 // Check if this position should show an ad
-                if ((index + 1) % 3 == 0 && index < (redeemOptions.length + (redeemOptions.length ~/ 2))) {
+                bool shouldShowAd = false;
+                if (index == 1) {
+                  // First ad after first redeem item
+                  shouldShowAd = true;
+                } else if (index > 1 && (index - 1) % 6 == 0) {
+                  // Subsequent ads every 6 positions (after every 5 redeem items)
+                  shouldShowAd = true;
+                }
+                
+                if (shouldShowAd && index < (redeemOptions.length + (redeemOptions.length ~/ 5) + 1)) {
                   return _buildNativeAdCard(theme, key: ValueKey('ad_$index'));
                 }
                 
                 // Show redeem card if we have one
-                if (redeemIndex < redeemOptions.length) {
+                if (redeemIndex >= 0 && redeemIndex < redeemOptions.length) {
                   return _buildRedeemCard(
                     redeemOptions[redeemIndex], 
                     theme, 
@@ -586,7 +607,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 // Return empty container if no more items
                 return const SizedBox.shrink();
               },
-              childCount: redeemOptions.length + (redeemOptions.length ~/ 2), // Redeem cards + ads
+              childCount: redeemOptions.length + (redeemOptions.length ~/ 5) + 1, // Redeem cards + ads
             ),
           ),
         ],

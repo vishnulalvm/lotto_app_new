@@ -308,13 +308,26 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
     }
 
     List<Widget> videoWidgets = [];
+    bool isFirstVideo = true;
     
     for (int i = 0; i < videos.length; i++) {
       // Add video card
       videoWidgets.add(_buildVideoCard(videos[i], theme));
       
-      // Add native ad after every 2 videos (but not after the last one)
-      if ((i + 1) % 2 == 0 && i < videos.length - 1) {
+      bool shouldInsertAd = false;
+      
+      // For the first video, show ad after it
+      if (isFirstVideo) {
+        shouldInsertAd = true;
+        isFirstVideo = false;
+      }
+      // For subsequent videos, show ad after every 5th video (following home screen pattern)
+      else if ((i + 1) % 5 == 0) {
+        shouldInsertAd = true;
+      }
+      
+      // Insert ad if conditions are met and not after the last video
+      if (shouldInsertAd && i < videos.length - 1) {
         videoWidgets.add(const NativeAdVideoWidget());
       }
     }
