@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
@@ -91,10 +90,6 @@ class _SplashScreenState extends State<SplashScreen>
       // Phase 4: Initialize remaining services in background after navigation
       unawaited(_initializeBackgroundServices());
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🚨 Splash screen initialization error: $e');
-      }
-
       // Still proceed to navigate
       await Future.delayed(const Duration(milliseconds: 1000));
       await _checkLoginStatus();
@@ -112,14 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
       ]);
 
       CacheManager.initialize();
-
-      if (kDebugMode) {
-        debugPrint('✅ Background services initialized');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Background services failed: $e');
-      }
     }
   }
 
@@ -136,9 +124,6 @@ class _SplashScreenState extends State<SplashScreen>
         AdMobService.instance.preloadAds();
       }));
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ AdMob initialization failed: $e');
-      }
     }
   }
 
@@ -159,9 +144,6 @@ class _SplashScreenState extends State<SplashScreen>
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Notification channel creation failed: $e');
-      }
     }
   }
 
@@ -174,48 +156,22 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkLoginStatus() async {
     try {
-      if (kDebugMode) {
-        debugPrint('🔍 Checking login status...');
-      }
-
       final prefs = await SharedPreferences.getInstance();
       final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-      if (kDebugMode) {
-        debugPrint('🔑 Login status: $isLoggedIn');
-      }
-
       if (!mounted) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Widget not mounted, skipping navigation');
-        }
         return;
       }
 
       if (isLoggedIn) {
-        if (kDebugMode) {
-          debugPrint('🏠 Navigating to home screen');
-        }
         context.go('/');
       } else {
-        if (kDebugMode) {
-          debugPrint('🔐 Navigating to login screen');
-        }
         context.go('/login');
       }
 
-      if (kDebugMode) {
-        debugPrint('✅ Navigation completed from splash screen');
-      }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🚨 Error in _checkLoginStatus: $e');
-      }
 
       if (mounted) {
-        if (kDebugMode) {
-          debugPrint('🔄 Fallback navigation to login');
-        }
         context.go('/login');
       }
     }

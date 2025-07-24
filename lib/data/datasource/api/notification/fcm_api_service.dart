@@ -25,8 +25,6 @@ class FcmApiService {
           'notifications_enabled': notificationsEnabled,
         }),
       );
-      print("FCM token registration request sent to server.:fcmToken: $fcmToken, phoneNumber: $phoneNumber, name: $name, notificationsEnabled: $notificationsEnabled");
-print('FCM Registration Response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return FcmRegistrationResponse.fromJson(json.decode(response.body));

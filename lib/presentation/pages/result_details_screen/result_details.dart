@@ -1378,7 +1378,6 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   }
 
   Widget _buildErrorWidget(ThemeData theme, String message) {
-    print('Error loading result details: $message');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),

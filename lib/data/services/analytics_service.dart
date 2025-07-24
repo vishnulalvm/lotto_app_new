@@ -20,10 +20,6 @@ class AnalyticsService {
     
     // Track first time user
     await _trackFirstTimeUser();
-    
-    if (kDebugMode) {
-      print('Firebase Analytics initialized');
-    }
   }
 
   /// Get analytics instance
@@ -55,10 +51,6 @@ class AnalyticsService {
       // Mark user as having opened the app
       await prefs.setBool('user_opened_app_before', true);
       await prefs.setString('first_open_date', DateTime.now().toIso8601String());
-      
-      if (kDebugMode) {
-        print('Analytics: First time user tracked');
-      }
     }
     
     // Always log app open for active user tracking
@@ -86,10 +78,6 @@ class AnalyticsService {
       screenClass: screenClass ?? screenName,
       parameters: safeParameters,
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Screen view tracked - $screenName');
-    }
   }
 
   /// Track user engagement
@@ -113,10 +101,6 @@ class AnalyticsService {
       name: 'user_engagement',
       parameters: eventParameters,
     );
-    
-    if (kDebugMode) {
-      print('Analytics: User engagement tracked - $action');
-    }
   }
 
   /// Track custom events
@@ -128,10 +112,6 @@ class AnalyticsService {
       name: eventName,
       parameters: parameters ?? {},
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Custom event tracked - $eventName');
-    }
   }
 
   /// Track lottery-specific events
@@ -155,10 +135,6 @@ class AnalyticsService {
       name: 'lottery_interaction',
       parameters: parameters,
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Lottery event tracked - $eventType');
-    }
   }
 
   /// Track search events
@@ -175,10 +151,6 @@ class AnalyticsService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Search tracked - $searchTerm');
-    }
   }
 
   /// Track sharing events
@@ -195,10 +167,6 @@ class AnalyticsService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Share tracked - $contentType');
-    }
   }
 
   /// Track login events
@@ -213,10 +181,6 @@ class AnalyticsService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Login tracked - $loginMethod');
-    }
   }
 
   /// Track signup events
@@ -231,10 +195,6 @@ class AnalyticsService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Sign up tracked - $signUpMethod');
-    }
   }
 
   /// Track session timing
@@ -295,10 +255,6 @@ class AnalyticsService {
         }
       }
     }
-    
-    if (kDebugMode) {
-      print('Analytics: User properties set');
-    }
   }
 
   /// Track errors
@@ -318,10 +274,6 @@ class AnalyticsService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Error tracked - $errorMessage');
-    }
   }
 
   /// Track feature usage
@@ -339,9 +291,5 @@ class AnalyticsService {
         ...?parameters,
       },
     );
-    
-    if (kDebugMode) {
-      print('Analytics: Feature usage tracked - $featureName');
-    }
   }
 }

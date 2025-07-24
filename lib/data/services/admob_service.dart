@@ -83,21 +83,12 @@ class AdMobService {
               ad.dispose();
               _rewardedAd = null;
               _isRewardedAdLoaded = false;
-              if (kDebugMode) {
-                print('Rewarded ad failed to show: $error');
-              }
-            },
+              },
           );
           
-          if (kDebugMode) {
-            print('Rewarded ad loaded successfully');
-          }
         },
         onAdFailedToLoad: (error) {
           _isRewardedAdLoaded = false;
-          if (kDebugMode) {
-            print('Rewarded ad failed to load: $error');
-          }
         },
       ),
     );
@@ -127,16 +118,10 @@ class AdMobService {
             ad.dispose();
             _rewardedAd = null;
             _isRewardedAdLoaded = false;
-            if (kDebugMode) {
-              print('Rewarded ad failed to show: $error');
-            }
           },
         );
       }
     } else {
-      if (kDebugMode) {
-        print('Rewarded ad not ready');
-      }
     }
   }
 
@@ -165,21 +150,12 @@ class AdMobService {
               ad.dispose();
               _interstitialAd = null;
               _isInterstitialAdLoaded = false;
-              if (kDebugMode) {
-                print('Interstitial ad failed to show: $error');
-              }
             },
           );
           
-          if (kDebugMode) {
-            print('Interstitial ad loaded successfully');
-          }
         },
         onAdFailedToLoad: (error) {
           _isInterstitialAdLoaded = false;
-          if (kDebugMode) {
-            print('Interstitial ad failed to load: $error');
-          }
         },
       ),
     );
@@ -206,16 +182,10 @@ class AdMobService {
             ad.dispose();
             _interstitialAd = null;
             _isInterstitialAdLoaded = false;
-            if (kDebugMode) {
-              print('Interstitial ad failed to show: $error');
-            }
           },
         );
       }
     } else {
-      if (kDebugMode) {
-        print('Interstitial ad not ready');
-      }
     }
   }
 
@@ -230,16 +200,10 @@ class AdMobService {
       listener: BannerAdListener(
         onAdLoaded: (ad) {
           _isBannerAdLoaded = true;
-          if (kDebugMode) {
-            print('Banner ad loaded successfully');
-          }
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           _isBannerAdLoaded = false;
-          if (kDebugMode) {
-            print('Banner ad failed to load: $error');
-          }
         },
       ),
     );
@@ -316,35 +280,41 @@ class AdMobService {
   // Create news-styled native ad for seamless integration
   NativeAd createNewsStyleNativeAd({
     required NativeAdListener listener,
+    bool isDarkTheme = false,
   }) {
+    final primaryTextColor = isDarkTheme ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDarkTheme ? Colors.white70 : Colors.black54;
+    final tertiaryTextColor = isDarkTheme ? Colors.white60 : Colors.black45;
+    final backgroundColor = isDarkTheme ? Colors.grey[850] : Colors.white;
+    
     return NativeAd(
       adUnitId: nativeAdUnitId,
       listener: listener,
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.medium,
-        mainBackgroundColor: Colors.transparent,
-        cornerRadius: 0.0,
+        mainBackgroundColor: backgroundColor,
+        cornerRadius: 8.0,
         callToActionTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white,
+          backgroundColor: Colors.blue[600]!,
+          style: NativeTemplateFontStyle.bold,
+          size: 14.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: primaryTextColor,
+          backgroundColor: Colors.transparent,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: secondaryTextColor,
           backgroundColor: Colors.transparent,
           style: NativeTemplateFontStyle.normal,
           size: 14.0,
         ),
-        primaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white,
-          backgroundColor: Colors.transparent,
-          style: NativeTemplateFontStyle.bold,
-          size: 20.0,
-        ),
-        secondaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white70,
-          backgroundColor: Colors.transparent,
-          style: NativeTemplateFontStyle.normal,
-          size: 16.0,
-        ),
         tertiaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white60,
+          textColor: tertiaryTextColor,
           backgroundColor: Colors.transparent,
           style: NativeTemplateFontStyle.normal,
           size: 12.0,
@@ -353,6 +323,8 @@ class AdMobService {
       nativeAdOptions: NativeAdOptions(
         adChoicesPlacement: AdChoicesPlacement.topRightCorner,
         mediaAspectRatio: MediaAspectRatio.landscape,
+        shouldRequestMultipleImages: false,
+        shouldReturnUrlsForImageAssets: false,
       ),
     );
   }

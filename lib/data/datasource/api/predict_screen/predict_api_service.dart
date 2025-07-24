@@ -12,7 +12,6 @@ class PredictApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
-      print('Predict API Response: ${response.statusCode} - ${response.body}');
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return PredictResponseModel.fromJson(jsonData);

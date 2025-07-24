@@ -47,7 +47,6 @@ import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.d
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/routes/route_names.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 // Singleton services to avoid multiple instances
@@ -70,11 +69,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialize Firebase if not already initialized
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  if (kDebugMode) {
-    debugPrint('🔔 Background message received: ${message.messageId}');
-    debugPrint('📱 Message data: ${message.data}');
-    debugPrint('🔔 Message notification: ${message.notification?.title}');
-  }
 }
 
 void main() async {
@@ -90,11 +84,7 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Initialize app update service (non-blocking)
-  AppUpdateService().initialize().catchError((error) {
-    if (kDebugMode) {
-      debugPrint('❌ Failed to initialize app update service: $error');
-    }
-  });
+  AppUpdateService().initialize().catchError((error) {});
 
   runApp(
     EasyLocalization(

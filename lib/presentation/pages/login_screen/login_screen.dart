@@ -175,13 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
           
           // Enable notifications after successful sign-in
           FirebaseMessagingService.updateNotificationSettings(true).then((success) {
-            if (success) {
-              print('✅ Notification settings enabled after sign-in');
-            } else {
-              print('❌ Failed to enable notification settings after sign-in');
-            }
           }).catchError((error) {
-            print('❌ Error enabling notification settings: $error');
           });
           
           context.go('/'); // Navigate to home page

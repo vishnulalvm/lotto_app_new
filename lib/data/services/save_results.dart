@@ -55,7 +55,6 @@ class SavedResultsService {
       await box.put(result.uniqueId, savedResult);
       return true;
     } catch (e) {
-      print('Error saving lottery result: $e');
       rethrow; // Re-throw to let the UI handle the error
     }
   }
