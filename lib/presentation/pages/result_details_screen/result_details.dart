@@ -56,7 +56,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   bool _isSaved = false;
   // Refresh state tracking
   bool _isRefreshing = false;
-  
+
   // Ad state tracking (commented out - AdMob account not ready)
   // bool _hasShownRewardedAd = false;
   // bool _isRewardedAdReady = false;
@@ -534,8 +534,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   // Helper method to check if it's live hours
   bool get _isLiveHours {
     final now = DateTime.now();
-    return (now.hour >= 15 && now.hour < 16) || 
-           (now.hour == 16 && now.minute <= 20);
+    return (now.hour >= 15 && now.hour < 16) ||
+        (now.hour == 16 && now.minute <= 20);
   }
 
   // Helper method to check if result is today's and live
@@ -645,8 +645,10 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     buffer.writeln(
         '${result.lotteryName.toUpperCase()} DRAW NO: ${result.drawNumber}');
     buffer.writeln('DRAW HELD ON: ${result.formattedDate}');
-    buffer.writeln('=' * 36);
     buffer.writeln();
+    buffer.writeln('Visit: https://www.lottokeralalotteries.com/');
+
+    buffer.writeln('=' * 36);
 
     // Prizes in order
     final prizes = result.prizes;
@@ -709,7 +711,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     }
 
     // Footer
-    buffer.writeln('=' * 50);
+    buffer.writeln('=' * 36);
     buffer
         .writeln('The prize winners are advised to verify the winning numbers');
     buffer
@@ -718,8 +720,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     buffer.writeln();
     buffer.writeln('Contact: 0471-2305230');
     buffer.writeln('Email: cru.dir.lotteries@kerala.gov.in');
-    buffer.writeln('Visit: https://lottokeralalotteries.com/');
-
+    buffer.writeln('Visit: https://www.lottokeralalotteries.com/');
     return buffer.toString();
   }
 
@@ -902,7 +903,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                     }
                   });
                 }
-                
+
                 // Initialize lottery numbers
                 _initializeLotteryNumbers(state.data.result);
 
@@ -924,41 +925,49 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                     left: 16,
                     right: 16,
                     child: FloatingActionButton.extended(
-                      onPressed: _isRefreshing ? null : () {
-                        if (widget.uniqueId != null) {
-                          setState(() {
-                            _isRefreshing = true;
-                          });
-                          context.read<LotteryResultDetailsBloc>().add(
-                                RefreshLotteryResultDetailsEvent(
-                                    widget.uniqueId!),
-                              );
-                        }
-                      },
-                      backgroundColor: _isRefreshing ? theme.colorScheme.surface : theme.primaryColor,
+                      onPressed: _isRefreshing
+                          ? null
+                          : () {
+                              if (widget.uniqueId != null) {
+                                setState(() {
+                                  _isRefreshing = true;
+                                });
+                                context.read<LotteryResultDetailsBloc>().add(
+                                      RefreshLotteryResultDetailsEvent(
+                                          widget.uniqueId!),
+                                    );
+                              }
+                            },
+                      backgroundColor: _isRefreshing
+                          ? theme.colorScheme.surface
+                          : theme.primaryColor,
                       foregroundColor: theme.colorScheme.onPrimary,
                       elevation: 4,
-                      icon: _isRefreshing 
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                theme.colorScheme.onSurface,
+                      icon: _isRefreshing
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.onSurface,
+                                ),
                               ),
-                            ),
-                          )
-                        : const Icon(Icons.refresh,
-                            size: 24, color: Colors.white),
+                            )
+                          : const Icon(Icons.refresh,
+                              size: 24, color: Colors.white),
                       label: Text(
                         _isRefreshing ? 'Refreshing...' : 'Refresh',
                         style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: _isRefreshing ? theme.colorScheme.onSurface : Colors.white),
+                            color: _isRefreshing
+                                ? theme.colorScheme.onSurface
+                                : Colors.white),
                       ),
-                      tooltip: _isRefreshing ? 'Refreshing results...' : 'Refresh results',
+                      tooltip: _isRefreshing
+                          ? 'Refreshing results...'
+                          : 'Refresh results',
                     ),
                   );
                 } else {
@@ -985,7 +994,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
             builder: (context, state) {
               if (state is LotteryResultDetailsLoaded) {
                 final isLive = _isResultLive(state.data.result);
-                
+
                 if (isLive) {
                   return Positioned(
                     top: 0,
@@ -1027,7 +1036,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                                     const SizedBox(width: 6),
                                     Text(
                                       'LIVE - Results updating',
-                                      style: theme.textTheme.bodySmall?.copyWith(
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
@@ -1066,7 +1076,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: EdgeInsets.only(
-            top: _isResultLive(result) ? 56.0 : 8.0, // Add top padding when live indicator is shown
+            top: _isResultLive(result)
+                ? 56.0
+                : 8.0, // Add top padding when live indicator is shown
             bottom: 8.0,
             left: 8.0,
             right: 8.0,

@@ -27,6 +27,7 @@ class UserPointsApiService {
         throw Exception('Failed to fetch user points: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error in UserPointsApiService: $e');
       if (e.toString().contains('TimeoutException')) {
         throw Exception('Request timeout: Please check your internet connection');
       }

@@ -359,13 +359,22 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         break;
 
       case 'no price today':
-        // Case 2: Current Loser
-        bannerColor =
-            isDark ? Colors.orange[900]!.withValues(alpha: 0.3) : Colors.orange[50]!;
-        iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
-        primaryIcon = Icons.info;
-        title = 'Better Luck Next Time';
-        subtitle = 'Current Draw Result';
+        // Case 2: Current Loser - Show points if available
+        if (result.points != null && result.points! > 0) {
+          bannerColor =
+              isDark ? Colors.blue[900]!.withValues(alpha: 0.3) : Colors.blue[50]!;
+          iconColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
+          primaryIcon = Icons.card_giftcard;
+          title = '🎁 You Earned ${result.points} Points!';
+          subtitle = 'Consolation points for current draw';
+        } else {
+          bannerColor =
+              isDark ? Colors.orange[900]!.withValues(alpha: 0.3) : Colors.orange[50]!;
+          iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
+          primaryIcon = Icons.info;
+          title = 'Better Luck Next Time';
+          subtitle = 'Current Draw Result';
+        }
         break;
 
       case 'previous result':
@@ -734,14 +743,35 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                             ),
                           ],
                         ] else ...[
-                          Text(
-                            'no_prize'.tr(),
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                          // Show points for currentLoser if available, otherwise show no prize
+                          if (result.responseType == ResponseType.currentLoser && result.points != null && result.points! > 0) ...[
+                            Text(
+                              '🎁 +${result.points} Points',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Consolation Points Earned',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                          ] else ...[
+                            Text(
+                              'no_prize'.tr(),
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
                         ],
                         Text(
                           '${'ticket'.tr()}: ${result.displayTicketNumber}',
@@ -809,6 +839,10 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       case ResponseType.currentWinner:
         return 'congratulations'.tr();
       case ResponseType.currentLoser:
+        // Show points if available for currentLoser, otherwise show better luck message
+        if (result.points != null && result.points! > 0) {
+          return 'You Earned Points!';
+        }
         return 'better_luck_next_time'.tr();
       case ResponseType.previousWinner:
         return 'congratulations'.tr();

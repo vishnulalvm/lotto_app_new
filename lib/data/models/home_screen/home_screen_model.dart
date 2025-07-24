@@ -160,7 +160,19 @@ class HomeScreenResultModel {
   // ... rest of your existing methods remain the same
   String get formattedFirstPrize {
     final amountInLakhs = (firstPrize.amount / 100000).toInt();
-    return '1st Prize Rs ${firstPrize.amount.toInt()}/-  [$amountInLakhs Lakhs]';
+    
+    if (amountInLakhs >= 100) {
+      final amountInCrores = (amountInLakhs / 100.0);
+      if (amountInCrores == amountInCrores.toInt()) {
+        // Whole number crores
+        return '1st Prize Rs ${firstPrize.amount.toInt()}/-  [${amountInCrores.toInt()} Crore]';
+      } else {
+        // Decimal crores
+        return '1st Prize Rs ${firstPrize.amount.toInt()}/-  [${amountInCrores.toStringAsFixed(1)} Crore]';
+      }
+    } else {
+      return '1st Prize Rs ${firstPrize.amount.toInt()}/-  [$amountInLakhs Lakhs]';
+    }
   }
 
   String get formattedWinner =>

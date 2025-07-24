@@ -16,6 +16,7 @@ class UserPointsRepositoryImpl implements UserPointsRepository {
     try {
       return await _apiService.getUserPoints(phoneNumber);
     } catch (e) {
+      print('Error in UserPointsRepository: $e');
       throw Exception('Repository error: $e');
     }
   }
