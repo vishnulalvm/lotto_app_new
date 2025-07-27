@@ -39,11 +39,15 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _shimmerAnimation;
   late AnimationController _badgeShimmerAnimationController;
   late Animation<double> _badgeShimmerAnimation;
+  
+  // Animation status listeners for cleanup
+  late AnimationStatusListener _rotationStatusListener;
+  late AnimationStatusListener _shimmerStatusListener;
+  late AnimationStatusListener _badgeShimmerStatusListener;
   bool _isExpanded = true;
   bool _isScrollingDown = false;
   DateTime? _lastRefreshTime;
   Timer? _periodicRefreshTimer;
-  bool isBackgroundRefreshing = false;
 
   @override
   void initState() {
@@ -165,6 +169,12 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.dispose();
     _fabAnimationController.dispose();
     _blinkAnimationController.dispose();
+    
+    // Remove animation status listeners to prevent memory leaks
+    _rotationAnimationController.removeStatusListener(_rotationStatusListener);
+    _shimmerAnimationController.removeStatusListener(_shimmerStatusListener);
+    _badgeShimmerAnimationController.removeStatusListener(_badgeShimmerStatusListener);
+    
     _rotationAnimationController.dispose();
     _shimmerAnimationController.dispose();
     _badgeShimmerAnimationController.dispose();
@@ -203,36 +213,39 @@ class _HomeScreenState extends State<HomeScreen>
     await Future.delayed(const Duration(milliseconds: 1000));
 
     if (mounted) {
-      // Start all animations simultaneously
-      _rotationAnimationController.forward();
-      _shimmerAnimationController.forward();
-      _startBadgeShimmerAnimation();
-
-      // Listen for rotation completion to repeat
-      _rotationAnimationController.addStatusListener((status) {
+      // Create status listeners once to prevent memory leaks
+      _rotationStatusListener = (status) {
         if (status == AnimationStatus.completed && mounted) {
-          // Wait a bit then repeat (3 times total)
-          Future.delayed(const Duration(milliseconds: 800), () {
+          // Wait a bit then repeat (limit to prevent excessive CPU usage)
+          Future.delayed(const Duration(milliseconds: 2000), () {
             if (mounted) {
               _rotationAnimationController.reset();
               _rotationAnimationController.forward();
             }
           });
         }
-      });
+      };
 
-      // Listen for shimmer completion to repeat
-      _shimmerAnimationController.addStatusListener((status) {
+      _shimmerStatusListener = (status) {
         if (status == AnimationStatus.completed && mounted) {
-          // Wait a bit then repeat
-          Future.delayed(const Duration(milliseconds: 1500), () {
+          // Wait longer between shimmers to reduce CPU load
+          Future.delayed(const Duration(milliseconds: 3000), () {
             if (mounted) {
               _shimmerAnimationController.reset();
               _shimmerAnimationController.forward();
             }
           });
         }
-      });
+      };
+
+      // Add listeners once
+      _rotationAnimationController.addStatusListener(_rotationStatusListener);
+      _shimmerAnimationController.addStatusListener(_shimmerStatusListener);
+
+      // Start animations
+      _rotationAnimationController.forward();
+      _shimmerAnimationController.forward();
+      _startBadgeShimmerAnimation();
     }
   }
 
@@ -242,20 +255,22 @@ class _HomeScreenState extends State<HomeScreen>
     await Future.delayed(const Duration(milliseconds: 2000));
 
     if (mounted) {
-      _badgeShimmerAnimationController.forward();
-
-      // Listen for badge shimmer completion to repeat periodically
-      _badgeShimmerAnimationController.addStatusListener((status) {
+      // Create badge shimmer listener once
+      _badgeShimmerStatusListener = (status) {
         if (status == AnimationStatus.completed && mounted) {
-          // Wait longer between badge shimmers (every 8 seconds)
-          Future.delayed(const Duration(milliseconds: 8000), () {
+          // Wait longer between badge shimmers to reduce CPU usage
+          Future.delayed(const Duration(milliseconds: 10000), () {
             if (mounted) {
               _badgeShimmerAnimationController.reset();
               _badgeShimmerAnimationController.forward();
             }
           });
         }
-      });
+      };
+
+      // Add listener once
+      _badgeShimmerAnimationController.addStatusListener(_badgeShimmerStatusListener);
+      _badgeShimmerAnimationController.forward();
     }
   }
 
@@ -330,24 +345,11 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    // Show background refresh indicator
-    if (mounted) {
-      setState(() {
-        isBackgroundRefreshing = true;
-      });
-    }
-
     _lastRefreshTime = DateTime.now();
     context.read<HomeScreenResultsBloc>().add(BackgroundRefreshEvent());
 
-    // Hide indicator after a short delay
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          isBackgroundRefreshing = false;
-        });
-      }
-    });
+    // Use BLoC state to manage refresh indicator instead of setState
+    // Remove setState calls to eliminate unnecessary rebuilds
   }
 
   /// Set up periodic refresh timer
@@ -787,25 +789,20 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                   SizedBox(width: AppResponsive.spacing(context, 4)),
-                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                    builder: (context, state) {
-                      if (state is HomeScreenResultsLoaded) {}
-                      return Text(
-                        "Points",
-                        style: TextStyle(
-                          fontSize: AppResponsive.fontSize(context, 10),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              offset: Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
+                  Text(
+                    "Points",
+                    style: TextStyle(
+                      fontSize: AppResponsive.fontSize(context, 10),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ],
               ),

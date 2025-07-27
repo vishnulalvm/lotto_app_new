@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -18,6 +19,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
   bool _isAdLoaded = false;
   bool _isDarkTheme = false;
   bool _isLoadingFromCache = false;
+  Timer? _retryTimer;
 
   _NativeAdHomeWidgetState();
 
@@ -26,12 +28,17 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     super.initState();
     // Don't access Theme.of(context) in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _tryLoadCachedAd();
+      if (mounted) {
+        _tryLoadCachedAd();
+      }
     });
   }
 
   void _tryLoadCachedAd() {
     if (!mounted) return;
+    
+    // Cancel any existing retry timer before new attempt
+    _retryTimer?.cancel();
     
     _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     
@@ -39,6 +46,8 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     final cachedAd = AdMobService.instance.getCachedHomeResultsAd();
     if (cachedAd != null) {
       if (mounted) {
+        // Dispose existing ad before setting new one
+        _nativeAd?.dispose();
         setState(() {
           _nativeAd = cachedAd;
           _isAdLoaded = true;
@@ -55,6 +64,9 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
   void _loadNativeAdDirect() {
     if (!mounted) return;
     
+    // Dispose existing ad before creating new one
+    _nativeAd?.dispose();
+    
     _nativeAd = AdMobService.instance.createNewsStyleNativeHomeResultsAd(
       isDarkTheme: _isDarkTheme,
       listener: NativeAdListener(
@@ -69,12 +81,16 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           if (mounted) {
+            // Nullify ad reference on failure to prevent memory issues
+            _nativeAd = null;
             setState(() {
               _isAdLoaded = false;
               _isLoadingFromCache = false;
             });
-            // Retry after 30 seconds
-            Future.delayed(const Duration(seconds: 30), () {
+            // Cancel any existing retry timer
+            _retryTimer?.cancel();
+            // Setup new retry timer
+            _retryTimer = Timer(const Duration(seconds: 30), () {
               if (mounted) {
                 _tryLoadCachedAd();
               }
@@ -95,7 +111,14 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
 
   @override
   void dispose() {
+    // Cancel retry timer to prevent memory leaks
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    
+    // Dispose and nullify ad reference
     _nativeAd?.dispose();
+    _nativeAd = null;
+    
     super.dispose();
   }
 

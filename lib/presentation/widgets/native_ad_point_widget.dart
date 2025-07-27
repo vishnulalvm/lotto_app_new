@@ -1,14 +1,16 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 
-class NativeAdWidget extends StatefulWidget {
+class NativePointAdWidget extends StatefulWidget {
   final double? height;
   final EdgeInsets? margin;
   final BorderRadius? borderRadius;
   
-  const NativeAdWidget({
+  const NativePointAdWidget({
     super.key,
     this.height,
     this.margin,
@@ -16,12 +18,15 @@ class NativeAdWidget extends StatefulWidget {
   });
 
   @override
-  State<NativeAdWidget> createState() => _NativeAdWidgetState();
+  State<NativePointAdWidget> createState() => _NativeAdWidgetState();
 }
 
-class _NativeAdWidgetState extends State<NativeAdWidget> {
+class _NativeAdWidgetState extends State<NativePointAdWidget> {
   NativeAd? _nativeAd;
   bool _isAdLoaded = false;
+  bool _isDarkTheme = false;
+  bool _isLoadingFromCache = false;
+  Timer? _retryTimer;
 
   @override
   void initState() {
@@ -32,62 +37,79 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_nativeAd == null) {
-      _loadNativeAd();
+      _tryLoadCachedAd();
     }
   }
 
-  void _loadNativeAd() {
-    final theme = Theme.of(context);
+  void _tryLoadCachedAd() {
+    if (!mounted) return;
     
-    _nativeAd = AdMobService.instance.createNativeHomeResultsAd(
+    // Cancel any existing retry timer
+    _retryTimer?.cancel();
+    
+    _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    
+    // Try to get cached ad first (instant loading)
+    final cachedAd = AdMobService.instance.getCachedLottoPointsAd();
+    if (cachedAd != null) {
+      if (mounted) {
+        // Dispose existing ad before setting new one
+        _nativeAd?.dispose();
+        setState(() {
+          _nativeAd = cachedAd;
+          _isAdLoaded = true;
+          _isLoadingFromCache = true;
+        });
+      }
+      return;
+    }
+    
+    // Fallback to loading new ad if no cache available
+    _loadNativeAdDirect();
+  }
+  
+  void _loadNativeAdDirect() {
+    if (!mounted) return;
+    
+    // Dispose existing ad before creating new one
+    _nativeAd?.dispose();
+    
+    // Use news-style ad format for better performance
+    _nativeAd = AdMobService.instance.createNewsStyleNativeLottoPointsAd(
+      isDarkTheme: _isDarkTheme,
       listener: NativeAdListener(
         onAdLoaded: (ad) {
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
+              _isLoadingFromCache = false;
             });
           }
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           if (mounted) {
+            // Nullify ad reference on failure
+            _nativeAd = null;
             setState(() {
               _isAdLoaded = false;
+              _isLoadingFromCache = false;
+            });
+            // Setup retry timer
+            _retryTimer?.cancel();
+            _retryTimer = Timer(const Duration(seconds: 30), () {
+              if (mounted) {
+                _tryLoadCachedAd();
+              }
             });
           }
         },
-        onAdClicked: (ad) {
-          // Handle ad click
-        },
-      ),
-      templateStyle: NativeTemplateStyle(
-        templateType: TemplateType.medium,
-        mainBackgroundColor: theme.cardTheme.color ?? theme.colorScheme.surface,
-        cornerRadius: widget.borderRadius?.topLeft.x ?? 12.0,
-        callToActionTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white,
-          backgroundColor: theme.primaryColor,
-          style: NativeTemplateFontStyle.bold,
-          size: 14.0,
-        ),
-        primaryTextStyle: NativeTemplateTextStyle(
-          textColor: theme.textTheme.titleMedium?.color ?? Colors.black87,
-          backgroundColor: Colors.transparent,
-          style: NativeTemplateFontStyle.bold,
-          size: 16.0,
-        ),
-        secondaryTextStyle: NativeTemplateTextStyle(
-          textColor: theme.textTheme.bodyMedium?.color ?? Colors.black54,
-          backgroundColor: Colors.transparent,
-          style: NativeTemplateFontStyle.normal,
-          size: 14.0,
-        ),
-        tertiaryTextStyle: NativeTemplateTextStyle(
-          textColor: theme.textTheme.bodySmall?.color ?? Colors.black45,
-          backgroundColor: Colors.transparent,
-          style: NativeTemplateFontStyle.normal,
-          size: 12.0,
-        ),
+        onAdClicked: (ad) {},
+        onAdImpression: (ad) {},
+        onAdClosed: (ad) {},
+        onAdOpened: (ad) {},
+        onAdWillDismissScreen: (ad) {},
+        onPaidEvent: (ad, valueMicros, precision, currencyCode) {},
       ),
     );
 
@@ -96,7 +118,14 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   void dispose() {
+    // Cancel retry timer to prevent memory leaks
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    
+    // Dispose and nullify ad reference
     _nativeAd?.dispose();
+    _nativeAd = null;
+    
     super.dispose();
   }
 
@@ -120,10 +149,34 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
         ],
       ),
       child: _isAdLoaded && _nativeAd != null
-          ? ClipRRect(
-              borderRadius: widget.borderRadius ?? 
-                  BorderRadius.circular(AppResponsive.spacing(context, 12)),
-              child: AdWidget(ad: _nativeAd!),
+          ? Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: widget.borderRadius ?? 
+                      BorderRadius.circular(AppResponsive.spacing(context, 12)),
+                  child: AdWidget(ad: _nativeAd!),
+                ),
+                // CRITICAL: Ad Label for AdMob Compliance
+                Positioned(
+                  top: 4,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'AD',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             )
           : _buildAdPlaceholder(theme),
     );
@@ -150,7 +203,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
           ),
           SizedBox(height: AppResponsive.spacing(context, 8)),
           Text(
-            'Advertisement',
+            _isLoadingFromCache ? 'loading_cached_ad'.tr() : 'sponsored_content'.tr(),
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: AppResponsive.fontSize(context, 12),
               color: (theme.textTheme.bodySmall?.color ?? theme.textTheme.bodyMedium?.color ?? Colors.grey).withValues(alpha: 0.6),

@@ -8,7 +8,7 @@ import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_blo
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_event.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_state.dart';
 import 'package:lotto_app/presentation/pages/lotto_point_screen/widget/backgrond.dart';
-import 'package:lotto_app/presentation/widgets/native_ad_widget.dart';
+import 'package:lotto_app/presentation/widgets/native_ad_point_widget.dart';
 
 class LottoPointsScreen extends StatefulWidget {
   const LottoPointsScreen({super.key});
@@ -564,33 +564,21 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                // Calculate actual redeem item index considering ads
+                // Calculate actual redeem item index considering single ad
                 int redeemIndex = index;
-                int adsCount = 0;
-                
-                // Count ads that appear before this position
-                // First ad after position 1 (index 1), then every 5th redeem item
-                if (index > 1) {
-                  // After the first ad at index 1, count subsequent ads every 5 redeem items
-                  final remainingIndex = index - 2; // Subtract first redeem item and first ad
-                  adsCount = 1 + (remainingIndex ~/ 6); // 1 first ad + ads every 6 positions (5 redeems + 1 ad)
-                } else if (index == 1) {
-                  adsCount = 1; // First ad at index 1
+                if (index > 3) {
+                  redeemIndex = index - 1; // Account for single ad at position 3
                 }
-                
-                redeemIndex = index - adsCount;
                 
                 // Check if this position should show an ad
+                // CRITICAL FIX: AdMob Policy Compliance - Maximum 1 ad per screen
                 bool shouldShowAd = false;
-                if (index == 1) {
-                  // First ad after first redeem item
-                  shouldShowAd = true;
-                } else if (index > 1 && (index - 1) % 6 == 0) {
-                  // Subsequent ads every 6 positions (after every 5 redeem items)
+                if (index == 3 && redeemOptions.length > 5) {
+                  // Show only ONE ad at position 3 (middle of screen) if enough content
                   shouldShowAd = true;
                 }
                 
-                if (shouldShowAd && index < (redeemOptions.length + (redeemOptions.length ~/ 5) + 1)) {
+                if (shouldShowAd) {
                   return _buildNativeAdCard(theme, key: ValueKey('ad_$index'));
                 }
                 
@@ -607,7 +595,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 // Return empty container if no more items
                 return const SizedBox.shrink();
               },
-              childCount: redeemOptions.length + (redeemOptions.length ~/ 5) + 1, // Redeem cards + ads
+              childCount: redeemOptions.length + 1, // Redeem cards + max 1 ad
             ),
           ),
         ],
@@ -616,11 +604,43 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   }
 
   Widget _buildNativeAdCard(ThemeData theme, {Key? key}) {
-    return NativeAdWidget(
-      key: key,
-      height: AppResponsive.height(context, 30), // Slightly taller for grid
-      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
-      margin: EdgeInsets.zero, // No margin as grid handles spacing
+    return Stack(
+      children: [
+        NativePointAdWidget(
+          key: key,
+          height: AppResponsive.height(context, 30), // Slightly taller for grid
+          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          margin: EdgeInsets.zero, // No margin as grid handles spacing
+        ),
+        // CRITICAL: AdMob Policy Compliance - Clear Ad Label
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              'AD',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -85,7 +85,7 @@ class _NativeAdVideoWidgetState extends State<NativeAdVideoWidget> {
                   top: Radius.circular(AppResponsive.spacing(context, 8)),
                 ),
                 child: AspectRatio(
-                  aspectRatio: 16 / 9,
+                  aspectRatio: 16 / 14,
                   child: AdWidget(ad: _nativeAd!),
                 ),
               ),
@@ -185,58 +185,58 @@ class _NativeAdVideoWidgetState extends State<NativeAdVideoWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title with accent line (matching video card style)
-                Row(
-                  children: [
-                    Container(
-                      width: 3,
-                      height: AppResponsive.spacing(context, 45),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    SizedBox(width: AppResponsive.spacing(context, 12)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'sponsored_content'.tr(),
-                            style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 17),
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.1,
-                              color: theme.textTheme.titleLarge?.color,
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: AppResponsive.spacing(context, 6)),
-                          // Highlighted date
-                          Container(
-                            padding: AppResponsive.padding(context,
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(
-                                  AppResponsive.spacing(context, 6)),
-                            ),
-                            child: Text(
-                              'promoted'.tr(),
-                              style: TextStyle(
-                                fontSize: AppResponsive.fontSize(context, 11),
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Container(
+                //       width: 3,
+                //       height: AppResponsive.spacing(context, 45),
+                //       decoration: BoxDecoration(
+                //         color: theme.colorScheme.primary,
+                //         borderRadius: BorderRadius.circular(2),
+                //       ),
+                //     ),
+                //     SizedBox(width: AppResponsive.spacing(context, 12)),
+                //     Expanded(
+                //       child: Column(
+                //         crossAxisAlignment: CrossAxisAlignment.start,
+                //         children: [
+                //           Text(
+                //             'sponsored_content'.tr(),
+                //             style: TextStyle(
+                //               fontSize: AppResponsive.fontSize(context, 17),
+                //               fontWeight: FontWeight.w600,
+                //               letterSpacing: 0.1,
+                //               color: theme.textTheme.titleLarge?.color,
+                //               height: 1.3,
+                //             ),
+                //             maxLines: 2,
+                //             overflow: TextOverflow.ellipsis,
+                //           ),
+                //           SizedBox(height: AppResponsive.spacing(context, 6)),
+                //           // Highlighted date
+                //           Container(
+                //             padding: AppResponsive.padding(context,
+                //                 horizontal: 8, vertical: 3),
+                //             decoration: BoxDecoration(
+                //               color: theme.colorScheme.primary
+                //                   .withValues(alpha: 0.1),
+                //               borderRadius: BorderRadius.circular(
+                //                   AppResponsive.spacing(context, 6)),
+                //             ),
+                //             child: Text(
+                //               'promoted'.tr(),
+                //               style: TextStyle(
+                //                 fontSize: AppResponsive.fontSize(context, 11),
+                //                 fontWeight: FontWeight.w600,
+                //                 color: theme.colorScheme.primary,
+                //               ),
+                //             ),
+                //           ),
+                //         ],
+                //       ),
+                //     ),
+                //   ],
+                // ),
 
                 // Description
                 SizedBox(height: AppResponsive.spacing(context, 10)),
