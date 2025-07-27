@@ -119,11 +119,25 @@ class _SplashScreenState extends State<SplashScreen>
       // Create notification channel in parallel
       unawaited(_createNotificationChannel());
 
-      // Preload ads with longer delay to prevent blocking
-      unawaited(Future.delayed(const Duration(seconds: 3), () {
-        AdMobService.instance.preloadAds();
+      // Preload all ads in background to prevent home screen lag
+      unawaited(Future.delayed(const Duration(milliseconds: 500), () {
+        _preloadAdsInBackground();
       }));
     } catch (e) {
+    }
+  }
+  
+  void _preloadAdsInBackground() async {
+    // Run ad preloading in background to avoid blocking home screen
+    try {
+      // Preload interstitial and banner ads first (faster)
+      AdMobService.instance.preloadAds();
+      
+      // Preload native ads with slight delay to spread load
+      await Future.delayed(const Duration(milliseconds: 300));
+      await AdMobService.instance.preloadNativeAds();
+    } catch (e) {
+      // Silently handle preload errors - ads will load on demand
     }
   }
 

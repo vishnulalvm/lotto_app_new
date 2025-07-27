@@ -17,6 +17,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
   NativeAd? _nativeAd;
   bool _isAdLoaded = false;
   bool _isDarkTheme = false;
+  bool _isLoadingFromCache = false;
 
   _NativeAdHomeWidgetState();
 
@@ -25,14 +26,35 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     super.initState();
     // Don't access Theme.of(context) in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadNativeAd();
+      _tryLoadCachedAd();
     });
   }
 
-  void _loadNativeAd() {
-    if (mounted) {
-      _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+  void _tryLoadCachedAd() {
+    if (!mounted) return;
+    
+    _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    
+    // Try to get cached ad first (instant loading)
+    final cachedAd = AdMobService.instance.getCachedHomeResultsAd();
+    if (cachedAd != null) {
+      if (mounted) {
+        setState(() {
+          _nativeAd = cachedAd;
+          _isAdLoaded = true;
+          _isLoadingFromCache = true;
+        });
+      }
+      return;
     }
+    
+    // Fallback to loading new ad if no cache available
+    _loadNativeAdDirect();
+  }
+  
+  void _loadNativeAdDirect() {
+    if (!mounted) return;
+    
     _nativeAd = AdMobService.instance.createNewsStyleNativeHomeResultsAd(
       isDarkTheme: _isDarkTheme,
       listener: NativeAdListener(
@@ -40,6 +62,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
+              _isLoadingFromCache = false;
             });
           }
         },
@@ -48,11 +71,12 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
           if (mounted) {
             setState(() {
               _isAdLoaded = false;
+              _isLoadingFromCache = false;
             });
             // Retry after 30 seconds
             Future.delayed(const Duration(seconds: 30), () {
               if (mounted) {
-                _loadNativeAd();
+                _tryLoadCachedAd();
               }
             });
           }
@@ -105,7 +129,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
               ),
               SizedBox(height: AppResponsive.spacing(context, 8)),
               Text(
-                'sponsored_content'.tr(),
+                _isLoadingFromCache ? 'loading_cached_ad'.tr() : 'sponsored_content'.tr(),
                 style: TextStyle(
                   fontSize: AppResponsive.fontSize(context, 14),
                   fontWeight: FontWeight.w500,
@@ -116,10 +140,10 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
               SizedBox(height: AppResponsive.spacing(context, 4)),
               if (!_isAdLoaded)
                 SizedBox(
-                  width: AppResponsive.width(context, 5),
-                  height: AppResponsive.width(context, 5),
+                  width: AppResponsive.width(context, 4),
+                  height: AppResponsive.width(context, 4),
                   child: CircularProgressIndicator(
-                    strokeWidth: 2,
+                    strokeWidth: 1.5,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       theme.colorScheme.primary.withValues(alpha: 0.6),
                     ),

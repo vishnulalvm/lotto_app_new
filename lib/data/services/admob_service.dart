@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:async';
 
 class AdMobService {
   static AdMobService? _instance;
@@ -20,10 +21,20 @@ class AdMobService {
   // Ad instances
   InterstitialAd? _interstitialPredictAd;
   InterstitialAd? _interstitialSeemoreAd;
+  
+  // Native ad cache
+  NativeAd? _cachedHomeResultsAd;
+  NativeAd? _cachedLiveVideoAd;
+  NativeAd? _cachedLottoPointsAd;
+  NativeAd? _cachedNewsFeedAd;
 
   // Ad loading states
   bool _isInterstitialPredictAdLoaded = false;
   bool _isInterstitialSeemoreAdLoaded = false;
+  bool _isHomeResultsAdLoaded = false;
+  bool _isLiveVideoAdLoaded = false;
+  bool _isLottoPointsAdLoaded = false;
+  bool _isNewsFeedAdLoaded = false;
 
   // Initialization
   static Future<void> initialize() async {
@@ -176,9 +187,27 @@ class AdMobService {
     _isInterstitialSeemoreAdLoaded = false;
   }
 
+  void disposeNativeAds() {
+    _cachedHomeResultsAd?.dispose();
+    _cachedLiveVideoAd?.dispose();
+    _cachedLottoPointsAd?.dispose();
+    _cachedNewsFeedAd?.dispose();
+    
+    _cachedHomeResultsAd = null;
+    _cachedLiveVideoAd = null;
+    _cachedLottoPointsAd = null;
+    _cachedNewsFeedAd = null;
+    
+    _isHomeResultsAdLoaded = false;
+    _isLiveVideoAdLoaded = false;
+    _isLottoPointsAdLoaded = false;
+    _isNewsFeedAdLoaded = false;
+  }
+
   void disposeAll() {
     disposeInterstitialPredictAd();
     disposeInterstitialSeemoreAd();
+    disposeNativeAds();
   }
 
   // Native Ad Methods
@@ -438,6 +467,165 @@ class AdMobService {
         shouldReturnUrlsForImageAssets: false,
       ),
     );
+  }
+
+  // Native ad preloading methods  
+  Future<void> preloadHomeResultsAd({bool isDarkTheme = false}) async {
+    if (_cachedHomeResultsAd != null) {
+      _cachedHomeResultsAd!.dispose();
+    }
+    
+    _cachedHomeResultsAd = _createNewsStyleNativeAd(
+      adUnitId: nativeHomeResultsAdUnitId,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) => _isHomeResultsAdLoaded = true,
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _isHomeResultsAdLoaded = false;
+        },
+      ),
+      isDarkTheme: isDarkTheme,
+    );
+    
+    await _cachedHomeResultsAd!.load();
+  }
+  
+  Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) async {
+    if (_cachedLiveVideoAd != null) {
+      _cachedLiveVideoAd!.dispose();
+    }
+    
+    _cachedLiveVideoAd = _createNewsStyleNativeAd(
+      adUnitId: nativeLiveVideoAdUnitId,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) => _isLiveVideoAdLoaded = true,
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _isLiveVideoAdLoaded = false;
+        },
+      ),
+      isDarkTheme: isDarkTheme,
+    );
+    
+    await _cachedLiveVideoAd!.load();
+  }
+  
+  Future<void> preloadLottoPointsAd({bool isDarkTheme = false}) async {
+    if (_cachedLottoPointsAd != null) {
+      _cachedLottoPointsAd!.dispose();
+    }
+    
+    _cachedLottoPointsAd = _createNewsStyleNativeAd(
+      adUnitId: nativeLottoPointsAdUnitId,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) => _isLottoPointsAdLoaded = true,
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _isLottoPointsAdLoaded = false;
+        },
+      ),
+      isDarkTheme: isDarkTheme,
+    );
+    
+    await _cachedLottoPointsAd!.load();
+  }
+  
+  Future<void> preloadNewsFeedAd({bool isDarkTheme = false}) async {
+    if (_cachedNewsFeedAd != null) {
+      _cachedNewsFeedAd!.dispose();
+    }
+    
+    _cachedNewsFeedAd = _createNewsStyleNativeAd(
+      adUnitId: nativeNewsFeedAdUnitId,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) => _isNewsFeedAdLoaded = true,
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _isNewsFeedAdLoaded = false;
+        },
+      ),
+      isDarkTheme: isDarkTheme,
+    );
+    
+    await _cachedNewsFeedAd!.load();
+  }
+
+  // Get cached native ads
+  NativeAd? getCachedHomeResultsAd() {
+    if (_isHomeResultsAdLoaded && _cachedHomeResultsAd != null) {
+      final ad = _cachedHomeResultsAd!;
+      _cachedHomeResultsAd = null;
+      _isHomeResultsAdLoaded = false;
+      // Preload next ad in background
+      Future.delayed(const Duration(milliseconds: 100), () {
+        preloadHomeResultsAd();
+      });
+      return ad;
+    }
+    return null;
+  }
+  
+  NativeAd? getCachedLiveVideoAd() {
+    if (_isLiveVideoAdLoaded && _cachedLiveVideoAd != null) {
+      final ad = _cachedLiveVideoAd!;
+      _cachedLiveVideoAd = null;
+      _isLiveVideoAdLoaded = false;
+      // Preload next ad in background
+      Future.delayed(const Duration(milliseconds: 100), () {
+        preloadLiveVideoAd();
+      });
+      return ad;
+    }
+    return null;
+  }
+  
+  NativeAd? getCachedLottoPointsAd() {
+    if (_isLottoPointsAdLoaded && _cachedLottoPointsAd != null) {
+      final ad = _cachedLottoPointsAd!;
+      _cachedLottoPointsAd = null;
+      _isLottoPointsAdLoaded = false;
+      // Preload next ad in background
+      Future.delayed(const Duration(milliseconds: 100), () {
+        preloadLottoPointsAd();
+      });
+      return ad;
+    }
+    return null;
+  }
+  
+  NativeAd? getCachedNewsFeedAd() {
+    if (_isNewsFeedAdLoaded && _cachedNewsFeedAd != null) {
+      final ad = _cachedNewsFeedAd!;
+      _cachedNewsFeedAd = null;
+      _isNewsFeedAdLoaded = false;
+      // Preload next ad in background
+      Future.delayed(const Duration(milliseconds: 100), () {
+        preloadNewsFeedAd();
+      });
+      return ad;
+    }
+    return null;
+  }
+
+  // Check if cached ads are available
+  bool get isHomeResultsAdCached => _isHomeResultsAdLoaded;
+  bool get isLiveVideoAdCached => _isLiveVideoAdLoaded;
+  bool get isLottoPointsAdCached => _isLottoPointsAdLoaded;
+  bool get isNewsFeedAdCached => _isNewsFeedAdLoaded;
+
+  // Preload all native ads
+  Future<void> preloadNativeAds({bool isDarkTheme = false}) async {
+    // Load ads with staggered delays to avoid overwhelming the ad network
+    unawaited(preloadHomeResultsAd(isDarkTheme: isDarkTheme));
+    
+    await Future.delayed(const Duration(milliseconds: 200));
+    unawaited(preloadLiveVideoAd(isDarkTheme: isDarkTheme));
+    
+    await Future.delayed(const Duration(milliseconds: 200));
+    unawaited(preloadLottoPointsAd(isDarkTheme: isDarkTheme));
+    
+    await Future.delayed(const Duration(milliseconds: 200));
+    unawaited(preloadNewsFeedAd(isDarkTheme: isDarkTheme));
   }
 
   // Preload ads
