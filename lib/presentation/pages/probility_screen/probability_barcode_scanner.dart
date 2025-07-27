@@ -122,13 +122,24 @@ class _ProbabilityBarcodeScannerScreenState
         }
       },
       child: PopScope(
-      canPop: true,
+      canPop: false,
       onPopInvoked: (didPop) async {
-        if (didPop) {
-          setState(() {
-            _isNavigatingAway = true;
-          });
-          await cameraController.stop();
+        if (didPop) return;
+        
+        // Check if there are any dialogs open
+        if (Navigator.of(context).canPop()) {
+          // There's a dialog open, just close it
+          Navigator.of(context).pop();
+          return;
+        }
+        
+        // No dialogs open, navigate away from screen
+        setState(() {
+          _isNavigatingAway = true;
+        });
+        await cameraController.stop();
+        if (mounted) {
+          context.go('/');
         }
       },
       child: Scaffold(

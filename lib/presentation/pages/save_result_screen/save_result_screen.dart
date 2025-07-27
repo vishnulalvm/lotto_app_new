@@ -129,7 +129,10 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
   }
 
   void _navigateToResultDetails(String uniqueId) {
-    context.go('/lottery-result-details/$uniqueId');
+    context.go('/result-details', extra: {
+      'uniqueId': uniqueId,
+      'isNew': false,
+    });
   }
 
   @override

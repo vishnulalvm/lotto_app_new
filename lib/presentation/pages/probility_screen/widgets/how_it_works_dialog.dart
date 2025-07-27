@@ -71,9 +71,18 @@ class _HowItWorksDialogState extends State<HowItWorksDialog>
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: SlideTransition(
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          // Animate out before closing
+          _slideController.reverse();
+          _fadeController.reverse();
+        }
+      },
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        child: SlideTransition(
         position: _slideAnimation,
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -305,6 +314,7 @@ class _HowItWorksDialogState extends State<HowItWorksDialog>
           ),
         ),
       ),
+    ),
     );
   }
 

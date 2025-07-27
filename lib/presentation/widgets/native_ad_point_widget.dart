@@ -134,7 +134,7 @@ class _NativeAdWidgetState extends State<NativePointAdWidget> {
     final theme = Theme.of(context);
     
     return Container(
-      height: widget.height ?? AppResponsive.height(context, 25),
+      height: widget.height, // Use provided height or let parent control
       margin: widget.margin ?? AppResponsive.margin(context, vertical: 8),
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? theme.colorScheme.surface,
@@ -154,7 +154,9 @@ class _NativeAdWidgetState extends State<NativePointAdWidget> {
                 ClipRRect(
                   borderRadius: widget.borderRadius ?? 
                       BorderRadius.circular(AppResponsive.spacing(context, 12)),
-                  child: AdWidget(ad: _nativeAd!),
+                  child: SizedBox.expand(
+                    child: AdWidget(ad: _nativeAd!),
+                  ),
                 ),
                 // CRITICAL: Ad Label for AdMob Compliance
                 Positioned(
@@ -183,46 +185,49 @@ class _NativeAdWidgetState extends State<NativePointAdWidget> {
   }
 
   Widget _buildAdPlaceholder(ThemeData theme) {
-    return Container(
-      padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: AppResponsive.width(context, 20),
-            height: AppResponsive.width(context, 20),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
-            ),
-            child: Icon(
-              Icons.ads_click,
-              color: theme.primaryColor,
-              size: AppResponsive.fontSize(context, 24),
-            ),
-          ),
-          SizedBox(height: AppResponsive.spacing(context, 8)),
-          Text(
-            _isLoadingFromCache ? 'loading_cached_ad'.tr() : 'sponsored_content'.tr(),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: AppResponsive.fontSize(context, 12),
-              color: (theme.textTheme.bodySmall?.color ?? theme.textTheme.bodyMedium?.color ?? Colors.grey).withValues(alpha: 0.6),
-            ),
-          ),
-          if (!_isAdLoaded) ...[
-            SizedBox(height: AppResponsive.spacing(context, 4)),
-            SizedBox(
-              width: AppResponsive.width(context, 5),
-              height: AppResponsive.width(context, 5),
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  theme.primaryColor.withValues(alpha: 0.6),
-                ),
+    return SizedBox.expand(
+      child: Container(
+        padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: AppResponsive.width(context, 20),
+              height: AppResponsive.width(context, 20),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+              ),
+              child: Icon(
+                Icons.ads_click,
+                color: theme.primaryColor,
+                size: AppResponsive.fontSize(context, 24),
               ),
             ),
+            SizedBox(height: AppResponsive.spacing(context, 8)),
+            Text(
+              _isLoadingFromCache ? 'loading_cached_ad'.tr() : 'sponsored_content'.tr(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: AppResponsive.fontSize(context, 12),
+                color: (theme.textTheme.bodySmall?.color ?? theme.textTheme.bodyMedium?.color ?? Colors.grey).withValues(alpha: 0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (!_isAdLoaded) ...[
+              SizedBox(height: AppResponsive.spacing(context, 4)),
+              SizedBox(
+                width: AppResponsive.width(context, 5),
+                height: AppResponsive.width(context, 5),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.primaryColor.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

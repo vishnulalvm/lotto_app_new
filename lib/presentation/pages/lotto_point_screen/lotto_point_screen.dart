@@ -608,7 +608,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       children: [
         NativePointAdWidget(
           key: key,
-          height: AppResponsive.height(context, 30), // Slightly taller for grid
+          height: null, // Let grid control height via aspect ratio
           borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
           margin: EdgeInsets.zero, // No margin as grid handles spacing
         ),
