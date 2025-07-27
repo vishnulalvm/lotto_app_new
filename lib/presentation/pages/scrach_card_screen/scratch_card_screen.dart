@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_event.dart';
@@ -175,6 +176,18 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             setState(() {
               _ticketResult = state.result;
             });
+            
+            // Show toast if user earned points (currentLoser with points)
+            if (state.result.responseType == ResponseType.currentLoser && 
+                state.result.points != null && 
+                state.result.points! > 0) {
+              // Delay toast slightly to let the UI update first
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  _showPointsEarnedToast(state.result.points!);
+                }
+              });
+            }
           } else if (state is TicketCheckFailure) {
             setState(() {
               _ticketResult = null;
@@ -240,14 +253,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            Text(
-              error,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.textTheme.bodyMedium?.color,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () async {
                 context.read<TicketCheckBloc>().add(ResetTicketCheckEvent());
@@ -355,7 +360,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         iconColor = isDark ? Colors.green[400]! : Colors.green[600]!;
         primaryIcon = Icons.emoji_events;
         title = '🎉 Congratulations! You Won!';
-        subtitle = 'Current Draw Result';
+        subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : widget.ticketData['date'])}';
         break;
 
       case 'no price today':
@@ -366,14 +371,14 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           iconColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
           primaryIcon = Icons.card_giftcard;
           title = '🎁 You Earned ${result.points} Points!';
-          subtitle = 'Consolation points for current draw';
+          subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : widget.ticketData['date'])}';
         } else {
           bannerColor =
               isDark ? Colors.orange[900]!.withValues(alpha: 0.3) : Colors.orange[50]!;
           iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
           primaryIcon = Icons.info;
           title = 'Better Luck Next Time';
-          subtitle = 'Current Draw Result';
+          subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : widget.ticketData['date'])}';
         }
         break;
 
@@ -754,7 +759,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Consolation Points Earned',
+                              'Points for participation',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: Colors.white.withValues(alpha: 0.9),
                                 fontStyle: FontStyle.italic,
@@ -867,13 +872,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   String _getNoResultSubtitle(TicketCheckResponseModel result) {
     switch (result.responseType) {
       case ResponseType.previousLoser:
-        return 'Not todays result, and no prize in last result';
+        return 'Checked on ${_formatDate(result.drawDate)} - No prize won';
       case ResponseType.resultNotPublished:
         return result.message.isNotEmpty
             ? result.message
-            : 'result_not_published_yet'.tr();
+            : 'Result will be available after 3 PM';
       default:
-        return 'result_not_published_yet'.tr();
+        return 'Result will be available after 3 PM';
     }
   }
 
@@ -1013,6 +1018,47 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       return DateFormat('MMM dd, yyyy').format(date);
     } catch (e) {
       return dateString; // Return original if parsing fails
+    }
+  }
+
+  /// Show toast message when user earns points
+  void _showPointsEarnedToast(int points) {
+    try {
+      Fluttertoast.showToast(
+        msg: "🎉 Congratulations! You earned $points points!",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.TOP,
+        timeInSecForIosWeb: 3,
+        backgroundColor: Colors.blue[700],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } catch (e) {
+      // Fallback to SnackBar if toast fails
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.card_giftcard, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "🎉 Congratulations! You earned $points points!",
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.blue[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
   }
 }

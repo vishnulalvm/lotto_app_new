@@ -33,7 +33,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     if (mounted) {
       _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     }
-    _nativeAd = AdMobService.instance.createNewsStyleNativeAd(
+    _nativeAd = AdMobService.instance.createNewsStyleNativeHomeResultsAd(
       isDarkTheme: _isDarkTheme,
       listener: NativeAdListener(
         onAdLoaded: (ad) {
@@ -80,19 +80,52 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     final theme = Theme.of(context);
 
     if (!_isAdLoaded || _nativeAd == null) {
-
-      // Show a placeholder to test if the rendering logic works
       return Card(
-        color: Colors.red.withValues(alpha: 0.1),
+        color: theme.cardTheme.color,
         margin: AppResponsive.margin(context, horizontal: 16, vertical: 10),
+        elevation: theme.brightness == Brightness.dark ? 4.0 : 2.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 12)),
+          side: BorderSide(
+            color: theme.brightness == Brightness.dark
+                ? Colors.grey.withValues(alpha: 0.3)
+                : Colors.grey.withValues(alpha: 0.1),
+            width: theme.brightness == Brightness.dark ? 1.0 : 0.5,
+          ),
+        ),
         child: SizedBox(
-          height: 100,
-          child: Center(
-            child: Text(
-              'AD PLACEHOLDER - Loading: ${!_isAdLoaded}, Ad null: ${_nativeAd == null}',
-              style: TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
+          height: 120,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.ads_click,
+                size: AppResponsive.fontSize(context, 32),
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 8)),
+              Text(
+                'sponsored_content'.tr(),
+                style: TextStyle(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                  fontWeight: FontWeight.w500,
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 4)),
+              if (!_isAdLoaded)
+                SizedBox(
+                  width: AppResponsive.width(context, 5),
+                  height: AppResponsive.width(context, 5),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       );

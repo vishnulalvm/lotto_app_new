@@ -22,7 +22,7 @@ class _NativeAdVideoWidgetState extends State<NativeAdVideoWidget> {
   }
 
   void _loadNativeAd() {
-    _nativeAd = AdMobService.instance.createNewsStyleNativeAd(
+    _nativeAd = AdMobService.instance.createNewsStyleNativeLiveVideoAd(
       listener: NativeAdListener(
         onAdLoaded: (ad) {
           setState(() {

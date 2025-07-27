@@ -39,7 +39,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   void _loadNativeAd() {
     final theme = Theme.of(context);
     
-    _nativeAd = AdMobService.instance.createNativeAd(
+    _nativeAd = AdMobService.instance.createNativeHomeResultsAd(
       listener: NativeAdListener(
         onAdLoaded: (ad) {
           if (mounted) {

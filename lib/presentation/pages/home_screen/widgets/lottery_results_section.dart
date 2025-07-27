@@ -14,6 +14,7 @@ class LotteryResultsSection extends StatelessWidget {
   final VoidCallback onLoadLotteryResults;
   final VoidCallback onShowDatePicker;
   final Animation<double> blinkAnimation;
+  final Animation<double> badgeShimmerAnimation;
   final String Function(DateTime) formatDateForDisplay;
 
   const LotteryResultsSection({
@@ -21,6 +22,7 @@ class LotteryResultsSection extends StatelessWidget {
     required this.onLoadLotteryResults,
     required this.onShowDatePicker,
     required this.blinkAnimation,
+    required this.badgeShimmerAnimation,
     required this.formatDateForDisplay,
   });
 
@@ -515,78 +517,72 @@ class LotteryResultsSection extends StatelessWidget {
           ),
         ),
 
-        // Badge (New/Live based on time and date)
-        if (result.isNew || result.isLive)
+        // Badge (New/Live/Bumper based on time, date, and lottery type)
+        if (result.isNew || result.isLive || result.isBumper)
           Positioned(
             top: 13,
             right: AppResponsive.spacing(context, 16),
-            child: result.isLive
-                ? AnimatedBuilder(
-                    animation: blinkAnimation,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity: blinkAnimation.value,
-                        child: Container(
-                          padding: AppResponsive.padding(context,
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(
-                                  AppResponsive.spacing(context, 8)),
-                              bottomRight: Radius.circular(
-                                  AppResponsive.spacing(context, 8)),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            'live_badge'.tr(),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: AppResponsive.fontSize(context, 10),
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+            child: result.isBumper
+                ? _buildShimmerBadge(
+                    context: context,
+                    gradient: const LinearGradient(
+                      colors: [Colors.purple, Colors.deepPurple],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shadowColor: Colors.purple.withValues(alpha: 0.4),
+                    text: 'BUMPER',
+                    icon: Icons.star,
                   )
-                : Container(
-                    padding: AppResponsive.padding(context,
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft:
-                            Radius.circular(AppResponsive.spacing(context, 8)),
-                        bottomRight:
-                            Radius.circular(AppResponsive.spacing(context, 8)),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                : result.isLive
+                    ? AnimatedBuilder(
+                        animation: blinkAnimation,
+                        builder: (context, child) {
+                          return Opacity(
+                            opacity: blinkAnimation.value,
+                            child: Container(
+                              padding: AppResponsive.padding(context,
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(
+                                      AppResponsive.spacing(context, 8)),
+                                  bottomRight: Radius.circular(
+                                      AppResponsive.spacing(context, 8)),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'live_badge'.tr(),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: AppResponsive.fontSize(context, 10),
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : _buildShimmerBadge(
+                        context: context,
+                        gradient: const LinearGradient(
+                          colors: [Colors.green, Colors.lightGreen],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      'new_badge'.tr(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppResponsive.fontSize(context, 10),
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        shadowColor: Colors.green.withValues(alpha: 0.4),
+                        text: 'new_badge'.tr(),
+                        backgroundColor: Colors.green,
                       ),
-                    ),
-                  ),
           ),
       ],
     );
@@ -864,6 +860,91 @@ class LotteryResultsSection extends StatelessWidget {
     }
     
     return groupedResults;
+  }
+
+  /// Build a badge with shimmer effect for bumper and new badges
+  Widget _buildShimmerBadge({
+    required BuildContext context,
+    Gradient? gradient,
+    Color? backgroundColor,
+    required Color shadowColor,
+    required String text,
+    IconData? icon,
+  }) {
+    return AnimatedBuilder(
+      animation: badgeShimmerAnimation,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            // Base badge container
+            Container(
+              padding: AppResponsive.padding(context, horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: gradient,
+                color: backgroundColor,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
+                  bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: shadowColor,
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: child,
+            ),
+            // Shimmer overlay
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
+                  bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.white.withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                      begin: Alignment(badgeShimmerAnimation.value - 1, 0),
+                      end: Alignment(badgeShimmerAnimation.value, 0),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              color: Colors.white,
+              size: AppResponsive.fontSize(context, 12),
+            ),
+            SizedBox(width: AppResponsive.spacing(context, 4)),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: AppResponsive.fontSize(context, 10),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
 }

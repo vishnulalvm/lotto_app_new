@@ -37,6 +37,8 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _rotationAnimation;
   late AnimationController _shimmerAnimationController;
   late Animation<double> _shimmerAnimation;
+  late AnimationController _badgeShimmerAnimationController;
+  late Animation<double> _badgeShimmerAnimation;
   bool _isExpanded = true;
   bool _isScrollingDown = false;
   DateTime? _lastRefreshTime;
@@ -131,6 +133,20 @@ class _HomeScreenState extends State<HomeScreen>
       curve: Curves.easeInOut,
     ));
 
+    // Initialize shimmer animation controller for badge glance effect
+    _badgeShimmerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500), // 1.5 second shimmer for badges
+      vsync: this,
+    );
+
+    _badgeShimmerAnimation = Tween<double>(
+      begin: -1.0,
+      end: 2.0, // Move across the badge
+    ).animate(CurvedAnimation(
+      parent: _badgeShimmerAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
     // Start animations when app opens - repeat for more visibility
     _startAttentionAnimations();
 
@@ -171,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen>
     _blinkAnimationController.dispose();
     _rotationAnimationController.dispose();
     _shimmerAnimationController.dispose();
+    _badgeShimmerAnimationController.dispose();
     super.dispose();
   }
 
@@ -200,15 +217,16 @@ class _HomeScreenState extends State<HomeScreen>
   //   }
   // }
 
-  /// Start attention-grabbing animations for lotto points button
+  /// Start attention-grabbing animations for lotto points button and badges
   void _startAttentionAnimations() async {
     // Delay the start slightly for better UX
     await Future.delayed(const Duration(milliseconds: 1000));
 
     if (mounted) {
-      // Start both animations simultaneously
+      // Start all animations simultaneously
       _rotationAnimationController.forward();
       _shimmerAnimationController.forward();
+      _startBadgeShimmerAnimation();
 
       // Listen for rotation completion to repeat
       _rotationAnimationController.addStatusListener((status) {
@@ -231,6 +249,29 @@ class _HomeScreenState extends State<HomeScreen>
             if (mounted) {
               _shimmerAnimationController.reset();
               _shimmerAnimationController.forward();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  /// Start badge shimmer animation with periodic repeats
+  void _startBadgeShimmerAnimation() async {
+    // Initial delay before starting badge shimmer
+    await Future.delayed(const Duration(milliseconds: 2000));
+
+    if (mounted) {
+      _badgeShimmerAnimationController.forward();
+
+      // Listen for badge shimmer completion to repeat periodically
+      _badgeShimmerAnimationController.addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          // Wait longer between badge shimmers (every 8 seconds)
+          Future.delayed(const Duration(milliseconds: 8000), () {
+            if (mounted) {
+              _badgeShimmerAnimationController.reset();
+              _badgeShimmerAnimationController.forward();
             }
           });
         }
@@ -623,6 +664,7 @@ class _HomeScreenState extends State<HomeScreen>
                       onLoadLotteryResults: _loadLotteryResults,
                       onShowDatePicker: _showDatePicker,
                       blinkAnimation: _blinkAnimation,
+                      badgeShimmerAnimation: _badgeShimmerAnimation,
                       formatDateForDisplay: _formatDateForDisplay,
                     ),
                     SizedBox(height: AppResponsive.spacing(context, 100)),
@@ -701,7 +743,7 @@ class _HomeScreenState extends State<HomeScreen>
             'LOTTO',
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 22),
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.bold, 
               color: theme.appBarTheme.titleTextStyle?.color,
             ),
           );

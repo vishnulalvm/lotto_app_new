@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -8,241 +7,187 @@ class AdMobService {
   
   AdMobService._();
 
-  // Test Ad Unit IDs for development
-  static const String _testRewardedAdUnitId = 'ca-app-pub-3940256099942544/5224354917';
-  static const String _testInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
-  static const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-  static const String _testNativeAdUnitId = 'ca-app-pub-3940256099942544/2247696110';
-
-  // Production Ad Unit IDs (to be updated when you create your AdMob account)
-  static const String _prodRewardedAdUnitId = 'ca-app-pub-3940256099942544/5224354917';
-  static const String _prodInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
-  static const String _prodBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-  static const String _prodNativeAdUnitId = 'ca-app-pub-3940256099942544/2247696110';
+  // INTERSTITIAL AD UNIT IDs
+  static const String interstitialResultsPredict = 'ca-app-pub-1386225714525775/8656073343';
+  static const String interstitialResultsSeemore = 'ca-app-pub-1386225714525775/4716828336';
+  
+  // NATIVE AD UNIT IDs
+  static const String nativeHomeResults = 'ca-app-pub-1386225714525775/1332117098';
+  static const String nativeLiveVideo = 'ca-app-pub-1386225714525775/5079790413';
+  static const String nativeLottoPoints = 'ca-app-pub-1386225714525775/5247311376';
+  static const String nativeNewsFeed = 'ca-app-pub-1386225714525775/6560393048';
 
   // Ad instances
-  RewardedAd? _rewardedAd;
-  InterstitialAd? _interstitialAd;
-  BannerAd? _bannerAd;
+  InterstitialAd? _interstitialPredictAd;
+  InterstitialAd? _interstitialSeemoreAd;
 
   // Ad loading states
-  bool _isRewardedAdLoaded = false;
-  bool _isInterstitialAdLoaded = false;
-  bool _isBannerAdLoaded = false;
+  bool _isInterstitialPredictAdLoaded = false;
+  bool _isInterstitialSeemoreAdLoaded = false;
 
   // Initialization
   static Future<void> initialize() async {
     await MobileAds.instance.initialize();
-    
-    // Request configuration for test devices (optional)
-    if (kDebugMode) {
-      final requestConfiguration = RequestConfiguration(
-        testDeviceIds: ['YOUR_TEST_DEVICE_ID_HERE'], // Add your test device ID
-      );
-      MobileAds.instance.updateRequestConfiguration(requestConfiguration);
-    }
   }
 
-  // Get Ad Unit IDs based on environment
-  String get rewardedAdUnitId {
-    return kDebugMode ? _testRewardedAdUnitId : _prodRewardedAdUnitId;
-  }
+  // Get Production Ad Unit IDs
+  String get interstitialPredictAdUnitId => interstitialResultsPredict;
+  String get interstitialSeemoreAdUnitId => interstitialResultsSeemore;
+  String get nativeHomeResultsAdUnitId => nativeHomeResults;
+  String get nativeLiveVideoAdUnitId => nativeLiveVideo;
+  String get nativeLottoPointsAdUnitId => nativeLottoPoints;
+  String get nativeNewsFeedAdUnitId => nativeNewsFeed;
 
-  String get interstitialAdUnitId {
-    return kDebugMode ? _testInterstitialAdUnitId : _prodInterstitialAdUnitId;
-  }
-
-  String get bannerAdUnitId {
-    return kDebugMode ? _testBannerAdUnitId : _prodBannerAdUnitId;
-  }
-
-  String get nativeAdUnitId {
-    return kDebugMode ? _testNativeAdUnitId : _prodNativeAdUnitId;
-  }
-
-  // Rewarded Ad Methods
-  Future<void> loadRewardedAd() async {
-    await RewardedAd.load(
-      adUnitId: rewardedAdUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          _rewardedAd = ad;
-          _isRewardedAdLoaded = true;
-          
-          // Set full screen content callback
-          _rewardedAd?.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _rewardedAd = null;
-              _isRewardedAdLoaded = false;
-              // Preload next ad
-              loadRewardedAd();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              _rewardedAd = null;
-              _isRewardedAdLoaded = false;
-              },
-          );
-          
-        },
-        onAdFailedToLoad: (error) {
-          _isRewardedAdLoaded = false;
-        },
-      ),
-    );
-  }
-
-  Future<void> showRewardedAd({
-    required OnUserEarnedRewardCallback onUserEarnedReward,
-    Function()? onAdDismissed,
-  }) async {
-    if (_rewardedAd != null && _isRewardedAdLoaded) {
-      _rewardedAd?.show(
-        onUserEarnedReward: onUserEarnedReward,
-      );
-      
-      // Set callback for when ad is dismissed
-      if (onAdDismissed != null) {
-        _rewardedAd?.fullScreenContentCallback = FullScreenContentCallback(
-          onAdDismissedFullScreenContent: (ad) {
-            ad.dispose();
-            _rewardedAd = null;
-            _isRewardedAdLoaded = false;
-            onAdDismissed();
-            // Preload next ad
-            loadRewardedAd();
-          },
-          onAdFailedToShowFullScreenContent: (ad, error) {
-            ad.dispose();
-            _rewardedAd = null;
-            _isRewardedAdLoaded = false;
-          },
-        );
-      }
-    } else {
-    }
-  }
-
-  bool get isRewardedAdLoaded => _isRewardedAdLoaded;
-
-  // Interstitial Ad Methods
-  Future<void> loadInterstitialAd() async {
+  // Interstitial Predict Ad Methods
+  Future<void> loadInterstitialPredictAd() async {
     await InterstitialAd.load(
-      adUnitId: interstitialAdUnitId,
+      adUnitId: interstitialPredictAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          _isInterstitialAdLoaded = true;
+          _interstitialPredictAd = ad;
+          _isInterstitialPredictAdLoaded = true;
           
           // Set full screen content callback
-          _interstitialAd?.fullScreenContentCallback = FullScreenContentCallback(
+          _interstitialPredictAd?.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
-              _interstitialAd = null;
-              _isInterstitialAdLoaded = false;
+              _interstitialPredictAd = null;
+              _isInterstitialPredictAdLoaded = false;
               // Preload next ad
-              loadInterstitialAd();
+              loadInterstitialPredictAd();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               ad.dispose();
-              _interstitialAd = null;
-              _isInterstitialAdLoaded = false;
+              _interstitialPredictAd = null;
+              _isInterstitialPredictAdLoaded = false;
             },
           );
-          
         },
         onAdFailedToLoad: (error) {
-          _isInterstitialAdLoaded = false;
+          _isInterstitialPredictAdLoaded = false;
         },
       ),
     );
   }
 
-  Future<void> showInterstitialAd({
+  Future<void> showInterstitialPredictAd({
     Function()? onAdDismissed,
   }) async {
-    if (_interstitialAd != null && _isInterstitialAdLoaded) {
-      _interstitialAd?.show();
+    if (_interstitialPredictAd != null && _isInterstitialPredictAdLoaded) {
+      _interstitialPredictAd?.show();
       
       // Set callback for when ad is dismissed
       if (onAdDismissed != null) {
-        _interstitialAd?.fullScreenContentCallback = FullScreenContentCallback(
+        _interstitialPredictAd?.fullScreenContentCallback = FullScreenContentCallback(
           onAdDismissedFullScreenContent: (ad) {
             ad.dispose();
-            _interstitialAd = null;
-            _isInterstitialAdLoaded = false;
+            _interstitialPredictAd = null;
+            _isInterstitialPredictAdLoaded = false;
             onAdDismissed();
             // Preload next ad
-            loadInterstitialAd();
+            loadInterstitialPredictAd();
           },
           onAdFailedToShowFullScreenContent: (ad, error) {
             ad.dispose();
-            _interstitialAd = null;
-            _isInterstitialAdLoaded = false;
+            _interstitialPredictAd = null;
+            _isInterstitialPredictAdLoaded = false;
           },
         );
       }
-    } else {
     }
   }
 
-  bool get isInterstitialAdLoaded => _isInterstitialAdLoaded;
+  bool get isInterstitialPredictAdLoaded => _isInterstitialPredictAdLoaded;
 
-  // Banner Ad Methods
-  BannerAd createBannerAd() {
-    return BannerAd(
-      adUnitId: bannerAdUnitId,
+  // Interstitial Seemore Ad Methods
+  Future<void> loadInterstitialSeemoreAd() async {
+    await InterstitialAd.load(
+      adUnitId: interstitialSeemoreAdUnitId,
       request: const AdRequest(),
-      size: AdSize.banner,
-      listener: BannerAdListener(
+      adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          _isBannerAdLoaded = true;
+          _interstitialSeemoreAd = ad;
+          _isInterstitialSeemoreAdLoaded = true;
+          
+          // Set full screen content callback
+          _interstitialSeemoreAd?.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialSeemoreAd = null;
+              _isInterstitialSeemoreAdLoaded = false;
+              // Preload next ad
+              loadInterstitialSeemoreAd();
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              _interstitialSeemoreAd = null;
+              _isInterstitialSeemoreAdLoaded = false;
+            },
+          );
         },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          _isBannerAdLoaded = false;
+        onAdFailedToLoad: (error) {
+          _isInterstitialSeemoreAdLoaded = false;
         },
       ),
     );
   }
 
-  bool get isBannerAdLoaded => _isBannerAdLoaded;
+  Future<void> showInterstitialSeemoreAd({
+    Function()? onAdDismissed,
+  }) async {
+    if (_interstitialSeemoreAd != null && _isInterstitialSeemoreAdLoaded) {
+      _interstitialSeemoreAd?.show();
+      
+      // Set callback for when ad is dismissed
+      if (onAdDismissed != null) {
+        _interstitialSeemoreAd?.fullScreenContentCallback = FullScreenContentCallback(
+          onAdDismissedFullScreenContent: (ad) {
+            ad.dispose();
+            _interstitialSeemoreAd = null;
+            _isInterstitialSeemoreAdLoaded = false;
+            onAdDismissed();
+            // Preload next ad
+            loadInterstitialSeemoreAd();
+          },
+          onAdFailedToShowFullScreenContent: (ad, error) {
+            ad.dispose();
+            _interstitialSeemoreAd = null;
+            _isInterstitialSeemoreAdLoaded = false;
+          },
+        );
+      }
+    }
+  }
+
+  bool get isInterstitialSeemoreAdLoaded => _isInterstitialSeemoreAdLoaded;
+
 
   // Dispose methods
-  void disposeRewardedAd() {
-    _rewardedAd?.dispose();
-    _rewardedAd = null;
-    _isRewardedAdLoaded = false;
+  void disposeInterstitialPredictAd() {
+    _interstitialPredictAd?.dispose();
+    _interstitialPredictAd = null;
+    _isInterstitialPredictAdLoaded = false;
   }
 
-  void disposeInterstitialAd() {
-    _interstitialAd?.dispose();
-    _interstitialAd = null;
-    _isInterstitialAdLoaded = false;
-  }
-
-  void disposeBannerAd() {
-    _bannerAd?.dispose();
-    _bannerAd = null;
-    _isBannerAdLoaded = false;
+  void disposeInterstitialSeemoreAd() {
+    _interstitialSeemoreAd?.dispose();
+    _interstitialSeemoreAd = null;
+    _isInterstitialSeemoreAdLoaded = false;
   }
 
   void disposeAll() {
-    disposeRewardedAd();
-    disposeInterstitialAd();
-    disposeBannerAd();
+    disposeInterstitialPredictAd();
+    disposeInterstitialSeemoreAd();
   }
 
   // Native Ad Methods
-  NativeAd createNativeAd({
+  NativeAd createNativeHomeResultsAd({
     required NativeAdListener listener,
     NativeTemplateStyle? templateStyle,
   }) {
     return NativeAd(
-      adUnitId: nativeAdUnitId,
+      adUnitId: nativeHomeResultsAdUnitId,
       listener: listener,
       request: const AdRequest(),
       nativeTemplateStyle: templateStyle ?? NativeTemplateStyle(
@@ -277,8 +222,174 @@ class AdMobService {
     );
   }
 
-  // Create news-styled native ad for seamless integration
-  NativeAd createNewsStyleNativeAd({
+  NativeAd createNativeLiveVideoAd({
+    required NativeAdListener listener,
+    NativeTemplateStyle? templateStyle,
+  }) {
+    return NativeAd(
+      adUnitId: nativeLiveVideoAdUnitId,
+      listener: listener,
+      request: const AdRequest(),
+      nativeTemplateStyle: templateStyle ?? NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 10.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: Colors.blue,
+          style: NativeTemplateFontStyle.monospace,
+          size: 16.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black87,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black54,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.italic,
+          size: 14.0,
+        ),
+        tertiaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black45,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.normal,
+          size: 12.0,
+        ),
+      ),
+    );
+  }
+
+  NativeAd createNativeLottoPointsAd({
+    required NativeAdListener listener,
+    NativeTemplateStyle? templateStyle,
+  }) {
+    return NativeAd(
+      adUnitId: nativeLottoPointsAdUnitId,
+      listener: listener,
+      request: const AdRequest(),
+      nativeTemplateStyle: templateStyle ?? NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 10.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: Colors.blue,
+          style: NativeTemplateFontStyle.monospace,
+          size: 16.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black87,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black54,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.italic,
+          size: 14.0,
+        ),
+        tertiaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black45,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.normal,
+          size: 12.0,
+        ),
+      ),
+    );
+  }
+
+  NativeAd createNativeNewsFeedAd({
+    required NativeAdListener listener,
+    NativeTemplateStyle? templateStyle,
+  }) {
+    return NativeAd(
+      adUnitId: nativeNewsFeedAdUnitId,
+      listener: listener,
+      request: const AdRequest(),
+      nativeTemplateStyle: templateStyle ?? NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 10.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: Colors.blue,
+          style: NativeTemplateFontStyle.monospace,
+          size: 16.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black87,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black54,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.italic,
+          size: 14.0,
+        ),
+        tertiaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black45,
+          backgroundColor: Colors.white,
+          style: NativeTemplateFontStyle.normal,
+          size: 12.0,
+        ),
+      ),
+    );
+  }
+
+  // Create news-styled native ads for different locations
+  NativeAd createNewsStyleNativeHomeResultsAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNewsStyleNativeAd(
+      adUnitId: nativeHomeResultsAdUnitId,
+      listener: listener,
+      isDarkTheme: isDarkTheme,
+    );
+  }
+
+  NativeAd createNewsStyleNativeLiveVideoAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNewsStyleNativeAd(
+      adUnitId: nativeLiveVideoAdUnitId,
+      listener: listener,
+      isDarkTheme: isDarkTheme,
+    );
+  }
+
+  NativeAd createNewsStyleNativeLottoPointsAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNewsStyleNativeAd(
+      adUnitId: nativeLottoPointsAdUnitId,
+      listener: listener,
+      isDarkTheme: isDarkTheme,
+    );
+  }
+
+  NativeAd createNewsStyleNativeNewsFeedAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNewsStyleNativeAd(
+      adUnitId: nativeNewsFeedAdUnitId,
+      listener: listener,
+      isDarkTheme: isDarkTheme,
+    );
+  }
+
+  // Private helper method for consistent styling
+  NativeAd _createNewsStyleNativeAd({
+    required String adUnitId,
     required NativeAdListener listener,
     bool isDarkTheme = false,
   }) {
@@ -288,7 +399,7 @@ class AdMobService {
     final backgroundColor = isDarkTheme ? Colors.grey[850] : Colors.white;
     
     return NativeAd(
-      adUnitId: nativeAdUnitId,
+      adUnitId: adUnitId,
       listener: listener,
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
@@ -331,7 +442,7 @@ class AdMobService {
 
   // Preload ads
   void preloadAds() {
-    loadRewardedAd();
-    loadInterstitialAd();
+    loadInterstitialPredictAd();
+    loadInterstitialSeemoreAd();
   }
 }
