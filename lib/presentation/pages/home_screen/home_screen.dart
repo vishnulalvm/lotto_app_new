@@ -135,7 +135,8 @@ class _HomeScreenState extends State<HomeScreen>
 
     // Initialize shimmer animation controller for badge glance effect
     _badgeShimmerAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500), // 1.5 second shimmer for badges
+      duration:
+          const Duration(milliseconds: 1500), // 1.5 second shimmer for badges
       vsync: this,
     );
 
@@ -151,27 +152,6 @@ class _HomeScreenState extends State<HomeScreen>
     _startAttentionAnimations();
 
     _showLanguageDialogIfNeeded();
-
-    // Preload common assets for better performance
-    _preloadCommonAssets();
-  }
-
-  /// Preload common assets to improve initial load performance
-  void _preloadCommonAssets() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Preload fallback carousel images
-      const fallbackImages = [
-        'assets/images/bhagyadhara.jpg',
-        'assets/images/dhanalakshmi.jpg',
-        'assets/images/karunya-plus.jpg',
-        'assets/images/karunya.jpg',
-        'assets/images/sthreesakthi.jpg',
-      ];
-
-      for (final assetPath in fallbackImages) {
-        precacheImage(AssetImage(assetPath), context);
-      }
-    });
   }
 
   @override
@@ -297,9 +277,7 @@ class _HomeScreenState extends State<HomeScreen>
       if (!_isScrollingDown) {
         _isScrollingDown = true;
         if (_isExpanded) {
-          setState(() {
-            _isExpanded = false;
-          });
+          _isExpanded = false;
           _fabAnimationController.reverse();
         }
       }
@@ -308,9 +286,7 @@ class _HomeScreenState extends State<HomeScreen>
       if (_isScrollingDown) {
         _isScrollingDown = false;
         if (!_isExpanded) {
-          setState(() {
-            _isExpanded = true;
-          });
+          _isExpanded = true;
           _fabAnimationController.forward();
         }
       }
@@ -532,27 +508,6 @@ class _HomeScreenState extends State<HomeScreen>
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  // Helper method to format points numbers (e.g., 1250 -> "1.25K", 1000000 -> "1M")
-  // String _formatPoints(int points) {
-  //   if (points < 1000) {
-  //     return points.toString();
-  //   } else if (points < 1000000) {
-  //     double thousands = points / 1000;
-  //     if (thousands == thousands.roundToDouble()) {
-  //       return '${thousands.round()}K';
-  //     } else {
-  //       return '${thousands.toStringAsFixed(1)}K';
-  //     }
-  //   } else {
-  //     double millions = points / 1000000;
-  //     if (millions == millions.roundToDouble()) {
-  //       return '${millions.round()}M';
-  //     } else {
-  //       return '${millions.toStringAsFixed(1)}M';
-  //     }
-  //   }
-  // }
-
   /// Handle back button press and show rating dialog
   Future<bool> _handleBackPress() async {
     await RateUsDialog.incrementBackButtonCount();
@@ -645,15 +600,9 @@ class _HomeScreenState extends State<HomeScreen>
                           gradientStartColor: Colors.pink.shade100,
                           gradientEndColor: Colors.pink.shade300,
                           // Optional: Custom settings
+
                           autoPlay: true,
                           autoPlayInterval: const Duration(seconds: 4),
-                          fallbackImages: const [
-                            'assets/images/sthreesakthi.jpg',
-                            'assets/images/bhagyadhara.jpg',
-                            'assets/images/karunya-plus.jpg',
-                            'assets/images/karunya.jpg',
-                            'assets/images/suvarnna-keralam.jpg',
-                          ],
                         );
                       },
                     ),
@@ -743,7 +692,7 @@ class _HomeScreenState extends State<HomeScreen>
             'LOTTO',
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 22),
-              fontWeight: FontWeight.bold, 
+              fontWeight: FontWeight.bold,
               color: theme.appBarTheme.titleTextStyle?.color,
             ),
           );
