@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_event.dart';
@@ -177,18 +176,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             setState(() {
               _ticketResult = state.result;
             });
-
-            // Show toast if user earned points (currentLoser with points)
-            if (state.result.responseType == ResponseType.currentLoser &&
-                state.result.points != null &&
-                state.result.points! > 0) {
-              // Delay toast slightly to let the UI update first
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  _showPointsEarnedToast(state.result.points!);
-                }
-              });
-            }
           } else if (state is TicketCheckFailure) {
             setState(() {
               _ticketResult = null;
@@ -412,46 +399,5 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         ],
       ),
     );
-  }
-
-  /// Show toast message when user earns points
-  void _showPointsEarnedToast(int points) {
-    try {
-      Fluttertoast.showToast(
-        msg: "🎉 Congratulations! You earned $points points!",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.TOP,
-        timeInSecForIosWeb: 3,
-        backgroundColor: Colors.blue[700],
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    } catch (e) {
-      // Fallback to SnackBar if toast fails
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.card_giftcard, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "🎉 Congratulations! You earned $points points!",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            duration: const Duration(seconds: 3),
-            backgroundColor: Colors.blue[700],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    }
   }
 }

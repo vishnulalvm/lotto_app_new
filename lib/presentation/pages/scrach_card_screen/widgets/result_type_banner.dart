@@ -216,9 +216,9 @@ class ResultTypeBanner extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      'See',
+                      'View ',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

@@ -80,14 +80,14 @@ class ResultCard extends StatelessWidget {
     
     // Calculate card size as percentage of screen width with min/max constraints
     double cardWidth = screenWidth * 0.85; // 85% of screen width
-    cardWidth = cardWidth.clamp(280.0, 350.0); // Min 280, Max 350
+    cardWidth = cardWidth.clamp(280.0, 300.0); // Min 280, Max 300
     
     // Maintain aspect ratio (1:1 for square cards)
     double cardHeight = cardWidth;
     
     // For no-result cards, allow slightly taller if needed
     if (type == ResultCardType.noResult) {
-      cardHeight = cardWidth.clamp(300.0, 380.0);
+      cardHeight = cardWidth.clamp(280.0, 300.0);
     }
     
     // Adjust for very small screens (iPhone SE, etc.)
@@ -316,7 +316,7 @@ class ResultCard extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontSize: responsiveSize.titleFontSize,
+                          fontSize: responsiveSize.titleFontSize * 1.15,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -326,14 +326,14 @@ class ResultCard extends StatelessWidget {
                         '${'ticket'.tr()}: ${result!.displayTicketNumber}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
-                          fontSize: responsiveSize.bodyFontSize * 0.9,
+                          fontSize: responsiveSize.bodyFontSize,
                         ),
                       ),
                       Text(
                         '${'draw'.tr()}: ${result!.formattedLotteryInfo}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
-                          fontSize: responsiveSize.bodyFontSize * 0.9,
+                          fontSize: responsiveSize.bodyFontSize,
                         ),
                       ),
                     ],
@@ -400,7 +400,7 @@ class ResultCard extends StatelessWidget {
           style: theme.textTheme.headlineSmall?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: responsiveSize.titleFontSize * 1.2,
+            fontSize: responsiveSize.titleFontSize * 1.35,
           ),
         ),
         SizedBox(height: responsiveSize.padding * 0.33),
@@ -408,7 +408,7 @@ class ResultCard extends StatelessWidget {
           result!.matchType,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: Colors.white,
-            fontSize: responsiveSize.bodyFontSize,
+            fontSize: responsiveSize.bodyFontSize * 1.1,
           ),
           textAlign: TextAlign.center,
         ),
@@ -419,7 +419,7 @@ class ResultCard extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               fontStyle: FontStyle.italic,
-              fontSize: responsiveSize.bodyFontSize * 0.8,
+              fontSize: responsiveSize.bodyFontSize * 0.95,
             ),
             textAlign: TextAlign.center,
           ),
@@ -435,7 +435,7 @@ class ResultCard extends StatelessWidget {
             style: theme.textTheme.headlineSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: responsiveSize.titleFontSize * 1.2,
+              fontSize: responsiveSize.titleFontSize * 1.35,
             ),
           ),
           SizedBox(height: responsiveSize.padding * 0.17),
@@ -444,7 +444,7 @@ class ResultCard extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               fontStyle: FontStyle.italic,
-              fontSize: responsiveSize.bodyFontSize * 0.9,
+              fontSize: responsiveSize.bodyFontSize * 1.05,
             ),
             textAlign: TextAlign.center,
           ),
@@ -457,7 +457,7 @@ class ResultCard extends StatelessWidget {
             style: theme.textTheme.headlineSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: responsiveSize.titleFontSize * 1.2,
+              fontSize: responsiveSize.titleFontSize * 1.35,
             ),
           ),
           SizedBox(height: responsiveSize.padding * 0.33),
