@@ -47,6 +47,7 @@ import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.d
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/routes/route_names.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'dart:async';
 
 // Singleton services to avoid multiple instances
@@ -82,6 +83,9 @@ void main() async {
 
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Initialize Firebase messaging service (non-blocking)
+  FirebaseMessagingService.initialize().catchError((error) {});
 
   // Initialize app update service (non-blocking)
   AppUpdateService().initialize().catchError((error) {});

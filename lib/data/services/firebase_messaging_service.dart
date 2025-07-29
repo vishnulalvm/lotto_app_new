@@ -3,71 +3,106 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotto_app/data/datasource/api/notification/fcm_api_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lotto_app/routes/app_routes.dart';
+import 'package:lotto_app/routes/route_names.dart';
+import 'dart:convert';
+import 'dart:developer' as developer;
 
 class FirebaseMessagingService {
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
   static final FcmApiService _fcmApiService = FcmApiService();
-  static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-  
+  static final FlutterLocalNotificationsPlugin
+      _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  // Singleton instances to avoid repeated instantiation
+  static UserService? _userService;
+  static SharedPreferences? _sharedPreferences;
   static String? _currentToken;
-  
+
+  /// Get singleton UserService instance
+  static UserService get _userServiceInstance {
+    return _userService ??= UserService();
+  }
+
+  /// Get singleton SharedPreferences instance
+  static Future<SharedPreferences> get _prefsInstance async {
+    return _sharedPreferences ??= await SharedPreferences.getInstance();
+  }
+
   /// Initialize Firebase messaging
   static Future<void> initialize() async {
-    
     // Initialize local notifications
     await _initializeLocalNotifications();
-    
+
     // Request notification permissions
     await _requestPermissions();
-    
+
     // Get the token
     await _getToken();
-    
+
     // Configure foreground message handling
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    
+
     // Handle notification taps when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-    
+
     // Handle notification tap when app is terminated
     final initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
       _handleNotificationTap(initialMessage);
     }
-    
+
     // Listen for token refresh
     _firebaseMessaging.onTokenRefresh.listen(_onTokenRefresh);
   }
-  
+
   /// Initialize local notifications
   static Future<void> _initializeLocalNotifications() async {
     try {
-      
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
-      
+
       const InitializationSettings initializationSettings =
           InitializationSettings(
-            android: initializationSettingsAndroid,
-          );
-      
+        android: initializationSettingsAndroid,
+      );
+
       await _flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
+
+      developer.log('Local notifications initialized successfully',
+          name: 'FirebaseMessaging');
     } catch (e) {
+      developer.log('Failed to initialize local notifications: $e',
+          name: 'FirebaseMessaging', error: e);
     }
   }
-  
+
   /// Handle notification tap from local notifications
   static void _onNotificationTapped(NotificationResponse response) {
-    // Handle navigation based on payload
+    try {
+      if (response.payload != null) {
+        // Parse JSON payload and navigate accordingly
+        final data = jsonDecode(response.payload!);
+        _navigateBasedOnData(data);
+      } else {
+        // Default navigation when no payload
+        _navigateToHome();
+      }
+    } catch (e) {
+      developer.log('Failed to handle notification tap: $e',
+          name: 'FirebaseMessaging', error: e);
+      // Fallback to home screen
+      _navigateToHome();
+    }
   }
-  
+
   /// Request notification permissions
   static Future<void> _requestPermissions() async {
-    
     await _firebaseMessaging.requestPermission(
       alert: true,
       announcement: false,
@@ -76,105 +111,117 @@ class FirebaseMessagingService {
       criticalAlert: false,
       provisional: false,
       sound: true,
-       
     );
   }
-  
+
   /// Get FCM token
   static Future<String?> _getToken() async {
     try {
       _currentToken = await _firebaseMessaging.getToken();
+      developer.log('FCM token retrieved successfully',
+          name: 'FirebaseMessaging');
       return _currentToken;
     } catch (e) {
+      developer.log('Failed to get FCM token: $e',
+          name: 'FirebaseMessaging', error: e);
       return null;
     }
   }
-  
+
   /// Get current FCM token
   static String? get currentToken => _currentToken;
-  
+
   /// Register FCM token with backend
   static Future<bool> registerToken({bool notificationsEnabled = true}) async {
+    return await _handleTokenOperation(
+      notificationsEnabled: notificationsEnabled,
+      isUpdate: false,
+    );
+  }
+
+  /// Update notification settings
+  static Future<bool> updateNotificationSettings(bool enabled) async {
+    return await _handleTokenOperation(
+      notificationsEnabled: enabled,
+      isUpdate: true,
+    );
+  }
+
+  /// Common method to handle token registration and updates
+  static Future<bool> _handleTokenOperation({
+    required bool notificationsEnabled,
+    required bool isUpdate,
+  }) async {
     try {
       final token = _currentToken ?? await _getToken();
       if (token == null) {
-        return false;
-      }
-      
-      final userService = UserService();
-      final phoneNumber = await userService.getPhoneNumber();
-      final name = await userService.getUserName();
-      
-      if (phoneNumber == null) {
+        developer.log('FCM token is null', name: 'FirebaseMessaging');
         return false;
       }
 
-      await _fcmApiService.registerFcmToken(
-        fcmToken: token,
-        phoneNumber: phoneNumber,
-        name: name ?? 'User',
-        notificationsEnabled: notificationsEnabled,
-      );
-      
-      // Save notification preference locally
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('notifications_enabled', notificationsEnabled);
-      
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  /// Update notification settings
-  static Future<bool> updateNotificationSettings(bool enabled) async {
-    try {
-      final token = _currentToken ?? await _getToken();
-      if (token == null) {
-        return false;
-      }
-      
-      final userService = UserService();
-      final phoneNumber = await userService.getPhoneNumber();
-      final name = await userService.getUserName();
-      
+      final phoneNumber = await _userServiceInstance.getPhoneNumber();
+      final name = await _userServiceInstance.getUserName();
+
       if (phoneNumber == null) {
+        developer.log('Phone number is null', name: 'FirebaseMessaging');
         return false;
       }
-      
-      await _fcmApiService.updateNotificationSettings(
-        fcmToken: token,
-        phoneNumber: phoneNumber,
-        name: name ?? 'User',
-        notificationsEnabled: enabled,
-      );
-      
-      // Save notification preference locally
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('notifications_enabled', enabled);
-      
+
+      if (isUpdate) {
+        await _fcmApiService.updateNotificationSettings(
+          fcmToken: token,
+          phoneNumber: phoneNumber,
+          name: name ?? 'User',
+          notificationsEnabled: notificationsEnabled,
+        );
+      } else {
+        await _fcmApiService.registerFcmToken(
+          fcmToken: token,
+          phoneNumber: phoneNumber,
+          name: name ?? 'User',
+          notificationsEnabled: notificationsEnabled,
+        );
+      }
+
+      // Save notification preference locally using singleton instance
+      final prefs = await _prefsInstance;
+      await prefs.setBool('notifications_enabled', notificationsEnabled);
+
       return true;
     } catch (e) {
+      developer.log('Token operation failed: $e',
+          name: 'FirebaseMessaging', error: e);
       return false;
     }
   }
-  
+
   /// Handle foreground messages
   static void _handleForegroundMessage(RemoteMessage message) {
-    RemoteNotification? notification = message.notification;
-    
-    if (notification != null) {
-      // Show local notification with large icon for foreground messages
-      _showLocalNotification(
-        id: notification.hashCode,
-        title: notification.title ?? 'Kerala Lottery',
-        body: notification.body ?? 'New lottery notification',
-        payload: message.data.toString(),
-      );
+    try {
+      RemoteNotification? notification = message.notification;
+
+      if (notification != null) {
+        // Encode data as JSON for proper parsing later
+        final payload =
+            message.data.isNotEmpty ? jsonEncode(message.data) : null;
+
+        // Show local notification with large icon for foreground messages
+        _showLocalNotification(
+          id: notification.hashCode,
+          title: notification.title ?? 'Kerala Lottery',
+          body: notification.body ?? 'New lottery notification',
+          payload: payload,
+        );
+
+        developer.log('Foreground notification displayed',
+            name: 'FirebaseMessaging');
+      }
+    } catch (e) {
+      developer.log('Failed to handle foreground message: $e',
+          name: 'FirebaseMessaging', error: e);
     }
-    
   }
-  
+
   /// Show local notification with large icon
   static Future<void> _showLocalNotification({
     required int id,
@@ -183,25 +230,24 @@ class FirebaseMessagingService {
     String? payload,
   }) async {
     try {
-      
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-            'default_channel',
-            'Default Notifications',
-            channelDescription: 'Channel for foreground notifications',
-            icon: '@mipmap/ic_launcher',
-            largeIcon: DrawableResourceAndroidBitmap('ic_stat_new_small_logo'), // Use your custom icon
-            importance: Importance.max,
-            priority: Priority.high,
-            showWhen: true,
-            enableVibration: true,
-            playSound: true,
-            autoCancel: true,
-          );
-      
+        'default_channel',
+        'Default Notifications',
+        channelDescription: 'Channel for foreground notifications',
+        icon: '@mipmap/ic_launcher',
+        largeIcon: DrawableResourceAndroidBitmap('ic_stat_new_small_logo'),
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+        autoCancel: true,
+      );
+
       const NotificationDetails platformChannelSpecifics =
           NotificationDetails(android: androidPlatformChannelSpecifics);
-      
+
       await _flutterLocalNotificationsPlugin.show(
         id,
         title,
@@ -209,38 +255,112 @@ class FirebaseMessagingService {
         platformChannelSpecifics,
         payload: payload,
       );
+
+      developer.log('Local notification shown successfully',
+          name: 'FirebaseMessaging');
     } catch (e) {
-      // Fallback - notification will still be handled by FCM automatically
+      developer.log('Failed to show local notification: $e',
+          name: 'FirebaseMessaging', error: e);
     }
   }
-  
+
   /// Handle notification tap
   static void _handleNotificationTap(RemoteMessage message) {
-    // Handle navigation based on notification data
-    final notificationType = message.data['type'];
-    
-    switch (notificationType) {
-      case 'live_result_starts':
-        // Navigate to live results or home screen
-        break;
-      case 'result_published':
-        // Navigate to specific result details
-        break;
-      case 'test':
-        // Handle test notification
-        break;
-      default:
-        // Navigate to home screen
-        break;
+    try {
+      _navigateBasedOnData(message.data);
+      developer.log('Notification tap handled successfully',
+          name: 'FirebaseMessaging');
+    } catch (e) {
+      developer.log('Failed to handle notification tap: $e',
+          name: 'FirebaseMessaging', error: e);
+      _navigateToHome();
     }
   }
+
+  /// Navigate based on notification data
+  static void _navigateBasedOnData(Map<String, dynamic> data) {
+    // If context is not available, wait and retry
+    _attemptNavigation(data, retryCount: 0);
+  }
   
+  /// Attempt navigation with retry logic for app initialization
+  static void _attemptNavigation(Map<String, dynamic> data, {int retryCount = 0}) {
+    final context = AppRouter.navigatorKey.currentContext;
+
+    if (context == null) {
+      if (retryCount < 10) { // Max 10 retries (5 seconds)
+        developer.log('Navigation context null, retrying in 500ms (attempt ${retryCount + 1})', 
+            name: 'FirebaseMessaging');
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _attemptNavigation(data, retryCount: retryCount + 1);
+        });
+        return;
+      } else {
+        developer.log('Navigation context still null after retries', 
+            name: 'FirebaseMessaging');
+        return;
+      }
+    }
+
+    final notificationType = data['type'];
+
+    try {
+      switch (notificationType) {
+        case 'live_result_starts':
+          context.pushNamed(RouteNames.liveVideoScreen);
+          break;
+        case 'new_result':
+        case 'result_ready':
+        case 'result_published':
+          final uniqueId = data['uniqueId'];
+          if (uniqueId != null) {
+            context.push('/result-details', extra: {
+              'uniqueId': uniqueId,
+              'isNew': true,
+            });
+          } else {
+            context.go('/');
+          }
+          break;
+        case 'test':
+          context.go('/');
+          break;
+        default:
+          context.go('/');
+          break;
+      }
+      
+      developer.log('Navigation completed successfully for type: $notificationType', 
+          name: 'FirebaseMessaging');
+    } catch (e) {
+      developer.log('Navigation failed, falling back to home: $e',
+          name: 'FirebaseMessaging', error: e);
+      _navigateToHome();
+    }
+  }
+
+  /// Safe navigation to home screen
+  static void _navigateToHome() {
+    try {
+      final context = AppRouter.navigatorKey.currentContext;
+      if (context != null) {
+        context.go('/');
+      }
+    } catch (e) {
+      developer.log('Failed to navigate to home: $e',
+          name: 'FirebaseMessaging', error: e);
+    }
+  }
+
   /// Handle token refresh
   static void _onTokenRefresh(String token) {
     _currentToken = token;
-    
+    developer.log('FCM token refreshed', name: 'FirebaseMessaging');
+
     // Re-register with the new token
     registerToken().catchError((error) {
+      developer.log('Failed to re-register token after refresh: $error',
+          name: 'FirebaseMessaging', error: error);
       return false;
     });
   }

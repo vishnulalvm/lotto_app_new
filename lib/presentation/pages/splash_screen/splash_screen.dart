@@ -83,15 +83,17 @@ class _SplashScreenState extends State<SplashScreen>
         SavedResultsService.init(),
       ]);
 
-      // Phase 3: Navigate early to prevent UI blocking
-      await Future.delayed(const Duration(milliseconds: 1500));
+      // Phase 3: Navigate immediately after essential services complete
+      // Only ensure minimum animation time for smooth UX
+      final animationCompleted = Future.delayed(const Duration(milliseconds: 800));
+      await animationCompleted;
       await _checkLoginStatus();
 
       // Phase 4: Initialize remaining services in background after navigation
       unawaited(_initializeBackgroundServices());
     } catch (e) {
-      // Still proceed to navigate
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Still proceed to navigate with minimal delay
+      await Future.delayed(const Duration(milliseconds: 500));
       await _checkLoginStatus();
     }
   }
