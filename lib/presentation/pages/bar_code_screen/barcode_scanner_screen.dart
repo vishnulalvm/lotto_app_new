@@ -30,13 +30,25 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ensure camera starts when dependencies change (e.g., after navigation)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !cameraController.value.isRunning) {
+        _handleReturnFromNavigation();
+      }
+    });
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Handle app lifecycle changes
     switch (state) {
       case AppLifecycleState.resumed:
         // Resume camera when app comes back to foreground
-        if (mounted && !_isNavigatingAway) {
-          _restartCameraIfNeeded();
+        if (mounted) {
+          // Reset navigation flag and restart camera when app resumes
+          _handleReturnFromNavigation();
         }
         break;
       case AppLifecycleState.paused:
@@ -196,6 +208,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    // Ensure camera is started when widget rebuilds (e.g., after navigation)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _isNavigatingAway) {
+        _handleReturnFromNavigation();
+      }
+    });
+    
     return PopScope(
       canPop: true,
       onPopInvoked: (didPop) async {

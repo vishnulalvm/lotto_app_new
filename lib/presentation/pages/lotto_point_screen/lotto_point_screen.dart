@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/user_service.dart';
@@ -120,13 +121,44 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       curve: Curves.easeInOut,
     ));
 
+    // Add haptic feedback during animation
+    _animationController.addStatusListener(_handleAnimationStatus);
+    _addHapticFeedbackDuringAnimation(startingPoints, totalPoints);
+
     // Reset and start animation
     _animationController.reset();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
+        HapticFeedback.lightImpact(); // Initial haptic feedback when animation starts
         _animationController.forward();
       }
     });
+  }
+
+  void _handleAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      // Strong haptic feedback when animation completes
+      HapticFeedback.mediumImpact();
+      _animationController.removeStatusListener(_handleAnimationStatus);
+    }
+  }
+
+  void _addHapticFeedbackDuringAnimation(int startingPoints, int totalPoints) {
+    // Add haptic feedback at key points during the animation
+    int pointsDifference = totalPoints - startingPoints;
+    
+    if (pointsDifference > 0) {
+      // Add haptic feedback at 25%, 50%, and 75% of animation
+      List<double> hapticPoints = [0.25, 0.5, 0.75];
+      
+      for (double point in hapticPoints) {
+        Future.delayed(Duration(milliseconds: (2000 * point).round()), () {
+          if (mounted && _animationController.isAnimating) {
+            HapticFeedback.selectionClick(); // Subtle feedback during counting
+          }
+        });
+      }
+    }
   }
 
   @override

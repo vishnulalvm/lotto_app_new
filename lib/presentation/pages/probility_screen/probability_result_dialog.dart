@@ -48,18 +48,14 @@ class ProbabilityResultDialog extends StatefulWidget {
 class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
-  late AnimationController _scaleController;
-  late AnimationController _pulseController;
-  late AnimationController _sparkleController;
-  late AnimationController _emojiController;
   late AnimationController _fillController;
-
+  late AnimationController _pulseController; // Only for high probability
+  
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _sparkleAnimation;
-  late Animation<double> _emojiAnimation;
   late Animation<double> _fillAnimation;
+  late Animation<double> _pulseAnimation;
+  
+  bool _animationsCompleted = false;
 
   // All emojis for different probability ranges
   final List<String> allEmojis = ['😞', '😐', '🤞', '😊', '🎉'];
@@ -69,73 +65,26 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
     super.initState();
 
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _sparkleController = AnimationController(
-      duration: const Duration(milliseconds: 3000),
-      vsync: this,
-    );
-
-    _emojiController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 600), // Reduced duration
       vsync: this,
     );
 
     _fillController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000), // Reduced duration
+      vsync: this,
+    );
+
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1200), // Reduced duration
       vsync: this,
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
+      begin: const Offset(0, 0.3), // Reduced slide distance
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _slideController,
-      curve: Curves.elasticOut,
-    ));
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _scaleController,
-      curve: Curves.elasticOut,
-    ));
-
-    _pulseAnimation = Tween<double>(
-      begin: 0.95,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    _sparkleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _sparkleController,
-      curve: Curves.easeInOut,
-    ));
-
-    _emojiAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _emojiController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutCubic, // Simpler curve
     ));
 
     _fillAnimation = Tween<double>(
@@ -143,19 +92,27 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
       end: widget.probability / 100.0,
     ).animate(CurvedAnimation(
       parent: _fillController,
+      curve: Curves.easeOutCubic, // Simpler curve
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 0.98,
+      end: 1.02,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
       curve: Curves.easeInOut,
     ));
 
-    // Start animations
+    // Simplified animation sequence
     _slideController.forward().then((_) {
-      _scaleController.forward().then((_) {
-        _fillController.forward().then((_) {
-          _emojiController.forward();
-          if (widget.probability >= 70) {
-            _pulseController.repeat(reverse: true);
-            _sparkleController.repeat(reverse: true);
-          }
+      _fillController.forward().then((_) {
+        setState(() {
+          _animationsCompleted = true;
         });
+        // Only animate pulse for high probability to reduce resource usage
+        if (widget.probability >= 80) {
+          _pulseController.repeat(reverse: true);
+        }
       });
     });
   }
@@ -163,11 +120,8 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
   @override
   void dispose() {
     _slideController.dispose();
-    _scaleController.dispose();
-    _pulseController.dispose();
-    _sparkleController.dispose();
-    _emojiController.dispose();
     _fillController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -231,163 +185,123 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
     return AnimatedBuilder(
       animation: _fillAnimation,
       builder: (context, child) {
-        return AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: widget.probability >= 70 ? _pulseAnimation.value : 1.0,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Background circle
-                  Container(
-                    width: 260,
-                    height: 260,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.grey.withValues(alpha: 0.1),
-                      border: Border.all(
-                        color: Colors.grey.withValues(alpha: 0.3),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-
-                  // Animated fill circle
-                  SizedBox(
-                    width: 260,
-                    height: 260,
-                    child: CustomPaint(
-                      painter: CircularFillPainter(
-                        fillPercentage: _fillAnimation.value,
-                        fillColor: probabilityTheme.color,
-                        gradient: probabilityTheme.gradient,
-                      ),
-                    ),
-                  ),
-
-                  // Inner content circle
-                  Container(
-                    width: 210,
-                    height: 210,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).colorScheme.surface,
-                      boxShadow: [
-                        BoxShadow(
-                          color: probabilityTheme.color.withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Large percentage text
-                        Text(
-                          '${widget.probability.toInt()}%',
-                          style: TextStyle(
-                            fontSize: 70,
-                            fontWeight: FontWeight.bold,
-                            color: probabilityTheme.color,
-                            height: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        AnimatedBuilder(
-                          animation: _emojiAnimation,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _emojiAnimation.value,
-                              child: Text(
-                                probabilityTheme.emoji,
-                                style: const TextStyle(fontSize: 45),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSparkles() {
-    return AnimatedBuilder(
-      animation: _sparkleAnimation,
-      builder: (context, child) {
-        return Stack(
-          children: List.generate(8, (index) {
-            final angle = (index * 45) * (3.14159 / 180);
-            final radius = 120 + (20 * _sparkleAnimation.value);
-            final x = radius * cos(angle);
-            final y = radius * sin(angle);
-
-            return Positioned(
-              left: 110 + x,
-              top: 110 + y,
-              child: Opacity(
-                opacity: _sparkleAnimation.value,
-                child: Icon(
-                  Icons.star,
-                  size: 10 + (8 * _sparkleAnimation.value),
-                  color: Colors.amber.withValues(alpha: 0.8),
-                ),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmojiRow() {
-    return AnimatedBuilder(
-      animation: _emojiAnimation,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(allEmojis.length, (index) {
-              final isActive = _getEmojiIndex() == index;
-
-              return AnimatedContainer(
-                duration: Duration(milliseconds: 300 + (index * 50)),
-                width: isActive ? 50 : 38,
-                height: isActive ? 50 : 38,
+        final pulseScale = (widget.probability >= 80 && _animationsCompleted) 
+            ? _pulseAnimation.value 
+            : 1.0;
+            
+        return Transform.scale(
+          scale: pulseScale,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Background circle
+              Container(
+                width: 240, // Reduced size
+                height: 240,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive
-                      ? _getProbabilityTheme().color.withValues(alpha: 0.2)
-                      : Colors.grey.withValues(alpha: 0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   border: Border.all(
-                    color: isActive
-                        ? _getProbabilityTheme().color.withValues(alpha: 0.4)
-                        : Colors.grey.withValues(alpha: 0.2),
-                    width: isActive ? 3 : 2,
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    width: 2,
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    allEmojis[index],
-                    style: TextStyle(
-                      fontSize: isActive ? 20 : 24,
+              ),
+
+              // Animated fill circle
+              SizedBox(
+                width: 240,
+                height: 240,
+                child: CustomPaint(
+                  painter: CircularFillPainter(
+                    fillPercentage: _fillAnimation.value,
+                    fillColor: probabilityTheme.color,
+                    gradient: probabilityTheme.gradient,
+                  ),
+                ),
+              ),
+
+              // Inner content circle
+              Container(
+                width: 190, // Reduced size
+                height: 190,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: probabilityTheme.color.withValues(alpha: 0.2),
+                      blurRadius: 10, // Reduced blur
+                      spreadRadius: 0,
                     ),
-                  ),
+                  ],
                 ),
-              );
-            }),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Large percentage text
+                    Text(
+                      '${widget.probability.toInt()}%',
+                      style: TextStyle(
+                        fontSize: 60, // Reduced size
+                        fontWeight: FontWeight.bold,
+                        color: probabilityTheme.color,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Simple emoji without animation
+                    Text(
+                      probabilityTheme.emoji,
+                      style: const TextStyle(fontSize: 35), // Reduced size
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+
+  Widget _buildEmojiRow() {
+    final probabilityTheme = _getProbabilityTheme();
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(allEmojis.length, (index) {
+          final isActive = _getEmojiIndex() == index;
+
+          return Container(
+            width: isActive ? 46 : 36, // Reduced sizes
+            height: isActive ? 46 : 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive
+                  ? probabilityTheme.color.withValues(alpha: 0.15)
+                  : Colors.grey.withValues(alpha: 0.08),
+              border: Border.all(
+                color: isActive
+                    ? probabilityTheme.color.withValues(alpha: 0.3)
+                    : Colors.grey.withValues(alpha: 0.15),
+                width: isActive ? 2 : 1,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                allEmojis[index],
+                style: TextStyle(
+                  fontSize: isActive ? 18 : 16, // Reduced sizes
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -435,9 +349,7 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
         backgroundColor: Colors.transparent,
         child: SlideTransition(
           position: _slideAnimation,
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Container(
+          child: Container(
               width: dialogWidth,
               height: dialogHeight,
               decoration: BoxDecoration(
@@ -495,16 +407,7 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           // Probability display with fill
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Sparkles
-                              if (widget.probability >= 70) _buildSparkles(),
-
-                              // Main circular progress
-                              _buildCircularProgress(),
-                            ],
-                          ),
+                          _buildCircularProgress(),
                           // Lottery info in row format
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -619,7 +522,6 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
                   ),
                 ],
               ),
-            ),
           ),
         ),
       ),
@@ -666,7 +568,10 @@ class CircularFillPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CircularFillPainter oldDelegate) {
+    return fillPercentage != oldDelegate.fillPercentage ||
+           fillColor != oldDelegate.fillColor;
+  }
 }
 
 class ProbabilityTheme {

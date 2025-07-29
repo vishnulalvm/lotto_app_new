@@ -319,7 +319,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ScratchCardBottomSheet(
               result: result,
               ticketData: widget.ticketData,
-              onCheckAgain: () async => await _checkTicketWithAPI(),
+              onCheckAgain: () async => context.go('/barcode_scanner_screen'),
             ),
           ],
         ),

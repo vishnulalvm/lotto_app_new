@@ -327,9 +327,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Secondary action - Home
+            // Secondary action - Scan Again
             OutlinedButton(
-              onPressed: () => context.go('/'),
+              onPressed: onCheckAgain,
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
@@ -341,10 +341,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.home_outlined),
+                  const Icon(Icons.qr_code_scanner_outlined),
                   const SizedBox(width: 8),
                   Text(
-                    'back_to_home'.tr(),
+                    'scan_again'.tr(),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -416,9 +416,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Secondary action - Home
+            // Secondary action - Scan Again
             OutlinedButton(
-              onPressed: () => context.go('/'),
+              onPressed: onCheckAgain,
               style: OutlinedButton.styleFrom(
                 foregroundColor: isDark ? Colors.amber[400] : Colors.amber[600],
                 minimumSize: const Size(double.infinity, 48),
@@ -432,10 +432,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.home_outlined),
+                  const Icon(Icons.qr_code_scanner_outlined),
                   const SizedBox(width: 8),
                   Text(
-                    'back_to_home'.tr(),
+                    'scan_again'.tr(),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -473,9 +473,9 @@ class ScratchCardBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Secondary action - Home
+            // Secondary action - Scan Again
             OutlinedButton(
-              onPressed: () => context.go('/'),
+              onPressed: onCheckAgain,
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.primaryColor,
                 minimumSize: const Size(double.infinity, 48),
@@ -487,10 +487,10 @@ class ScratchCardBottomSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.home_outlined),
+                  const Icon(Icons.qr_code_scanner_outlined),
                   const SizedBox(width: 8),
                   Text(
-                    'back_to_home'.tr(),
+                    'scan_again'.tr(),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],

@@ -197,74 +197,135 @@ class ResultCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          border: Border.all(
-            width: 2,
-            color: theme.brightness == Brightness.dark
-                ? Colors.grey[600]!
-                : Colors.grey[300]!,
-          ),
+    // Get colors based on result type for better visual distinction
+    final bool isDark = theme.brightness == Brightness.dark;
+    Color cardColor;
+    Color iconColor;
+    Color primaryTextColor;
+    Color secondaryTextColor;
+    
+    if (result!.responseType == ResponseType.previousLoser) {
+      // Previous result styling - bluish theme
+      cardColor = isDark ? Colors.blue[900]!.withValues(alpha: 0.15) : Colors.blue[50]!;
+      iconColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
+      primaryTextColor = isDark ? Colors.blue[300]! : Colors.blue[700]!;
+      secondaryTextColor = isDark ? Colors.blue[200]! : Colors.blue[500]!;
+    } else {
+      // Result not published styling - amber theme
+      cardColor = isDark ? Colors.amber[900]!.withValues(alpha: 0.15) : Colors.amber[50]!;
+      iconColor = isDark ? Colors.amber[400]! : Colors.amber[600]!;
+      primaryTextColor = isDark ? Colors.amber[300]! : Colors.amber[700]!;
+      secondaryTextColor = isDark ? Colors.amber[200]! : Colors.amber[600]!;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            cardColor,
+            cardColor.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Container(
-          padding: EdgeInsets.all(responsiveSize.padding),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.sentiment_dissatisfied_outlined,
-                  color: theme.brightness == Brightness.dark
-                      ? Colors.grey[400]
-                      : Colors.grey[500],
-                  size: responsiveSize.iconSize,
-                ),
-                SizedBox(height: responsiveSize.padding * 0.67),
-                Text(
-                  _getNoResultTitle(),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: responsiveSize.titleFontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: responsiveSize.padding * 0.33),
-                Text(
-                  _getNoResultSubtitle(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: responsiveSize.bodyFontSize * 0.9,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: responsiveSize.padding * 0.67),
-                Text(
-                  '${'Ticket No'}: ${ticketData!['ticketNumber']}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: responsiveSize.bodyFontSize * 0.8,
-                  ),
-                ),
-                if (ticketData!['date'] != null)
-                  Text(
-                    '${'requested_date'.tr()}: ${_formatDate(ticketData!['date'])}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: responsiveSize.bodyFontSize * 0.8,
+
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(
+        children: [
+          // Background decorative elements
+          _buildNoResultBackgroundIcons(responsiveSize, iconColor),
+          // Main content
+          Container(
+            padding: EdgeInsets.all(responsiveSize.padding),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Main icon with background circle
+                  Container(
+                    padding: EdgeInsets.all(responsiveSize.padding * 0.75),
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: iconColor.withValues(alpha: 0.3),
+                        width: 0,
+                      ),
+                    ),
+                    child: Icon(
+                      result!.responseType == ResponseType.previousLoser
+                          ? Icons.sentiment_dissatisfied_outlined
+                          : Icons.access_time_outlined,
+                      color: iconColor,
+                      size: responsiveSize.iconSize * 0.8,
                     ),
                   ),
-                if (result!.drawDate.isNotEmpty &&
-                    result!.responseType == ResponseType.previousLoser)
+                  SizedBox(height: responsiveSize.padding * 0.75),
                   Text(
-                    '${'Date checked'}: ${_formatDate(result!.drawDate)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: responsiveSize.bodyFontSize * 0.8,
+                    _getNoResultTitle(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: responsiveSize.titleFontSize * 1.1,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTextColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: responsiveSize.padding * 0.4),
+                  Text(
+                    _getNoResultSubtitle(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: responsiveSize.bodyFontSize * 0.95,
+                      color: secondaryTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: responsiveSize.padding * 0.75),
+                  // Ticket info container
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: responsiveSize.padding * 0.75,
+                      vertical: responsiveSize.padding * 0.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: iconColor.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${'Ticket No'}: ${ticketData!['ticketNumber']}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: responsiveSize.bodyFontSize * 0.85,
+                            color: primaryTextColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+    
+                        if (result!.drawDate.isNotEmpty &&
+                            result!.responseType == ResponseType.previousLoser) ...[
+                          SizedBox(height: responsiveSize.padding * 0.2),
+                          Text(
+                            '${'Ticket name'}: ${result!.lotteryName}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: responsiveSize.bodyFontSize * 0.8,
+                              color: secondaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -609,6 +670,63 @@ class ResultCard extends StatelessWidget {
       default:
         return 'Result will be available after 3 PM';
     }
+  }
+
+  Widget _buildNoResultBackgroundIcons(ResponsiveCardSize responsiveSize, Color iconColor) {
+    final double cardWidth = responsiveSize.width;
+    final double cardHeight = responsiveSize.height;
+    final Color decorativeColor = iconColor.withValues(alpha: 0.1);
+
+    return Stack(
+      children: [
+        // Corner decorative icons
+        Positioned(
+          top: cardHeight * 0.15,
+          right: cardWidth * 0.12,
+          child: Icon(
+            result!.responseType == ResponseType.previousLoser
+                ? Icons.schedule_outlined
+                : Icons.hourglass_empty_outlined,
+            color: decorativeColor,
+            size: responsiveSize.iconSize * 0.6,
+          ),
+        ),
+        Positioned(
+          bottom: cardHeight * 0.2,
+          left: cardWidth * 0.15,
+          child: Icon(
+            Icons.info_outline,
+            color: decorativeColor,
+            size: responsiveSize.iconSize * 0.5,
+          ),
+        ),
+        Positioned(
+          top: cardHeight * 0.25,
+          left: cardWidth * 0.1,
+          child: Icon(
+            Icons.event_note_outlined,
+            color: decorativeColor,
+            size: responsiveSize.iconSize * 0.45,
+          ),
+        ),
+        // Decorative dots
+        ...List.generate(6, (index) {
+          final random = Random(index + 100); // Different seed for no-result cards
+          return Positioned(
+            top: (cardHeight * 0.1) + random.nextDouble() * (cardHeight * 0.8),
+            left: (cardWidth * 0.08) + random.nextDouble() * (cardWidth * 0.84),
+            child: Container(
+              width: responsiveSize.width * 0.015,
+              height: responsiveSize.width * 0.015,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: decorativeColor,
+              ),
+            ),
+          );
+        }),
+      ],
+    );
   }
 
   String _formatDate(String dateString) {

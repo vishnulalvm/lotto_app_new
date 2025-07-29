@@ -28,6 +28,8 @@ class _ProbabilityBarcodeScannerScreenState
   String? lastScannedCode;
   bool isProcessing = false;
   bool _isNavigatingAway = false;
+  bool _isDialogShowing = false;
+  DateTime? _lastScanTime;
 
   @override
   void initState() {
@@ -81,8 +83,6 @@ class _ProbabilityBarcodeScannerScreenState
     }
   }
 
-
-
   Future<void> _restartScanner() async {
     try {
       await cameraController.stop();
@@ -98,6 +98,34 @@ class _ProbabilityBarcodeScannerScreenState
     }
   }
 
+  Future<void> _pauseCameraForProcessing() async {
+    try {
+      if (cameraController.value.isRunning) {
+        await cameraController.stop();
+      }
+    } catch (e) {
+      // Ignore camera pause errors
+    }
+  }
+
+  Future<void> _resumeCameraAfterProcessing() async {
+    try {
+      if (!cameraController.value.isRunning && !_isDialogShowing) {
+        await cameraController.start();
+      }
+    } catch (e) {
+      // Try to recreate controller if resume fails
+      try {
+        cameraController.dispose();
+        cameraController = MobileScannerController();
+        if (!_isDialogShowing) {
+          await cameraController.start();
+        }
+      } catch (e) {
+        // Handle controller recreation error silently
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +135,7 @@ class _ProbabilityBarcodeScannerScreenState
         if (state is ProbabilityLoaded) {
           setState(() {
             isProcessing = false;
+            _isDialogShowing = true;
           });
           _showProbabilityResultDialog(
             lotteryName: state.response.lotteryName,
@@ -118,152 +147,108 @@ class _ProbabilityBarcodeScannerScreenState
           setState(() {
             isProcessing = false;
           });
+          _resumeCameraAfterProcessing();
           _showAPIErrorDialog();
         }
       },
       child: PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (didPop) return;
-        
-        // Check if there are any dialogs open
-        if (Navigator.of(context).canPop()) {
-          // There's a dialog open, just close it
-          Navigator.of(context).pop();
-          return;
-        }
-        
-        // No dialogs open, navigate away from screen
-        setState(() {
-          _isNavigatingAway = true;
-        });
-        await cameraController.stop();
-        if (mounted) {
-          context.go('/');
-        }
-      },
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: theme.appBarTheme.backgroundColor,
-          elevation: 0,
-          title: Text(
-            'barcode_scanner'.tr(),
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back,
-              color: theme.appBarTheme.iconTheme?.color,
-            ),
-            onPressed: () async {
-              setState(() {
-                _isNavigatingAway = true;
-              });
-              await cameraController.stop();
-              if (mounted) {
-                context.go('/');
-              }
-            },
-          ),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Scanner
-                  MobileScanner(
-                    controller: cameraController,
-                    onDetect: (capture) {
-                      if (isProcessing) return;
+        canPop: false,
+        onPopInvoked: (didPop) async {
+          if (didPop) return;
 
-                      final List<Barcode> barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        final scannedValue = barcode.rawValue ?? '';
-                        if (scannedValue.isNotEmpty &&
-                            scannedValue != lastScannedCode) {
-                          _handleScannedBarcode(scannedValue);
-                          break;
+          // Check if there are any dialogs open
+          if (Navigator.of(context).canPop()) {
+            // There's a dialog open, just close it
+            Navigator.of(context).pop();
+            return;
+          }
+
+          // No dialogs open, navigate away from screen
+          setState(() {
+            _isNavigatingAway = true;
+          });
+          await cameraController.stop();
+          if (mounted) {
+            context.go('/');
+          }
+        },
+        child: Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: theme.appBarTheme.backgroundColor,
+            elevation: 0,
+            title: Text(
+              'barcode_scanner'.tr(),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: theme.appBarTheme.iconTheme?.color,
+              ),
+              onPressed: () async {
+                setState(() {
+                  _isNavigatingAway = true;
+                });
+                await cameraController.stop();
+                if (mounted) {
+                  context.go('/');
+                }
+              },
+            ),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Scanner
+                    MobileScanner(
+                      controller: cameraController,
+                      onDetect: (capture) {
+                        if (isProcessing) return;
+
+                        final List<Barcode> barcodes = capture.barcodes;
+                        for (final barcode in barcodes) {
+                          final scannedValue = barcode.rawValue ?? '';
+                          if (scannedValue.isNotEmpty &&
+                              scannedValue != lastScannedCode) {
+                            _handleScannedBarcode(scannedValue);
+                            break;
+                          }
                         }
-                      }
-                    },
-                  ),
-                  // Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: theme.primaryColor,
-                        width: 2.0,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
+                      },
                     ),
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 200,
-                  ),
-                  // Loading indicator
-                  if (isProcessing)
+                    // Overlay
                     Container(
-                      color: Colors.black54,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(
-                                color: Colors.white),
-                            const SizedBox(height: 16),
-                            Text(
-                              'analyzing_probability'.tr(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: theme.primaryColor,
+                          width: 2.0,
                         ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      height: 200,
                     ),
-                  // Instruction text
-                  if (!isProcessing)
-                    Positioned(
-                      bottom: 100,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.primaryColor.withValues(alpha: 0.7),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
+                    // Loading indicator
+                    if (isProcessing)
+                      Container(
+                        color: Colors.black54,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              TextSpan(
-                                text: 'scan_to_check_winning_chance'.tr(),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'smart_prediction'.tr(),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'not_a_guarantee'.tr(),
-                                style: theme.textTheme.bodyMedium?.copyWith(
+                              const CircularProgressIndicator(
+                                  color: Colors.white),
+                              const SizedBox(height: 16),
+                              Text(
+                                'analyzing_probability'.tr(),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -272,52 +257,97 @@ class _ProbabilityBarcodeScannerScreenState
                           ),
                         ),
                       ),
+                    // Instruction text
+                    if (!isProcessing)
+                      Positioned(
+                        bottom: 100,
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.8,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.primaryColor.withValues(alpha: 0.7),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'scan_to_check_winning_chance'.tr(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'smart_prediction'.tr(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'not_a_guarantee'.tr(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                color: theme.cardTheme.color,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Date chooser button
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      child: _buildHowToWork(context, theme),
                     ),
-                ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildActionButton(
+                          icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                          label: 'flash'.tr(),
+                          isActive: isFlashOn,
+                          onTap: () {
+                            setState(() {
+                              isFlashOn = !isFlashOn;
+                              cameraController.toggleTorch();
+                            });
+                          },
+                          theme: theme,
+                        ),
+                        _buildActionButton(
+                          icon: Icons.photo_library,
+                          label: 'gallery'.tr(),
+                          onTap: _pickImageFromGallery,
+                          theme: theme,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(20),
-              color: theme.cardTheme.color,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Date chooser button
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    child: _buildHowToWork(context, theme),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildActionButton(
-                        icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
-                        label: 'flash'.tr(),
-                        isActive: isFlashOn,
-                        onTap: () {
-                          setState(() {
-                            isFlashOn = !isFlashOn;
-                            cameraController.toggleTorch();
-                          });
-                        },
-                        theme: theme,
-                      ),
-                      _buildActionButton(
-                        icon: Icons.photo_library,
-                        label: 'gallery'.tr(),
-                        onTap: _pickImageFromGallery,
-                        theme: theme,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -481,7 +511,15 @@ class _ProbabilityBarcodeScannerScreenState
   }
 
   void _handleScannedBarcode(String barcodeValue) async {
-    if (isProcessing) return;
+    // Prevent multiple rapid scans and dialog showing
+    if (isProcessing || _isDialogShowing) return;
+
+    // Debounce scanning (prevent scans within 1.5 seconds)
+    final now = DateTime.now();
+    if (_lastScanTime != null &&
+        now.difference(_lastScanTime!).inMilliseconds < 1500) {
+      return;
+    }
 
     // Check if this is the same code that was just scanned
     if (barcodeValue == lastScannedCode) {
@@ -491,7 +529,11 @@ class _ProbabilityBarcodeScannerScreenState
     setState(() {
       isProcessing = true;
       lastScannedCode = barcodeValue;
+      _lastScanTime = now;
     });
+
+    // Pause camera during processing to save resources
+    await _pauseCameraForProcessing();
 
     try {
       // Validate barcode format first
@@ -499,6 +541,7 @@ class _ProbabilityBarcodeScannerScreenState
         setState(() {
           isProcessing = false;
         });
+        await _resumeCameraAfterProcessing();
         _showValidationErrorDialog(
             BarcodeValidator.getValidationError(barcodeValue));
         return;
@@ -508,14 +551,16 @@ class _ProbabilityBarcodeScannerScreenState
       final lotteryNumber = BarcodeValidator.cleanTicketNumber(barcodeValue);
 
       // Call probability API using BLoC
-      context.read<ProbabilityBloc>().add(
-        GetProbabilityByLotteryNumberEvent(lotteryNumber: lotteryNumber),
-      );
+      if (mounted) {
+        context.read<ProbabilityBloc>().add(
+              GetProbabilityByLotteryNumberEvent(lotteryNumber: lotteryNumber),
+            );
+      }
     } catch (e) {
       setState(() {
         isProcessing = false;
       });
-
+      await _resumeCameraAfterProcessing();
       _showAPIErrorDialog();
     }
   }
@@ -525,7 +570,10 @@ class _ProbabilityBarcodeScannerScreenState
     required String lotteryNumber,
     required double probability,
     String? message,
-  }) {
+  }) async {
+    // Ensure camera is stopped before showing dialog
+    await _pauseCameraForProcessing();
+
     // Use the probability dialog with proper callback
     ProbabilityResultDialog.show(
       context,
@@ -542,21 +590,16 @@ class _ProbabilityBarcodeScannerScreenState
       lastScannedCode = null;
       isProcessing = false;
       _isNavigatingAway = false;
+      _isDialogShowing = false;
+      _lastScanTime = null; // Reset scan timer
     });
 
     try {
       // Restart the camera/scanner
       await _restartScanner();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('scanner_ready'.tr()),
-            backgroundColor: Theme.of(context).primaryColor,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -580,10 +623,12 @@ class _ProbabilityBarcodeScannerScreenState
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // Reset to allow scanning again
+              // Reset to allow scanning again and resume camera
               setState(() {
                 lastScannedCode = null;
+                _lastScanTime = null;
               });
+              _resumeCameraAfterProcessing();
             },
             child: Text('try_again'.tr()),
           ),
@@ -593,7 +638,10 @@ class _ProbabilityBarcodeScannerScreenState
   }
 
   void _showValidationErrorDialog(String errorMessage) {
-    ValidationErrorDialog.show(context, errorMessage);
+    ValidationErrorDialog.show(context, errorMessage).then((_) {
+      // Resume camera when validation error dialog is dismissed
+      _resumeCameraAfterProcessing();
+    });
   }
 
   @override

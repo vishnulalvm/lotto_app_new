@@ -30,25 +30,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late ScrollController _scrollController;
-  late AnimationController _fabAnimationController;
-  late Animation<double> _fabAnimation;
-  late AnimationController _blinkAnimationController;
-  late Animation<double> _blinkAnimation;
-  late AnimationController _rotationAnimationController;
-  late Animation<double> _rotationAnimation;
-  late AnimationController _shimmerAnimationController;
-  late Animation<double> _shimmerAnimation;
-  late AnimationController _badgeShimmerAnimationController;
-  late Animation<double> _badgeShimmerAnimation;
   
-  // Animation status listeners for cleanup
-  late AnimationStatusListener _rotationStatusListener;
-  late AnimationStatusListener _shimmerStatusListener;
-  late AnimationStatusListener _badgeShimmerStatusListener;
+  // Consolidated animation controllers
+  late AnimationController _primaryAnimationController;
+  late AnimationController _secondaryAnimationController;
+  
+  // All animations driven by the two controllers
+  late Animation<double> _fabAnimation;
+  late Animation<double> _blinkAnimation;
+  late Animation<double> _rotationAnimation;
+  late Animation<double> _shimmerAnimation;
+  late Animation<double> _badgeShimmerAnimation;
+
   bool _isExpanded = true;
   bool _isScrollingDown = false;
   DateTime? _lastRefreshTime;
   Timer? _periodicRefreshTimer;
+  Timer? _attentionAnimationTimer;
 
   @override
   void initState() {
@@ -70,93 +68,77 @@ class _HomeScreenState extends State<HomeScreen>
       AnalyticsService.trackSessionStart();
     });
 
-    // Load data immediately
+    // Load data immediately (without UI delays)
     _loadLotteryResultsWithCache();
 
     // Set up periodic refresh timer (every 5 minutes)
     _setupPeriodicRefresh();
 
     _scrollController = ScrollController();
-    _fabAnimationController = AnimationController(
-      duration: const Duration(
-          milliseconds: 400), // Slightly longer for smoother feel
+    _scrollController.addListener(_onScroll);
+    
+    _initializeAnimations();
+    _startAttentionAnimations();
+    _showLanguageDialogIfNeeded();
+  }
+
+  void _initializeAnimations() {
+    // Primary controller for FAB and main UI animations
+    _primaryAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
 
-    // Use a smooth curve for the animation
+    // Secondary controller for attention-grabbing animations
+    _secondaryAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 6000), // Longer cycle for all effects
+      vsync: this,
+    );
+
+    // FAB animation
     _fabAnimation = CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: Curves.easeInOutCubic, // Smoother curve
+      parent: _primaryAnimationController,
+      curve: Curves.easeInOutCubic,
       reverseCurve: Curves.easeInOutCubic,
     );
 
-    _fabAnimationController.forward();
-    _scrollController.addListener(_onScroll);
-
-    // Initialize blink animation controller for live badge
-    _blinkAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-
+    // Blink animation (0-1 second in the cycle)
     _blinkAnimation = Tween<double>(
       begin: 0.3,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _blinkAnimationController,
-      curve: Curves.easeInOut,
+      parent: _secondaryAnimationController,
+      curve: const Interval(0.0, 0.17, curve: Curves.easeInOut), // 0-1 sec of 6 sec cycle
     ));
 
-    // Start the blinking animation and repeat
-    _blinkAnimationController.repeat(reverse: true);
-
-    // Initialize rotation animation controller for lotto points icon
-    _rotationAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500), // 1.5 second per rotation
-      vsync: this,
-    );
-
+    // Rotation animation (1-2.5 seconds in the cycle)
     _rotationAnimation = Tween<double>(
       begin: 0.0,
-      end: 3.0, // 3 full rotations (3 turns = 1080 degrees)
+      end: 3.0, // 3 full rotations
     ).animate(CurvedAnimation(
-      parent: _rotationAnimationController,
-      curve: Curves.easeInOutCubic,
+      parent: _secondaryAnimationController,
+      curve: const Interval(0.17, 0.42, curve: Curves.easeInOutCubic), // 1-2.5 sec
     ));
 
-    // Initialize shimmer animation controller for glance effect
-    _shimmerAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 2000), // 2 second shimmer
-      vsync: this,
-    );
-
+    // Shimmer animation (2.5-4.5 seconds in the cycle)
     _shimmerAnimation = Tween<double>(
       begin: -1.0,
-      end: 2.0, // Move across the button
+      end: 2.0,
     ).animate(CurvedAnimation(
-      parent: _shimmerAnimationController,
-      curve: Curves.easeInOut,
+      parent: _secondaryAnimationController,
+      curve: const Interval(0.42, 0.75, curve: Curves.easeInOut), // 2.5-4.5 sec
     ));
 
-    // Initialize shimmer animation controller for badge glance effect
-    _badgeShimmerAnimationController = AnimationController(
-      duration:
-          const Duration(milliseconds: 1500), // 1.5 second shimmer for badges
-      vsync: this,
-    );
-
+    // Badge shimmer animation (4.5-6 seconds in the cycle)
     _badgeShimmerAnimation = Tween<double>(
       begin: -1.0,
-      end: 2.0, // Move across the badge
+      end: 2.0,
     ).animate(CurvedAnimation(
-      parent: _badgeShimmerAnimationController,
-      curve: Curves.easeInOut,
+      parent: _secondaryAnimationController,
+      curve: const Interval(0.75, 1.0, curve: Curves.easeInOut), // 4.5-6 sec
     ));
 
-    // Start animations when app opens - repeat for more visibility
-    _startAttentionAnimations();
-
-    _showLanguageDialogIfNeeded();
+    _primaryAnimationController.forward();
   }
 
   @override
@@ -166,19 +148,13 @@ class _HomeScreenState extends State<HomeScreen>
 
     WidgetsBinding.instance.removeObserver(this);
     _periodicRefreshTimer?.cancel();
+    _attentionAnimationTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _fabAnimationController.dispose();
-    _blinkAnimationController.dispose();
     
-    // Remove animation status listeners to prevent memory leaks
-    _rotationAnimationController.removeStatusListener(_rotationStatusListener);
-    _shimmerAnimationController.removeStatusListener(_shimmerStatusListener);
-    _badgeShimmerAnimationController.removeStatusListener(_badgeShimmerStatusListener);
-    
-    _rotationAnimationController.dispose();
-    _shimmerAnimationController.dispose();
-    _badgeShimmerAnimationController.dispose();
+    // Dispose consolidated animation controllers
+    _primaryAnimationController.dispose();
+    _secondaryAnimationController.dispose();
     super.dispose();
   }
 
@@ -208,80 +184,33 @@ class _HomeScreenState extends State<HomeScreen>
   //   }
   // }
 
-  /// Start attention-grabbing animations for lotto points button and badges
-  void _startAttentionAnimations() async {
-    // Delay the start slightly for better UX
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    if (mounted) {
-      // Create status listeners once to prevent memory leaks
-      _rotationStatusListener = (status) {
-        if (status == AnimationStatus.completed && mounted) {
-          // Wait a bit then repeat (limit to prevent excessive CPU usage)
-          Future.delayed(const Duration(milliseconds: 2000), () {
-            if (mounted) {
-              _rotationAnimationController.reset();
-              _rotationAnimationController.forward();
-            }
-          });
+  /// Start attention-grabbing animations using Timer.periodic for better performance
+  void _startAttentionAnimations() {
+    // Start the secondary animation controller cycle immediately
+    _secondaryAnimationController.forward();
+    
+    // Use Timer.periodic instead of Future.delayed chains for better performance
+    _attentionAnimationTimer = Timer.periodic(
+      const Duration(seconds: 8), // Repeat every 8 seconds (6 sec animation + 2 sec pause)
+      (timer) {
+        if (mounted) {
+          _secondaryAnimationController.reset();
+          _secondaryAnimationController.forward();
+        } else {
+          timer.cancel();
         }
-      };
-
-      _shimmerStatusListener = (status) {
-        if (status == AnimationStatus.completed && mounted) {
-          // Wait longer between shimmers to reduce CPU load
-          Future.delayed(const Duration(milliseconds: 3000), () {
-            if (mounted) {
-              _shimmerAnimationController.reset();
-              _shimmerAnimationController.forward();
-            }
-          });
-        }
-      };
-
-      // Add listeners once
-      _rotationAnimationController.addStatusListener(_rotationStatusListener);
-      _shimmerAnimationController.addStatusListener(_shimmerStatusListener);
-
-      // Start animations
-      _rotationAnimationController.forward();
-      _shimmerAnimationController.forward();
-      _startBadgeShimmerAnimation();
-    }
-  }
-
-  /// Start badge shimmer animation with periodic repeats
-  void _startBadgeShimmerAnimation() async {
-    // Initial delay before starting badge shimmer
-    await Future.delayed(const Duration(milliseconds: 2000));
-
-    if (mounted) {
-      // Create badge shimmer listener once
-      _badgeShimmerStatusListener = (status) {
-        if (status == AnimationStatus.completed && mounted) {
-          // Wait longer between badge shimmers to reduce CPU usage
-          Future.delayed(const Duration(milliseconds: 10000), () {
-            if (mounted) {
-              _badgeShimmerAnimationController.reset();
-              _badgeShimmerAnimationController.forward();
-            }
-          });
-        }
-      };
-
-      // Add listener once
-      _badgeShimmerAnimationController.addStatusListener(_badgeShimmerStatusListener);
-      _badgeShimmerAnimationController.forward();
-    }
+      },
+    );
   }
 
   void _showLanguageDialogIfNeeded() async {
-    // Wait a bit for the home screen to settle
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    if (mounted) {
-      await FirstTimeLanguageDialog.show(context);
-    }
+    // Show language dialog immediately when screen is ready
+    // Remove unnecessary delay for better UX
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted) {
+        await FirstTimeLanguageDialog.show(context);
+      }
+    });
   }
 
   void _onScroll() {
@@ -294,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen>
         _isScrollingDown = true;
         if (_isExpanded) {
           _isExpanded = false;
-          _fabAnimationController.reverse();
+          _primaryAnimationController.reverse();
         }
       }
     } else if (direction == ScrollDirection.forward) {
@@ -303,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen>
         _isScrollingDown = false;
         if (!_isExpanded) {
           _isExpanded = true;
-          _fabAnimationController.forward();
+          _primaryAnimationController.forward();
         }
       }
     }
@@ -322,15 +251,14 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Load results with cache-first strategy for better UX
   void _loadLotteryResultsWithCache() {
-    // Load from cache first (fast), then refresh from network
+    // Load from cache first (fast), then immediately trigger background refresh
+    // Remove UI delays - let the BLoC handle cache-first then network pattern
     context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
-
-    // After a short delay, refresh from network in background
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _refreshResultsInBackground();
-      }
-    });
+    
+    // Trigger background refresh immediately without delay
+    if (mounted) {
+      _refreshResultsInBackground();
+    }
   }
 
   void _refreshResults() {
@@ -540,95 +468,87 @@ class _HomeScreenState extends State<HomeScreen>
           }
         }
       },
-      child: GestureDetector(
-        onHorizontalDragEnd: (DragEndDetails details) {
-          if (details.primaryVelocity! < 0) {
-            context.go('/news_screen');
-          }
-        },
-        child: Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: _buildAppBar(theme),
-          body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-            listener: (context, state) {
-              // Clear any existing snackbars first
-              ScaffoldMessenger.of(context).clearSnackBars();
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: _buildAppBar(theme),
+        body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+          listener: (context, state) {
+            // Clear any existing snackbars first
+            ScaffoldMessenger.of(context).clearSnackBars();
 
-              if (state is HomeScreenResultsError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${'error_prefix'.tr()}${state.message}'),
-                    backgroundColor: Colors.red,
-                    action: SnackBarAction(
-                      label: 'retry'.tr(),
-                      textColor: Colors.white,
-                      onPressed: _loadLotteryResults,
-                    ),
+            if (state is HomeScreenResultsError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${'error_prefix'.tr()}${state.message}'),
+                  backgroundColor: Colors.red,
+                  action: SnackBarAction(
+                    label: 'retry'.tr(),
+                    textColor: Colors.white,
+                    onPressed: _loadLotteryResults,
                   ),
-                );
-              }
-            },
-            child: RefreshIndicator(
-              onRefresh: () async {
-                _refreshResults();
-              },
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    // Replace _buildCarousel() with the custom widget
-                    BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                      buildWhen: (previous, current) {
-                        // Only rebuild if images actually changed
-                        if (previous is HomeScreenResultsLoaded &&
-                            current is HomeScreenResultsLoaded) {
-                          return previous.data.updates.allImages !=
-                              current.data.updates.allImages;
-                        }
-                        return previous.runtimeType != current.runtimeType;
-                      },
-                      builder: (context, state) {
-                        List<String> carouselImages = [];
-
-                        // Get images from API response
-                        if (state is HomeScreenResultsLoaded) {
-                          carouselImages = state.data.updates.allImages;
-                        }
-
-                        return SimpleCarouselWidget(
-                          images: carouselImages,
-                          onImageTap: () => _launchWebsite(),
-                          // Optional: Customize colors to match your theme
-                          gradientStartColor: Colors.pink.shade100,
-                          gradientEndColor: Colors.pink.shade300,
-                          // Optional: Custom settings
-
-                          autoPlay: true,
-                          autoPlayInterval: const Duration(seconds: 4),
-                        );
-                      },
-                    ),
-                    SizedBox(height: AppResponsive.spacing(context, 5)),
-                    const NavigationIconsWidget(),
-                    SizedBox(height: AppResponsive.spacing(context, 10)),
-                    LotteryResultsSection(
-                      onLoadLotteryResults: _loadLotteryResults,
-                      onShowDatePicker: _showDatePicker,
-                      blinkAnimation: _blinkAnimation,
-                      badgeShimmerAnimation: _badgeShimmerAnimation,
-                      formatDateForDisplay: _formatDateForDisplay,
-                    ),
-                    SizedBox(height: AppResponsive.spacing(context, 100)),
-                  ],
                 ),
+              );
+            }
+          },
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _refreshResults();
+            },
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Replace _buildCarousel() with the custom widget
+                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                    buildWhen: (previous, current) {
+                      // Only rebuild if images actually changed
+                      if (previous is HomeScreenResultsLoaded &&
+                          current is HomeScreenResultsLoaded) {
+                        return previous.data.updates.allImages !=
+                            current.data.updates.allImages;
+                      }
+                      return previous.runtimeType != current.runtimeType;
+                    },
+                    builder: (context, state) {
+                      List<String> carouselImages = [];
+
+                      // Get images from API response
+                      if (state is HomeScreenResultsLoaded) {
+                        carouselImages = state.data.updates.allImages;
+                      }
+
+                      return SimpleCarouselWidget(
+                        images: carouselImages,
+                        onImageTap: () => _launchWebsite(),
+                        // Optional: Customize colors to match your theme
+                        gradientStartColor: Colors.pink.shade100,
+                        gradientEndColor: Colors.pink.shade300,
+                        // Optional: Custom settings
+
+                        autoPlay: true,
+                        autoPlayInterval: const Duration(seconds: 4),
+                      );
+                    },
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 5)),
+                  const NavigationIconsWidget(),
+                  SizedBox(height: AppResponsive.spacing(context, 10)),
+                  LotteryResultsSection(
+                    onLoadLotteryResults: _loadLotteryResults,
+                    onShowDatePicker: _showDatePicker,
+                    blinkAnimation: _blinkAnimation,
+                    badgeShimmerAnimation: _badgeShimmerAnimation,
+                    formatDateForDisplay: _formatDateForDisplay,
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 100)),
+                ],
               ),
             ),
           ),
-          floatingActionButton: _buildScanButton(theme),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerFloat,
         ),
+        floatingActionButton: _buildScanButton(theme),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
@@ -882,10 +802,10 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-
   Widget _buildScanButton(ThemeData theme) {
     return AIProbabilityFAB(
       onPressed: () {
+        // Navigate to the scanner page
         context.pushNamed(RouteNames.probabilityBarcodeScanner);
       },
       sizeAnimation: _fabAnimation,

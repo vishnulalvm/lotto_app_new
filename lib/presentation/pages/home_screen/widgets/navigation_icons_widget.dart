@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
@@ -16,6 +17,34 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
     with TickerProviderStateMixin {
   late AnimationController _flipAnimationController;
   late Animation<double> _flipAnimation;
+  
+  // Cached values for performance
+  ThemeData? _cachedTheme;
+  late bool _isDark;
+  late Color _lightBackground;
+  late Color _darkBackground;
+  late Color _lightRedGradientStart;
+  late Color _lightRedGradientEnd;
+  late Color _darkRedGradientStart;
+  late Color _darkRedGradientEnd;
+  late Color _primaryRed;
+  late Color _vibrantRed;
+  
+  // Cached responsive values
+  late double _iconSize;
+  late double _containerSize;
+  late double _smallIconSize;
+  late double _textWidth;
+  late double _spacing;
+  late EdgeInsets _padding;
+  late double _blurRadius;
+  late Offset _shadowOffset;
+  
+  // Cached navigation items
+  late List<Map<String, dynamic>> _navItems;
+  
+  // Manual flip control
+  bool _isManualFlipInProgress = false;
 
   @override
   void initState() {
@@ -35,53 +64,15 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       curve: Curves.easeInOut,
     ));
 
-    // Start periodic flip animation
-    _startPeriodicFlipAnimation();
+    // Initialize navigation items once
+    _initializeNavItems();
+    
+    // Start periodic flip animation with Timer instead of recursive async
+    _startOptimizedPeriodicFlipAnimation();
   }
-
-  @override
-  void dispose() {
-    _flipAnimationController.dispose();
-    super.dispose();
-  }
-
-  /// Start periodic flip animation for scanner button
-  void _startPeriodicFlipAnimation() async {
-    // Wait 3 seconds before first flip
-    await Future.delayed(const Duration(seconds: 3));
-
-    if (mounted) {
-      _periodicFlip();
-    }
-  }
-
-  /// Periodic flip animation
-  void _periodicFlip() async {
-    if (!mounted) return;
-
-    // Flip to "Get Points" side
-    await _flipAnimationController.forward();
-
-    // Wait 2 seconds on "Get Points" side
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    // Flip back to scanner side
-    await _flipAnimationController.reverse();
-
-    // Wait 8 seconds before next flip
-    await Future.delayed(const Duration(seconds: 8));
-
-    if (mounted) {
-      _periodicFlip(); // Repeat
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final List<Map<String, dynamic>> navItems = [
+  
+  void _initializeNavItems() {
+    _navItems = [
       {
         'icon': Icons.qr_code_scanner,
         'label': 'scanner'.tr(),
@@ -100,112 +91,187 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
         'route': '/saved-results'
       },
     ];
+  }
+  
+  void _cacheThemeValues(ThemeData theme) {
+    if (_cachedTheme == theme) return; // Skip if theme hasn't changed
+    
+    _cachedTheme = theme;
+    _isDark = theme.brightness == Brightness.dark;
+    
+    // Cache theme colors
+    _lightBackground = const Color(0xFFFFE4E6);
+    _darkBackground = const Color(0xFF2D1518);
+    _lightRedGradientStart = const Color(0xFFFF5252);
+    _lightRedGradientEnd = const Color(0xFFB71C1C);
+    _darkRedGradientStart = const Color(0xFFFF8A80);
+    _darkRedGradientEnd = const Color(0xFFD32F2F);
+    _primaryRed = theme.primaryColor;
+    _vibrantRed = const Color(0xFFFF5252);
+  }
+  
+  void _cacheResponsiveValues(BuildContext context) {
+    _iconSize = AppResponsive.fontSize(context, 24);
+    _containerSize = AppResponsive.width(
+      context,
+      AppResponsive.isMobile(context) ? 12 : 8,
+    );
+    _smallIconSize = _iconSize * 0.6;
+    _textWidth = AppResponsive.width(context, 15);
+    _spacing = AppResponsive.spacing(context, 8);
+    _padding = AppResponsive.padding(context, horizontal: 16, vertical: 16);
+    _blurRadius = AppResponsive.spacing(context, 8);
+    _shadowOffset = Offset(0, AppResponsive.spacing(context, 2));
+  }
+
+  @override
+  void dispose() {
+    _flipAnimationController.dispose();
+    super.dispose();
+  }
+
+  /// Optimized periodic flip animation using Timer
+  void _startOptimizedPeriodicFlipAnimation() {
+    // Use Timer instead of recursive async calls for better performance
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        _performFlipCycle();
+      }
+    });
+  }
+
+  /// Single flip cycle without recursion
+  void _performFlipCycle() async {
+    if (!mounted || _isManualFlipInProgress) return;
+
+    // Flip to "Get Points" side
+    await _flipAnimationController.forward();
+    
+    if (!mounted || _isManualFlipInProgress) return;
+    
+    // Wait 2 seconds on "Get Points" side
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (!mounted || _isManualFlipInProgress) return;
+
+    // Flip back to scanner side
+    await _flipAnimationController.reverse();
+    
+    if (!mounted) return;
+
+    // Schedule next flip cycle (8 seconds later)
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted && !_isManualFlipInProgress) {
+        _performFlipCycle();
+      }
+    });
+  }
+  
+  /// Manual flip back to scanner side
+  Future<void> _flipToScanner() async {
+    if (_flipAnimationController.value > 0.5) {
+      _isManualFlipInProgress = true;
+      HapticFeedback.lightImpact();
+      await _flipAnimationController.reverse();
+      _isManualFlipInProgress = false;
+      
+      // Restart automatic flip cycle after manual intervention
+      Future.delayed(const Duration(seconds: 8), () {
+        if (mounted && !_isManualFlipInProgress) {
+          _performFlipCycle();
+        }
+      });
+    }
+  }
+  
+  /// Handle swipe gestures on the flip navigation item
+  void _handleSwipe(DragEndDetails details) {
+    const double minVelocity = 300.0;
+    
+    // Check if swipe is horizontal and has sufficient velocity
+    if (details.velocity.pixelsPerSecond.dx.abs() > minVelocity) {
+      // Any horizontal swipe flips back to scanner
+      _flipToScanner();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    // Cache theme and responsive values
+    _cacheThemeValues(theme);
+    _cacheResponsiveValues(context);
 
     return Container(
-      padding: AppResponsive.padding(context, horizontal: 16, vertical: 16),
+      padding: _padding,
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: AppResponsive.spacing(context, 8),
-            offset: Offset(0, AppResponsive.spacing(context, 2)),
+            blurRadius: _blurRadius,
+            offset: _shadowOffset,
           ),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: navItems.map((item) {
+        children: _navItems.map((item) {
           // Special handling for scanner button with flip animation
           if (item['route'] == '/barcode_scanner_screen') {
-            return _buildFlipNavItem(context, item, theme);
+            return _buildOptimizedFlipNavItem(context, item, theme);
           }
-          return _buildNavItem(context, item, theme);
+          return _buildOptimizedNavItem(context, item, theme);
         }).toList(),
       ),
     );
   }
 
-  Widget _buildFlipNavItem(
+  Widget _buildOptimizedFlipNavItem(
       BuildContext context, Map<String, dynamic> item, ThemeData theme) {
-    final double iconSize = AppResponsive.fontSize(context, 24);
-    final double containerSize = AppResponsive.width(
-      context,
-      AppResponsive.isMobile(context) ? 12 : 8,
-    );
+    // Use cached values instead of recalculating
 
     return AnimatedBuilder(
       animation: _flipAnimation,
       builder: (context, child) {
         final isShowingFront = _flipAnimation.value < 0.5;
+        final flipValue = _flipAnimation.value * math.pi;
+        
+        // Cache transform matrix to avoid recalculation
+        final transform = Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateY(flipValue);
+        
         return Transform(
           alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.001)
-            ..rotateY(_flipAnimation.value * math.pi),
-          child: InkWell(
-            onTap: () {
-              if (isShowingFront) {
-                // Scanner side - navigate to scanner
-                if (item['route'] != null) {
-                  AnalyticsService.trackUserEngagement(
-                    action: 'navigation_tap',
-                    category: 'navigation',
-                    label: item['label'],
-                    parameters: {
-                      'destination': item['route'],
-                      'feature': item['label'],
-                    },
-                  );
-                  context.go(item['route']);
-                }
-              } else {
-                // Get Points side - navigate to lotto points
-                AnalyticsService.trackUserEngagement(
-                  action: 'navigation_tap',
-                  category: 'navigation',
-                  label: 'get_points',
-                  parameters: {
-                    'destination': '/lottoPoints',
-                    'feature': 'get_points',
-                  },
-                );
-                context.go('/lottoPoints');
-              }
-            },
+          transform: transform,
+          child: GestureDetector(
+            onTap: () => _handleFlipNavTap(isShowingFront, item),
+            onPanEnd: _handleSwipe,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: containerSize,
-                  height: containerSize,
+                  width: _containerSize,
+                  height: _containerSize,
                   decoration: BoxDecoration(
-                    // Eye-catching premium red gradient for flip side
+                    // Use cached gradient colors
                     gradient: isShowingFront
                         ? null
                         : LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              theme.brightness == Brightness.dark
-                                  ? const Color(
-                                      0xFFFF8A80) // Light red for dark theme
-                                  : const Color(
-                                      0xFFFF5252), // Light red for light theme
-                              theme.brightness == Brightness.dark
-                                  ? const Color(
-                                      0xFFD32F2F) // Deep red for dark theme
-                                  : const Color(
-                                      0xFFB71C1C), // Deep red for light theme
+                              _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                              _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
                             ],
                             stops: const [0.0, 1.0],
                           ),
                     color: isShowingFront
-                        ? (theme.brightness == Brightness.light
-                            ? const Color(0xFFFFE4E6) // Light pink/rose tint
-                            : const Color(0xFF2D1518)) // Dark red tint
+                        ? (_isDark ? _darkBackground : _lightBackground)
                         : null,
                     shape: BoxShape.circle,
                   ),
@@ -213,31 +279,22 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                       ? Icon(
                           item['icon'],
                           color: theme.iconTheme.color,
-                          size: iconSize,
+                          size: _iconSize,
                         )
                       : Transform(
                           alignment: Alignment.center,
                           transform: Matrix4.identity()..rotateY(math.pi),
                           child: Container(
-                            width: iconSize *
-                                0.6, // Smaller size (60% of original)
-                            height: iconSize * 0.6,
+                            width: _smallIconSize,
+                            height: _smallIconSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 center: Alignment.center,
                                 radius: 0.8,
                                 colors: [
-                                  theme.brightness == Brightness.dark
-                                      ? const Color(
-                                          0xFFFF8A80) // Light red for dark theme
-                                      : const Color(
-                                          0xFFFF5252), // Light red for light theme
-                                  theme.brightness == Brightness.dark
-                                      ? const Color(
-                                          0xFFD32F2F) // Deep red for dark theme
-                                      : const Color(
-                                          0xFFB71C1C), // Deep red for light theme
+                                  _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                                  _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
                                 ],
                                 stops: const [0.0, 1.0],
                               ),
@@ -245,18 +302,17 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                             child: Center(
                               child: Image.asset(
                                 'assets/icons/lotto_points.png',
-                                width: iconSize *
-                                    0.8, // Even smaller for the actual image
-                                height: iconSize * 0.8,
+                                width: _iconSize * 0.8,
+                                height: _iconSize * 0.8,
                                 fit: BoxFit.contain,
                               ),
                             ),
                           ),
                         ),
                 ),
-                SizedBox(height: AppResponsive.spacing(context, 8)),
+                SizedBox(height: _spacing),
                 SizedBox(
-                  width: AppResponsive.width(context, 15),
+                  width: _textWidth,
                   child: isShowingFront
                       ? Text(
                           item['label'],
@@ -276,12 +332,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 11),
                               fontWeight: FontWeight.w600,
-                              // Use theme's primary color (red) for the flip side text
-                              color: theme.brightness == Brightness.light
-                                  ? theme
-                                      .primaryColor // Standard red for light theme
-                                  : const Color(
-                                      0xFFFF5252), // Vibrant red for dark theme
+                              color: _isDark ? _vibrantRed : _primaryRed,
                             ),
                           ),
                         ),
@@ -293,68 +344,94 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       },
     );
   }
+  
+  // Helper method to handle flip navigation taps
+  void _handleFlipNavTap(bool isShowingFront, Map<String, dynamic> item) {
+    HapticFeedback.lightImpact(); // Add haptic feedback
+    
+    if (isShowingFront) {
+      // Scanner side - navigate to scanner
+      if (item['route'] != null) {
+        AnalyticsService.trackUserEngagement(
+          action: 'navigation_tap',
+          category: 'navigation',
+          label: item['label'],
+          parameters: {
+            'destination': item['route'],
+            'feature': item['label'],
+          },
+        );
+        context.go(item['route']);
+      }
+    } else {
+      // Get Points side - navigate to lotto points
+      AnalyticsService.trackUserEngagement(
+        action: 'navigation_tap',
+        category: 'navigation',
+        label: 'get_points',
+        parameters: {
+          'destination': '/lottoPoints',
+          'feature': 'get_points',
+        },
+      );
+      context.go('/lottoPoints');
+    }
+  }
 
-  Widget _buildNavItem(
+  Widget _buildOptimizedNavItem(
       BuildContext context, Map<String, dynamic> item, ThemeData theme) {
-    final double iconSize = AppResponsive.fontSize(context, 24);
-    final double containerSize = AppResponsive.width(
-      context,
-      AppResponsive.isMobile(context) ? 12 : 8,
-    );
-
     return InkWell(
-      onTap: () {
-        if (item['route'] != null) {
-          // Track navigation analytics
-          AnalyticsService.trackUserEngagement(
-            action: 'navigation_tap',
-            category: 'navigation',
-            label: item['label'],
-            parameters: {
-              'destination': item['route'],
-              'feature': item['label'],
-            },
-          );
-
-          // Direct navigation without ads
-          context.go(item['route']);
-        }
-      },
+      onTap: () => _handleRegularNavTap(item),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: containerSize,
-            height: containerSize,
+            width: _containerSize,
+            height: _containerSize,
             decoration: BoxDecoration(
-              color: theme.brightness == Brightness.light
-                  ? const Color(0xFFFFE4E6)
-                  : const Color(0xFF2D1518), // Dark red tint for dark theme
+              color: _isDark ? _darkBackground : _lightBackground,
               shape: BoxShape.circle,
             ),
             child: Icon(
               item['icon'],
               color: theme.iconTheme.color,
-              size: iconSize,
+              size: _iconSize,
             ),
           ),
-          SizedBox(height: AppResponsive.spacing(context, 8)),
+          SizedBox(height: _spacing),
           SizedBox(
-            width: AppResponsive.width(context, 15),
+            width: _textWidth,
             child: Text(
               item['label'],
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppResponsive.fontSize(context, 12),
                 fontWeight: FontWeight.w500,
-                color:
-                    theme.textTheme.bodyMedium?.color, // Use theme text color
+                color: theme.textTheme.bodyMedium?.color,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+  
+  // Helper method to handle regular navigation taps
+  void _handleRegularNavTap(Map<String, dynamic> item) {
+    HapticFeedback.lightImpact(); // Add haptic feedback
+    
+    if (item['route'] != null) {
+      AnalyticsService.trackUserEngagement(
+        action: 'navigation_tap',
+        category: 'navigation',
+        label: item['label'],
+        parameters: {
+          'destination': item['route'],
+          'feature': item['label'],
+        },
+      );
+      context.go(item['route']);
+    }
   }
 }

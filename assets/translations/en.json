@@ -118,7 +118,7 @@
   "try_again": "Try Again",
   "go_back": "Go Back",
   "better_luck_next_time": "Better Luck Next Time!",
-  "no_prize": "No Prize",
+  "no_prize": "Sorry, No Prize",
   "ticket": "Ticket",
   "draw": "Draw",
   "scratch_to_reveal": "Scratch to reveal",
@@ -453,5 +453,6 @@
   "promoted": "Promoted",
   "discover_amazing_products": "Discover amazing products and services tailored for you",
   "learn_more": "Learn More",
-  "ads_card": "Ads Card"
+  "ads_card": "Ads Card",
+  "scan_again": "Scan Again"
 }
