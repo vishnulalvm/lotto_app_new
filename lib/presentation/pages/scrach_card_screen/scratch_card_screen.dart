@@ -9,6 +9,7 @@ import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dar
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_event.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_state.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/scratch_card_bottom_sheet.dart';
+import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/result_type_banner.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:scratcher/widgets.dart';
 import 'package:confetti/confetti.dart';
@@ -287,8 +288,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
       children: [
         Column(
           children: [
-            // Enhanced status banner that explains the result type
-            _buildResultTypeBanner(theme, result),
+            // Banner always shows - different messages based on scratch state
+            ResultTypeBanner(
+              result: result,
+              shouldShowScratch: shouldShowScratch,
+              autoRevealTriggered: _autoRevealTriggered,
+              ticketData: widget.ticketData,
+            ),
 
             Expanded(
               child: Center(
@@ -333,178 +339,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     );
   }
 
-  // Enhanced banner that explains different result types with clear user messaging
-  Widget _buildResultTypeBanner(
-      ThemeData theme, TicketCheckResponseModel result) {
-    return _getResultBannerConfig(result, theme);
-  }
-
-  Widget _getResultBannerConfig(
-      TicketCheckResponseModel result, ThemeData theme) {
-    // Use resultStatus from API response for better accuracy
-    final String resultStatus = result.resultStatus;
-    final bool isDark = theme.brightness == Brightness.dark;
-
-    late Color bannerColor;
-    late Color iconColor;
-    late IconData primaryIcon;
-    late String title;
-    late String subtitle;
-
-    // Handle cases based on resultStatus from API response
-    switch (resultStatus.toLowerCase()) {
-      case 'won price today':
-        // Case 1: Current Winner
-        bannerColor =
-            isDark ? Colors.green[900]!.withValues(alpha: 0.3) : Colors.green[50]!;
-        iconColor = isDark ? Colors.green[400]! : Colors.green[600]!;
-        primaryIcon = Icons.emoji_events;
-        title = '🎉 Congratulations! You Won!';
-        subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : widget.ticketData['date'])}';
-        break;
-
-      case 'no price today':
-        // Case 2: Current Loser - Show points if available
-        if (result.points != null && result.points! > 0) {
-          bannerColor =
-              isDark ? Colors.blue[900]!.withValues(alpha: 0.3) : Colors.blue[50]!;
-          iconColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
-          primaryIcon = Icons.card_giftcard;
-          title = '🎁 You Earned ${result.points} Points!';
-          subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : widget.ticketData['date'])}';
-        } else {
-          bannerColor =
-              isDark ? Colors.orange[900]!.withValues(alpha: 0.3) : Colors.orange[50]!;
-          iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
-          primaryIcon = Icons.info;
-          title = 'Better Luck Next Time';
-          subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : widget.ticketData['date'])}';
-        }
-        break;
-
-      case 'previous result':
-        // Case 3: Previous Winner
-        bannerColor =
-            isDark ? Colors.yellow[900]!.withValues(alpha: 0.3) : Colors.yellow[50]!;
-        iconColor = isDark ? Colors.yellow[400]! : Colors.yellow[900]!;
-        primaryIcon = Icons.emoji_events;
-        title = 'Previous Lottery Winner!';
-        subtitle = 'checked on ${_formatDate(result.drawDate)} lottery';
-        break;
-
-      case 'previous result no price':
-        // Case 4: Previous No Win
-        bannerColor = isDark ? theme.cardColor : Colors.grey[50]!;
-        iconColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
-        primaryIcon = Icons.schedule;
-        title = 'Checked Previous Result';
-        subtitle = 'checked on ${_formatDate(result.drawDate)} lottery';
-        break;
-
-      case 'result is not published':
-        // Case 5: Result Not Published
-        bannerColor =
-            isDark ? Colors.amber[900]!.withValues(alpha: 0.3) : Colors.amber[50]!;
-        iconColor = isDark ? Colors.amber[400]! : Colors.amber[700]!;
-        primaryIcon = Icons.access_time;
-        title = 'Result Not Published';
-        subtitle = 'Result will be available after 3 PM';
-        break;
-
-      default:
-        // Fallback case
-        bannerColor = isDark ? theme.cardColor : Colors.grey[50]!;
-        iconColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
-        primaryIcon = Icons.help_outline;
-        title = 'Status Unknown';
-        subtitle = 'Unable to Determine Result';
-        break;
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(
-        left: 16,
-        right: 16,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            bannerColor,
-            bannerColor.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(
-          color: iconColor.withValues(alpha: 0.3),
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: iconColor.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.only(
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with icons and title
-            Row(
-              children: [
-                // Primary status icon
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    primaryIcon,
-                    color: iconColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: iconColor,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: iconColor.withValues(alpha: 0.7),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildNoResultCard(ThemeData theme, TicketCheckResponseModel result) {
     return Container(

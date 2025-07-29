@@ -20,7 +20,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize flip animation controller
     _flipAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
@@ -49,7 +49,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   void _startPeriodicFlipAnimation() async {
     // Wait 3 seconds before first flip
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (mounted) {
       _periodicFlip();
     }
@@ -58,21 +58,21 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   /// Periodic flip animation
   void _periodicFlip() async {
     if (!mounted) return;
-    
+
     // Flip to "Get Points" side
     await _flipAnimationController.forward();
-    
+
     // Wait 2 seconds on "Get Points" side
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted) return;
-    
+
     // Flip back to scanner side
     await _flipAnimationController.reverse();
-    
+
     // Wait 8 seconds before next flip
     await Future.delayed(const Duration(seconds: 8));
-    
+
     if (mounted) {
       _periodicFlip(); // Repeat
     }
@@ -127,7 +127,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
     );
   }
 
-  Widget _buildFlipNavItem(BuildContext context, Map<String, dynamic> item, ThemeData theme) {
+  Widget _buildFlipNavItem(
+      BuildContext context, Map<String, dynamic> item, ThemeData theme) {
     final double iconSize = AppResponsive.fontSize(context, 24);
     final double containerSize = AppResponsive.width(
       context,
@@ -181,45 +182,32 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                   width: containerSize,
                   height: containerSize,
                   decoration: BoxDecoration(
-                    // Beautiful gradient for flip side, regular color for front
-                    gradient: isShowingFront 
-                        ? null 
+                    // Eye-catching premium red gradient for flip side
+                    gradient: isShowingFront
+                        ? null
                         : LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: theme.brightness == Brightness.light
-                                ? [
-                                    const Color(0xFFFFE4E6), // Light pink/rose
-                                    const Color(0xFFFFD6D9), // Slightly deeper rose
-                                    const Color(0xFFFFC1C7), // Deeper rose
-                                    const Color(0xFFFFB3BA), // Even deeper
-                                  ]
-                                : [
-                                    const Color(0xFF2D1518), // Dark red tint
-                                    const Color(0xFF3D1F22), // Slightly lighter
-                                    const Color(0xFF4D2A2D), // More red
-                                    const Color(0xFF5D3439), // Lighter red
-                                  ],
-                            stops: const [0.0, 0.3, 0.7, 1.0],
+                            colors: [
+                              theme.brightness == Brightness.dark
+                                  ? const Color(
+                                      0xFFFF8A80) // Light red for dark theme
+                                  : const Color(
+                                      0xFFFF5252), // Light red for light theme
+                              theme.brightness == Brightness.dark
+                                  ? const Color(
+                                      0xFFD32F2F) // Deep red for dark theme
+                                  : const Color(
+                                      0xFFB71C1C), // Deep red for light theme
+                            ],
+                            stops: const [0.0, 1.0],
                           ),
-                    color: isShowingFront 
+                    color: isShowingFront
                         ? (theme.brightness == Brightness.light
                             ? const Color(0xFFFFE4E6) // Light pink/rose tint
                             : const Color(0xFF2D1518)) // Dark red tint
                         : null,
                     shape: BoxShape.circle,
-                    boxShadow: isShowingFront 
-                        ? null 
-                        : [
-                            BoxShadow(
-                              color: (theme.brightness == Brightness.light
-                                  ? Colors.red.withValues(alpha: 0.3)
-                                  : const Color(0xFFFF5252).withValues(alpha: 0.2)),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
                   ),
                   child: isShowingFront
                       ? Icon(
@@ -231,34 +219,35 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                           alignment: Alignment.center,
                           transform: Matrix4.identity()..rotateY(math.pi),
                           child: Container(
-                            width: iconSize * 0.6, // Smaller size (60% of original)
+                            width: iconSize *
+                                0.6, // Smaller size (60% of original)
                             height: iconSize * 0.6,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
-                                colors: theme.brightness == Brightness.light
-                                    ? [
-                                        Colors.white,
-                                        const Color(0xFFFFF8F8),
-                                      ]
-                                    : [
-                                        const Color(0xFF1E1E1E),
-                                        const Color(0xFF2A2A2A),
-                                      ],
+                                center: Alignment.center,
+                                radius: 0.8,
+                                colors: [
+                                  theme.brightness == Brightness.dark
+                                      ? const Color(
+                                          0xFFFF8A80) // Light red for dark theme
+                                      : const Color(
+                                          0xFFFF5252), // Light red for light theme
+                                  theme.brightness == Brightness.dark
+                                      ? const Color(
+                                          0xFFD32F2F) // Deep red for dark theme
+                                      : const Color(
+                                          0xFFB71C1C), // Deep red for light theme
+                                ],
+                                stops: const [0.0, 1.0],
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
                             ),
                             child: Center(
                               child: Image.asset(
                                 'assets/icons/lotto_points.png',
-                                width: iconSize * 0.5, // Even smaller for the actual image
-                                height: iconSize * 0.5,
+                                width: iconSize *
+                                    0.8, // Even smaller for the actual image
+                                height: iconSize * 0.8,
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -289,8 +278,10 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                               fontWeight: FontWeight.w600,
                               // Use theme's primary color (red) for the flip side text
                               color: theme.brightness == Brightness.light
-                                  ? theme.primaryColor // Standard red for light theme
-                                  : const Color(0xFFFF5252), // Vibrant red for dark theme
+                                  ? theme
+                                      .primaryColor // Standard red for light theme
+                                  : const Color(
+                                      0xFFFF5252), // Vibrant red for dark theme
                             ),
                           ),
                         ),
@@ -303,7 +294,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
     );
   }
 
-  Widget _buildNavItem(BuildContext context, Map<String, dynamic> item, ThemeData theme) {
+  Widget _buildNavItem(
+      BuildContext context, Map<String, dynamic> item, ThemeData theme) {
     final double iconSize = AppResponsive.fontSize(context, 24);
     final double containerSize = AppResponsive.width(
       context,
