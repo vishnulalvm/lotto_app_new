@@ -73,7 +73,7 @@ class _HowItWorksDialogState extends State<HowItWorksDialog>
 
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
           // Animate out before closing
           _slideController.reverse();

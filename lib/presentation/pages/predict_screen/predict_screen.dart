@@ -178,7 +178,7 @@ final List<Map<String, String>> lotteryTypes = [
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      BorderSide(color: theme.primaryColor.withOpacity(0.3)),
+                      BorderSide(color: theme.primaryColor.withValues(alpha: 0.3)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -187,10 +187,10 @@ final List<Map<String, String>> lotteryTypes = [
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 filled: true,
-                fillColor: theme.primaryColor.withOpacity(0.05),
+                fillColor: theme.primaryColor.withValues(alpha: 0.05),
                 prefixIcon: Icon(
                   Icons.confirmation_number,
-                  color: theme.primaryColor.withOpacity(0.7),
+                  color: theme.primaryColor.withValues(alpha: 0.7),
                 ),
               ),
               items: lotteryTypes.map((Map<String, String> lottery) {
@@ -788,10 +788,10 @@ final List<Map<String, String>> lotteryTypes = [
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -847,7 +847,7 @@ final List<Map<String, String>> lotteryTypes = [
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(

@@ -167,8 +167,9 @@ class RateUsDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () async {
+            final navigator = Navigator.of(context);
             await markNeverShow();
-            Navigator.of(context).pop(false);
+            navigator.pop(false);
           },
           child: Text(
             'never'.tr(),

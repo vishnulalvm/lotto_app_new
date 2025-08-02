@@ -62,7 +62,7 @@ class _YesterdayAccuracyWidgetState extends State<YesterdayAccuracyWidget>
 
   Color _getThemeAwareBackgroundColor(Color lightColor) {
     return widget.theme.brightness == Brightness.dark
-        ? lightColor.withOpacity(0.1)
+        ? lightColor.withValues(alpha: 0.1)
         : lightColor;
   }
 
@@ -120,7 +120,7 @@ class _YesterdayAccuracyWidgetState extends State<YesterdayAccuracyWidget>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: widget.theme.primaryColor.withOpacity(0.1),
+                  color: widget.theme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -182,16 +182,16 @@ class _YesterdayAccuracyWidgetState extends State<YesterdayAccuracyWidget>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                widget.theme.primaryColor.withOpacity(0.1),
+                widget.theme.primaryColor.withValues(alpha: 0.1),
                 _getThemeAwareColor(Colors.green, const Color(0xFF66BB6A))
-                    .withOpacity(0.1),
+                    .withValues(alpha: 0.1),
               ],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: widget.theme.primaryColor.withOpacity(0.2),
+              color: widget.theme.primaryColor.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -248,11 +248,11 @@ class AccuracyRowCard extends StatelessWidget {
     // Theme-aware colors
     final cardBackgroundColor = isDark ? theme.cardTheme.color : lightColor;
     final numbersSectionBackground = isDark
-        ? theme.cardTheme.color?.withOpacity(0.5) ?? const Color(0xFF2E2E2E)
-        : Colors.white.withOpacity(0.8);
+        ? theme.cardTheme.color?.withValues(alpha: 0.5) ?? const Color(0xFF2E2E2E)
+        : Colors.white.withValues(alpha: 0.8);
     final emptyStateBackground = isDark
-        ? theme.disabledColor.withOpacity(0.2)
-        : Colors.grey.withOpacity(0.1);
+        ? theme.disabledColor.withValues(alpha: 0.2)
+        : Colors.grey.withValues(alpha: 0.1);
     final textColor =
         isDark ? theme.textTheme.bodyMedium?.color : Colors.grey[600];
 
@@ -262,12 +262,12 @@ class AccuracyRowCard extends StatelessWidget {
         color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(isDark ? 0.5 : 0.3),
+          color: color.withValues(alpha: isDark ? 0.5 : 0.3),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(isDark ? 0.2 : 0.1),
+            color: color.withValues(alpha: isDark ? 0.2 : 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -322,7 +322,7 @@ class AccuracyRowCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(isDark ? 0.3 : 0.2),
+                  color: color.withValues(alpha: isDark ? 0.3 : 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -348,8 +348,8 @@ class AccuracyRowCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isDark
-                      ? theme.disabledColor.withOpacity(0.5)
-                      : Colors.grey.withOpacity(0.3),
+                      ? theme.disabledColor.withValues(alpha: 0.5)
+                      : Colors.grey.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -370,7 +370,7 @@ class AccuracyRowCard extends StatelessWidget {
                 color: numbersSectionBackground,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: color.withOpacity(isDark ? 0.4 : 0.2),
+                  color: color.withValues(alpha: isDark ? 0.4 : 0.2),
                   width: 1,
                 ),
               ),
@@ -395,10 +395,10 @@ class AccuracyRowCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(isDark ? 0.2 : 0.1),
+                          color: color.withValues(alpha: isDark ? 0.2 : 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: color.withOpacity(isDark ? 0.6 : 0.4),
+                            color: color.withValues(alpha: isDark ? 0.6 : 0.4),
                             width: 1,
                           ),
                         ),

@@ -774,29 +774,43 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   }
 
   // Method to share result text
+
   Future<void> _shareResultText(LotteryResultModel result) async {
     try {
       final resultText = _formatLotteryResultText(result);
-      final subject =
-          'Kerala Lottery Result: ${result.lotteryName} - Draw ${result.drawNumber}';
 
-      await Share.share(
-        resultText,
-        subject: subject,
+      final shareParams = ShareParams(
+        text: resultText,
+        subject: 'Lottery Results',
+        // Android: sheet title; on iPad/macOS sharePositionOrigin helps UI position
+        // title: 'Share result',
+        // sharePositionOrigin: <Rect if needed for iPad>
       );
+
+      final shareResult = await SharePlus.instance.share(shareParams);
+
+      if (!mounted) return;
+
+      if (shareResult.status == ShareResultStatus.unavailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sharing is unavailable on this platform'),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 8),
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
                 Expanded(child: Text('Failed to share: ${e.toString()}')),
               ],
             ),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -1240,6 +1254,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     final Uri url = Uri.parse(
         'https://statelottery.kerala.gov.in/index.php/lottery-result-view');
 
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(
@@ -1248,7 +1264,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         );
       } else {
         // Handle error - show snackbar or dialog
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('Could not launch website'),
           ),
@@ -1256,7 +1272,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       }
     } catch (e) {
       // Handle any exceptions
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Error opening website'),
         ),

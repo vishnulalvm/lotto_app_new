@@ -110,6 +110,8 @@ class _SplashScreenState extends State<SplashScreen>
 
       CacheManager.initialize();
     } catch (e) {
+      // Cache initialization is not critical for app startup
+      debugPrint('Failed to initialize cache: $e');
     }
   }
 
@@ -126,6 +128,8 @@ class _SplashScreenState extends State<SplashScreen>
         _preloadAdsInBackground();
       }));
     } catch (e) {
+      // AdMob initialization failure is not critical
+      debugPrint('Failed to initialize AdMob services: $e');
     }
   }
   
@@ -160,6 +164,8 @@ class _SplashScreenState extends State<SplashScreen>
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     } catch (e) {
+      // Notification channel creation failure is not critical
+      debugPrint('Failed to create notification channel: $e');
     }
   }
 

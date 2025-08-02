@@ -153,13 +153,16 @@ class _ProbabilityBarcodeScannerScreenState
       },
       child: PopScope(
         canPop: false,
-        onPopInvoked: (didPop) async {
+        onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
 
+          final navigator = Navigator.of(context);
+          final router = GoRouter.of(context);
+
           // Check if there are any dialogs open
-          if (Navigator.of(context).canPop()) {
+          if (navigator.canPop()) {
             // There's a dialog open, just close it
-            Navigator.of(context).pop();
+            navigator.pop();
             return;
           }
 
@@ -169,7 +172,7 @@ class _ProbabilityBarcodeScannerScreenState
           });
           await cameraController.stop();
           if (mounted) {
-            context.go('/');
+            router.go('/');
           }
         },
         child: Scaffold(
@@ -190,12 +193,13 @@ class _ProbabilityBarcodeScannerScreenState
                 color: theme.appBarTheme.iconTheme?.color,
               ),
               onPressed: () async {
+                final router = GoRouter.of(context);
                 setState(() {
                   _isNavigatingAway = true;
                 });
                 await cameraController.stop();
                 if (mounted) {
-                  context.go('/');
+                  router.go('/');
                 }
               },
             ),
@@ -573,6 +577,8 @@ class _ProbabilityBarcodeScannerScreenState
   }) async {
     // Ensure camera is stopped before showing dialog
     await _pauseCameraForProcessing();
+
+    if (!mounted) return;
 
     // Use the probability dialog with proper callback
     ProbabilityResultDialog.show(

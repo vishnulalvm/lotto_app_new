@@ -605,11 +605,12 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               final success = await SavedResultsService.clearAllSavedResults();
               if (success) {
                 await _loadSavedResults();
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text('All saved results cleared'),
                       backgroundColor: Colors.green,

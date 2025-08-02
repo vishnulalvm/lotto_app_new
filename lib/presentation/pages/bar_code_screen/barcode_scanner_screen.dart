@@ -95,6 +95,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    // Store context values before async operation
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
@@ -105,16 +109,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       confirmText: 'confirm'.tr(),
     );
     if (picked != null && picked != selectedDate) {
+      
       setState(() {
         selectedDate = picked;
         // Reset scanner state when date changes
         lastScannedCode = null;
         isProcessing = false;
       });
-
-      // Store context values before async operation
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
-      final theme = Theme.of(context);
       
       // Restart the scanner to enable scanning again with new date
       await _restartScanner();
@@ -218,7 +219,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) {
           // Handle hardware back button
           setState(() {
@@ -246,12 +247,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           ),
           onPressed: () async {
             // Set navigation flag and stop camera before going back
+            final navigator = GoRouter.of(context);
             setState(() {
               _isNavigatingAway = true;
             });
             await cameraController.stop();
             if (mounted) {
-              context.go('/');
+              navigator.go('/');
             }
           },
         ),

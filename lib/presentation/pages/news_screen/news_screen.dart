@@ -57,7 +57,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
   List<ContentItem> _createMixedContent(List<NewsModel> newsList) {
     List<ContentItem> content = [];
     bool isFirstNews = true;
-    
+
     for (int i = 0; i < newsList.length; i++) {
       // Add news item
       content.add(ContentItem(
@@ -65,9 +65,9 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
         type: ContentType.news,
         newsModel: newsList[i],
       ));
-      
+
       bool shouldInsertAd = false;
-      
+
       // For the first news item, show ad after it
       if (isFirstNews) {
         shouldInsertAd = true;
@@ -77,7 +77,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
       else if ((i + 1) % 5 == 0) {
         shouldInsertAd = true;
       }
-      
+
       // Insert ad if conditions are met and not after the last news item
       if (shouldInsertAd && i < newsList.length - 1) {
         content.add(ContentItem(
@@ -86,7 +86,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
         ));
       }
     }
-    
+
     return content;
   }
 
@@ -105,25 +105,37 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
 
   Future<void> _shareNews(NewsModel news) async {
     try {
-      String shareText;
+      final text = news.hasValidNewsUrl
+          ? '${news.headline}\n\n${news.newsUrl}'
+          : '${news.headline}\n\n${news.shortContent}';
 
-      if (news.hasValidNewsUrl) {
-        // Share with URL if available
-        shareText = '${news.headline}\n\n${news.newsUrl}';
-      } else {
-        // Share just the headline and content if no URL
-        shareText = '${news.headline}\n\n${news.shortContent}';
-      }
-
-      await Share.share(
-        shareText,
-        subject: news.headline, // This is used for email sharing
+      // Build ShareParams instead of using deprecated Share.share
+      final params = ShareParams(
+        text: text,
+        subject: news.headline, // Used by email & some platforms
+        title: 'Share News', // Android share sheet title
+        // Optional: sharePositionOrigin: box.localToGlobal(…) & box.size,
+        // required for proper positioning on iPad/macOS
       );
-    } catch (e) {
+
+      final result = await SharePlus.instance.share(params);
+
+      if (!mounted) return;
+
+      // Provide feedback based on share results
+      if (result.status == ShareResultStatus.unavailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sharing is unavailable on this platform'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not share the news'),
+            content: Text('Could not share the news: $error'),
             backgroundColor: Colors.red,
           ),
         );
@@ -215,7 +227,9 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
       actions: [
         BlocBuilder<NewsBloc, NewsState>(
           builder: (context, state) {
-            if (state is NewsLoaded && state.news.isNotEmpty && contentItems.isNotEmpty) {
+            if (state is NewsLoaded &&
+                state.news.isNotEmpty &&
+                contentItems.isNotEmpty) {
               return IconButton(
                 icon: Icon(
                   Icons.share_outlined,
@@ -225,7 +239,8 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
                 onPressed: () {
                   if (currentPage < contentItems.length) {
                     final currentItem = contentItems[currentPage];
-                    if (currentItem.type == ContentType.news && currentItem.newsModel != null) {
+                    if (currentItem.type == ContentType.news &&
+                        currentItem.newsModel != null) {
                       _shareNews(currentItem.newsModel!);
                     }
                   }
@@ -318,7 +333,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
 
   Widget _buildNewsContent(List<NewsModel> newsList, ThemeData theme) {
     contentItems = _createMixedContent(newsList);
-    
+
     return PageView.builder(
       controller: _pageController,
       scrollDirection: Axis.vertical,
@@ -329,7 +344,7 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
       itemCount: contentItems.length,
       itemBuilder: (context, index) {
         final contentItem = contentItems[index];
-        
+
         return NewsContentItem(
           key: ValueKey(contentItem.id),
           type: contentItem.type,
@@ -342,5 +357,4 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
       },
     );
   }
-
 }
