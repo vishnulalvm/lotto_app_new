@@ -54,5 +54,9 @@
 		<string>ca-app-pub-3940256099942544~1458002511</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>This app needs camera access to scan lottery ticket barcodes and check results.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>This app needs photo library access to scan barcodes from images.</string>
 	</dict>
 </plist>

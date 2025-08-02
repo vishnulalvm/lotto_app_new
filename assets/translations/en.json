@@ -454,5 +454,14 @@
   "discover_amazing_products": "Discover amazing products and services tailored for you",
   "learn_more": "Learn More",
   "ads_card": "Ads Card",
-  "scan_again": "Scan Again"
+  "scan_again": "Scan Again",
+  "camera_permission_required": "Camera Permission Required",
+  "camera_permission_message": "This app needs camera access to scan lottery tickets. Please grant camera permission to continue.",
+  "camera_permission_denied_message": "Camera permission was denied. You can grant permission by going to Settings > Apps > Lotto > Permissions and enabling Camera access.",
+  "grant_camera_permission": "Grant Camera Permission",
+  "open_settings": "Open Settings",
+  "check_permission_again": "Check Permission Again",
+  "no_barcode_found": "No Barcode Found",
+  "no_barcode_found_message": "No barcode was detected in the selected image. Please try with a different image.",
+  "image_scan_error": "Error scanning image. Please try again."
 }

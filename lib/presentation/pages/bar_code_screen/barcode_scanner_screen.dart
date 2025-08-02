@@ -5,6 +5,7 @@ import 'package:lotto_app/core/utils/barcode_validator.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/widgets/validation_error_dialog.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({super.key});
@@ -13,86 +14,61 @@ class BarcodeScannerScreen extends StatefulWidget {
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
-    with WidgetsBindingObserver {
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with WidgetsBindingObserver {
   MobileScannerController cameraController = MobileScannerController();
   bool isFlashOn = false;
   DateTime selectedDate = DateTime.now();
   String? lastScannedCode;
   bool isProcessing = false;
-  bool _isNavigatingAway = false;
+  PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
+  bool _isRequestingPermission = false;
 
   @override
   void initState() {
     super.initState();
-    // Add observer to detect app lifecycle changes
     WidgetsBinding.instance.addObserver(this);
+    _checkCameraPermission();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Ensure camera starts when dependencies change (e.g., after navigation)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !cameraController.value.isRunning) {
-        _handleReturnFromNavigation();
-      }
-    });
-  }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Handle app lifecycle changes
-    switch (state) {
-      case AppLifecycleState.resumed:
-        // Resume camera when app comes back to foreground
-        if (mounted) {
-          // Reset navigation flag and restart camera when app resumes
-          _handleReturnFromNavigation();
-        }
-        break;
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        // Stop camera when app goes to background (but not when navigating)
-        if (!_isNavigatingAway) {
-          cameraController.stop();
-        }
-        break;
-      case AppLifecycleState.detached:
-        break;
-      case AppLifecycleState.hidden:
-        // Stop camera when app is hidden
-        cameraController.stop();
-        break;
+
+  Future<void> _checkCameraPermission() async {
+    if (_isRequestingPermission) return;
+    
+    final permission = await Permission.camera.status;
+    if (mounted) {
+      setState(() {
+        _cameraPermissionStatus = permission;
+      });
     }
   }
 
-  Future<void> _restartCameraIfNeeded() async {
+  Future<void> _requestCameraPermission() async {
+    if (_isRequestingPermission) return;
+
+    setState(() {
+      _isRequestingPermission = true;
+    });
+
     try {
-      // Check if camera is already running
-      if (!cameraController.value.isRunning) {
-        await cameraController.start();
-        // Reset states when camera restarts
+      final permission = await Permission.camera.request();
+      
+      if (mounted) {
         setState(() {
-          isProcessing = false;
-          _isNavigatingAway = false;
+          _cameraPermissionStatus = permission;
+          _isRequestingPermission = false;
         });
       }
     } catch (e) {
-      // Try to recreate the controller if restart fails
-      try {
-        cameraController.dispose();
-        cameraController = MobileScannerController();
-        await cameraController.start();
+      if (mounted) {
         setState(() {
-          isProcessing = false;
-          _isNavigatingAway = false;
+          _isRequestingPermission = false;
         });
-      } catch (e) {
-        // Handle controller recreation error silently
       }
     }
   }
+
+
 
   Future<void> _selectDate(BuildContext context) async {
     // Store context values before async operation
@@ -117,8 +93,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         isProcessing = false;
       });
       
-      // Restart the scanner to enable scanning again with new date
-      await _restartScanner();
+      // Reset scanner state when date changes
+      setState(() {
+        isProcessing = false;
+      });
 
       // Show feedback to user
       if (mounted) {
@@ -133,101 +111,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     }
   }
 
-  Future<void> _restartScanner() async {
-    try {
-      // Stop the current scanner
-      await cameraController.stop();
-      // Small delay to ensure camera is properly stopped
-      await Future.delayed(const Duration(milliseconds: 300));
-      // Start the scanner again
-      await cameraController.start();
-    } catch (e) {
-      // If restart fails, try to dispose and recreate the controller
-      try {
-        cameraController.dispose();
-        cameraController = MobileScannerController();
-      } catch (e) {
-        // Handle controller recreation error silently
-      }
-    }
-  }
 
-  Future<void> _stopCameraAndNavigate(String route, {Object? extra}) async {
-    try {
-      // Set navigation flag to prevent lifecycle interference
-      setState(() {
-        _isNavigatingAway = true;
-      });
 
-      // Stop the camera before navigation
-      await cameraController.stop();
-
-      // Add a small delay to ensure camera is properly stopped
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      if (mounted) {
-        if (extra != null) {
-          await context.push(route, extra: extra);
-          // Reset navigation flag when returning
-          _handleReturnFromNavigation();
-        } else {
-          await context.push(route);
-          // Reset navigation flag when returning
-          _handleReturnFromNavigation();
-        }
-      }
-    } catch (e) {
-      // Navigate anyway even if camera stop fails
-      if (mounted) {
-        if (extra != null) {
-          await context.push(route, extra: extra);
-          _handleReturnFromNavigation();
-        } else {
-          await context.push(route);
-          _handleReturnFromNavigation();
-        }
-      }
-    }
-  }
-
-  void _handleReturnFromNavigation() {
-    // Reset navigation flag and restart camera when returning
-    setState(() {
-      _isNavigatingAway = false;
-      isProcessing = false;
-      lastScannedCode = null; // Reset to allow new scans
-    });
-    
-    // Restart camera after a brief delay
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        _restartCameraIfNeeded();
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // Ensure camera is started when widget rebuilds (e.g., after navigation)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _isNavigatingAway) {
-        _handleReturnFromNavigation();
-      }
-    });
-    
     return PopScope(
       canPop: true,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) {
-          // Handle hardware back button
-          setState(() {
-            _isNavigatingAway = true;
-          });
-          await cameraController.stop();
-        }
-      },
       child: Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -245,16 +137,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
             Icons.arrow_back,
             color: theme.appBarTheme.iconTheme?.color,
           ),
-          onPressed: () async {
-            // Set navigation flag and stop camera before going back
-            final navigator = GoRouter.of(context);
-            setState(() {
-              _isNavigatingAway = true;
-            });
-            await cameraController.stop();
-            if (mounted) {
-              navigator.go('/');
-            }
+          onPressed: () {
+            context.pop();
           },
         ),
       ),
@@ -264,35 +148,39 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Scanner
-                MobileScanner(
-                  controller: cameraController,
-                  onDetect: (capture) {
-                    if (isProcessing) return;
+                // Show permission request UI or scanner based on permission status
+                if (_cameraPermissionStatus == PermissionStatus.granted)
+                  MobileScanner(
+                    controller: cameraController,
+                    onDetect: (capture) {
+                      if (isProcessing) return;
 
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      final scannedValue = barcode.rawValue ?? '';
-                      if (scannedValue.isNotEmpty &&
-                          scannedValue != lastScannedCode) {
-                        _handleScannedBarcode(scannedValue);
-                        break;
+                      final List<Barcode> barcodes = capture.barcodes;
+                      for (final barcode in barcodes) {
+                        final scannedValue = barcode.rawValue ?? '';
+                        if (scannedValue.isNotEmpty &&
+                            scannedValue != lastScannedCode) {
+                          _handleScannedBarcode(scannedValue);
+                          break;
+                        }
                       }
-                    }
-                  },
-                ),
-                // Overlay
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: theme.primaryColor,
-                      width: 2.0,
+                    },
+                  )
+                else
+                  _buildPermissionRequestUI(),
+                // Overlay - only show when camera permission is granted
+                if (_cameraPermissionStatus == PermissionStatus.granted)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: theme.primaryColor,
+                        width: 2.0,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    height: 200,
                   ),
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  height: 200,
-                ),
                 // Loading indicator
                 if (isProcessing)
                   Container(
@@ -314,8 +202,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       ),
                     ),
                   ),
-                // Instruction text
-                if (!isProcessing)
+                // Instruction text - only show when camera permission is granted and not processing
+                if (!isProcessing && _cameraPermissionStatus == PermissionStatus.granted)
                   Positioned(
                     bottom: 100,
                     child: Container(
@@ -348,7 +236,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                 // Date chooser button
                 Container(
                   margin: const EdgeInsets.only(bottom: 20),
-                  child: _buildDateChooserButton(context, theme),
+                  child: _buildDateChooserButton(),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -363,13 +251,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                           cameraController.toggleTorch();
                         });
                       },
-                      theme: theme,
                     ),
                     _buildActionButton(
                       icon: Icons.photo_library,
                       label: 'gallery'.tr(),
                       onTap: _pickImageFromGallery,
-                      theme: theme,
                     ),
                   ],
                 ),
@@ -383,7 +269,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
-  Widget _buildDateChooserButton(BuildContext context, ThemeData theme) {
+  Widget _buildDateChooserButton() {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: () => _selectDate(context),
       child: Container(
@@ -429,8 +316,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     required String label,
     required VoidCallback onTap,
     bool isActive = false,
-    required ThemeData theme,
   }) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: isProcessing ? null : onTap,
       borderRadius: BorderRadius.circular(12),
@@ -603,26 +490,175 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     final ticketData = {
       'ticketNumber': BarcodeValidator.cleanTicketNumber(barcodeValue),
       'date': formattedDate,
-      'phoneNumber': '62389700', // You might want to get this from user input
+      'phoneNumber': '', // TODO: Get this from user input or preferences
     };
 
     setState(() {
       isProcessing = false;
     });
 
-    // Use the new method to stop camera and navigate
-    await _stopCameraAndNavigate('/result/scratch', extra: ticketData);
+    // Stop camera before navigation to prevent it running in background
+    try {
+      await cameraController.stop();
+    } catch (e) {
+      // Camera stop failed, but continue with navigation
+    }
+
+    // Navigate to scratch card with ticket data
+    if (mounted) {
+      await context.push('/result/scratch', extra: ticketData);
+      
+      // Restart camera when returning from navigation
+      if (mounted && _cameraPermissionStatus == PermissionStatus.granted) {
+        try {
+          await cameraController.start();
+          // Reset scanner state for new scans
+          setState(() {
+            lastScannedCode = null;
+            isProcessing = false;
+          });
+        } catch (e) {
+          // Camera restart failed - user can try manually
+          setState(() {
+            lastScannedCode = null;
+            isProcessing = false;
+          });
+        }
+      }
+    }
   }
 
   void _showValidationErrorDialog(String errorMessage) {
     ValidationErrorDialog.show(context, errorMessage);
   }
 
+  Widget _buildPermissionRequestUI() {
+    final theme = Theme.of(context);
+    
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.camera_alt_outlined,
+                size: 80,
+                color: theme.primaryColor,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'camera_permission_required'.tr(),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _cameraPermissionStatus == PermissionStatus.permanentlyDenied
+                    ? 'camera_permission_denied_message'.tr()
+                    : 'camera_permission_message'.tr(),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: Colors.white70,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              if (_cameraPermissionStatus == PermissionStatus.permanentlyDenied)
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        await openAppSettings();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('open_settings'.tr()),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _isRequestingPermission ? null : () async {
+                        await _checkCameraPermission();
+                      },
+                      child: Text(
+                        'check_permission_again'.tr(),
+                        style: TextStyle(
+                          color: _isRequestingPermission 
+                              ? theme.primaryColor.withValues(alpha: 0.5)
+                              : theme.primaryColor
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                ElevatedButton(
+                  onPressed: _isRequestingPermission ? null : () async {
+                    await _requestCameraPermission();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isRequestingPermission
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text('grant_camera_permission'.tr()),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app going to background/foreground
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        // App is going to background - stop camera to save battery
+        cameraController.stop();
+        break;
+      case AppLifecycleState.resumed:
+        // App is back to foreground - restart camera if permission granted
+        if (_cameraPermissionStatus == PermissionStatus.granted) {
+          cameraController.start();
+        }
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
   @override
   void dispose() {
-    // Remove the observer
     WidgetsBinding.instance.removeObserver(this);
-    // Stop and dispose the camera controller
+    // Dispose the camera controller
     cameraController.dispose();
     super.dispose();
   }
