@@ -69,7 +69,6 @@ final ThemeService _themeService = ThemeService();
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialize Firebase if not already initialized
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
 }
 
 void main() async {

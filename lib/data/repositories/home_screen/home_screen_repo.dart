@@ -19,6 +19,7 @@ class HomeScreenResultsRepository {
   /// Get home screen results with cache-first strategy
   Future<HomeScreenResultsModel> getHomeScreenResults({
     bool forceRefresh = false,
+    Function(HomeScreenResultsModel)? onBackgroundRefreshComplete,
   }) async {
     try {
       // If force refresh is requested and we're online, skip cache
@@ -38,8 +39,8 @@ class HomeScreenResultsRepository {
       // If we have valid cached data and we're online, return cached data immediately
       // but also fetch fresh data in the background
       if (cachedData != null && isCacheValid && _connectivityService.isOnline) {
-        // Background refresh (fire and forget)
-        _backgroundRefresh();
+        // Background refresh with callback
+        _backgroundRefresh(onBackgroundRefreshComplete);
         return cachedData;
       }
 
@@ -78,10 +79,12 @@ class HomeScreenResultsRepository {
   }
 
   /// Background refresh - fetch fresh data without blocking UI
-  void _backgroundRefresh() {
+  void _backgroundRefresh(Function(HomeScreenResultsModel)? onComplete) {
     Future.delayed(const Duration(milliseconds: 100), () async {
       try {
-        await _fetchAndCacheFromNetwork();
+        final freshData = await _fetchAndCacheFromNetwork();
+        // Notify caller with fresh data
+        onComplete?.call(freshData);
       } catch (e) {
         // Silent fail for background refresh
       }

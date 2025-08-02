@@ -7,8 +7,14 @@ class HomeScreenResultsUseCase {
   HomeScreenResultsUseCase(this._repository);
 
   /// Execute with optional force refresh
-  Future<HomeScreenResultsModel> execute({bool forceRefresh = false}) async {
-    return await _repository.getHomeScreenResults(forceRefresh: forceRefresh);
+  Future<HomeScreenResultsModel> execute({
+    bool forceRefresh = false,
+    Function(HomeScreenResultsModel)? onBackgroundRefreshComplete,
+  }) async {
+    return await _repository.getHomeScreenResults(
+      forceRefresh: forceRefresh,
+      onBackgroundRefreshComplete: onBackgroundRefreshComplete,
+    );
   }
 
   /// Get data source information

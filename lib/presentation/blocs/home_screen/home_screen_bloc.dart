@@ -29,6 +29,7 @@ class HomeScreenResultsBloc
     on<ConnectivityChangedEvent>(_onConnectivityChanged);
     on<ClearCacheEvent>(_onClearCache);
     on<BackgroundRefreshEvent>(_onBackgroundRefresh);
+    on<BackgroundRefreshCompleteEvent>(_onBackgroundRefreshComplete);
 
     // Listen to connectivity changes
     _connectivitySubscription = _connectivityService.connectionStream.listen(
@@ -49,7 +50,13 @@ class HomeScreenResultsBloc
     try {
       emit(HomeScreenResultsLoading());
 
-      final result = await _useCase.execute(forceRefresh: event.forceRefresh);
+      final result = await _useCase.execute(
+        forceRefresh: event.forceRefresh,
+        onBackgroundRefreshComplete: (freshData) {
+          // When background refresh completes, update the UI with fresh data
+          _handleBackgroundRefreshComplete(freshData);
+        },
+      );
       _cachedResults = result;
 
       // Get additional metadata
@@ -245,6 +252,55 @@ class HomeScreenResultsBloc
         await _handleError(e, emit, context: 'Background refresh failed');
       }
       // If we already have loaded data, silently fail the background refresh
+    }
+  }
+
+  /// Handle background refresh completion from repository callback
+  void _handleBackgroundRefreshComplete(HomeScreenResultsModel freshData) {
+    // Only update if we're still in a loaded state and the BLoC is not closed
+    if (!isClosed && state is HomeScreenResultsLoaded) {
+      _cachedResults = freshData;
+      
+      // Add a background refresh event to update the UI
+      add(BackgroundRefreshCompleteEvent(freshData));
+    }
+  }
+
+  /// Handle background refresh complete event
+  Future<void> _onBackgroundRefreshComplete(
+    BackgroundRefreshCompleteEvent event,
+    Emitter<HomeScreenResultsState> emit,
+  ) async {
+    try {
+      // Only update if we're currently in a loaded state
+      if (state is HomeScreenResultsLoaded) {
+        final currentState = state as HomeScreenResultsLoaded;
+        
+        // Update cached results
+        _cachedResults = event.freshData;
+
+        // Get updated metadata
+        final dataSource = await _useCase.getDataSource();
+        final cacheInfo = await _useCase.getCacheInfo();
+        
+        // If filtered, apply the same filter to new data
+        HomeScreenResultsModel dataToEmit = event.freshData;
+        if (currentState.isFiltered && currentState.filteredDate != null) {
+          dataToEmit = _filterResultsByDate(event.freshData, currentState.filteredDate!);
+        }
+
+        // Emit new state with fresh data
+        emit(HomeScreenResultsLoaded(
+          dataToEmit,
+          filteredDate: currentState.filteredDate,
+          isFiltered: currentState.isFiltered,
+          isOffline: _connectivityService.isOffline,
+          dataSource: dataSource,
+          cacheAgeInMinutes: cacheInfo['ageInMinutes'],
+        ));
+      }
+    } catch (e) {
+      // Silent fail for background refresh completion
     }
   }
 

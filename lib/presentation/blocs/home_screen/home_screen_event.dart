@@ -1,3 +1,5 @@
+import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
+
 abstract class HomeScreenResultsEvent {}
 
 class LoadLotteryResultsEvent extends HomeScreenResultsEvent {
@@ -48,4 +50,14 @@ class ClearCacheEvent extends HomeScreenResultsEvent {
 class BackgroundRefreshEvent extends HomeScreenResultsEvent {
   @override
   String toString() => 'BackgroundRefreshEvent()';
+}
+
+/// Event triggered when background refresh completes with fresh data
+class BackgroundRefreshCompleteEvent extends HomeScreenResultsEvent {
+  final HomeScreenResultsModel freshData;
+  
+  BackgroundRefreshCompleteEvent(this.freshData);
+  
+  @override
+  String toString() => 'BackgroundRefreshCompleteEvent(count: ${freshData.count})';
 }
