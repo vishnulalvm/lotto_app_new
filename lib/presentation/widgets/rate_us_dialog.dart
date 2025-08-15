@@ -11,7 +11,7 @@ class RateUsDialog extends StatelessWidget {
   static const String _lastRateUsDateKey = 'last_rate_us_date';
   static const String _userRatedKey = 'user_rated';
   
-  static const String _playStoreUrl = 'https://play.google.com/store/apps/details?id=app.solidapps.lotto&pcampaignid=web_share';
+  static const String _playStoreUrl = 'https://play.google.com/store/apps/details?id=app.solidapps.lotto';
 
   /// Check if we should show the rating dialog
   static Future<bool> shouldShowRatingDialog() async {

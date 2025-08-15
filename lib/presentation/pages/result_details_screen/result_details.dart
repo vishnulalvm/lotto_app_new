@@ -256,23 +256,19 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     }
   }
 
-  // Updated method to handle search functionality with minimum length
+  // Updated method to handle search functionality with minimum length and smart fallback
   void _performSearch(String query) {
     setState(() {
       _searchQuery = query.trim();
       _lastSearchQuery = _searchQuery;
-
+ 
       // Only perform search if query is empty or meets minimum length
       if (_searchQuery.isEmpty) {
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
         _clearTicketKeys();
         _hasShownNoResultsToast = false;
       } else if (_searchQuery.length >= _minSearchLength) {
-        _filteredLotteryNumbers = _allLotteryNumbers.where((item) {
-          final ticketNumber = item['number'].toString().toLowerCase();
-          final searchLower = _searchQuery.toLowerCase();
-          return ticketNumber.contains(searchLower);
-        }).toList();
+        _filteredLotteryNumbers = _performSmartSearch(_searchQuery);
 
         // Provide haptic feedback when search results are found
         if (_filteredLotteryNumbers.isNotEmpty) {
@@ -301,6 +297,33 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         _hasShownNoResultsToast = false; // Reset flag
       }
     });
+  }
+
+  // Smart search with fallback logic
+  List<Map<String, dynamic>> _performSmartSearch(String searchQuery) {
+    final searchLower = searchQuery.toLowerCase();
+    
+    // First attempt: Direct search for the full query
+    List<Map<String, dynamic>> results = _allLotteryNumbers.where((item) {
+      final ticketNumber = item['number'].toString().toLowerCase();
+      return ticketNumber.contains(searchLower);
+    }).toList();
+
+    // If no results found and query is longer than 4 digits, try fallback search
+    if (results.isEmpty && searchQuery.length > 4) {
+      // Extract last 4 digits for fallback search
+      final lastFourDigits = searchQuery.substring(searchQuery.length - 4);
+      
+      // Only proceed if last 4 digits are all numeric
+      if (RegExp(r'^\d{4}$').hasMatch(lastFourDigits)) {
+        results = _allLotteryNumbers.where((item) {
+          final ticketNumber = item['number'].toString().toLowerCase();
+          return ticketNumber.contains(lastFourDigits.toLowerCase());
+        }).toList();
+      }
+    }
+
+    return results;
   }
 
   void _checkAndShowNoResultsToast() {
