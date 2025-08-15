@@ -274,6 +274,11 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
           return ticketNumber.contains(searchLower);
         }).toList();
 
+        // Provide haptic feedback when search results are found
+        if (_filteredLotteryNumbers.isNotEmpty) {
+          HapticFeedback.lightImpact();
+        }
+
         // Generate GlobalKeys for matched tickets
         _generateTicketKeys();
         _checkAndShowNoResultsToast();
@@ -408,6 +413,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         ).then((_) {
           // Reset auto-scrolling flag after animation completes
           if (mounted) {
+            // Provide subtle haptic feedback when auto-scroll completes
+            HapticFeedback.selectionClick();
             setState(() {
               _isAutoScrolling = false;
             });
@@ -1242,6 +1249,49 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
               child: Text(
                 'Visit Official Website',
                 style: TextStyle(color: theme.colorScheme.onPrimary),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Disclaimer section
+            Container(
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.amber.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.amber[700],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Important Notice',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'These results are manually entered from live TV broadcasts. While we strive for accuracy, there may be occasional errors during data entry. Please cross-check the results on the official government website for verification.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.amber[800],
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

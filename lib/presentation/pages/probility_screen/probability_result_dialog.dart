@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:math';
 
 class ProbabilityResultDialog extends StatefulWidget {
@@ -34,7 +35,7 @@ class ProbabilityResultDialog extends StatefulWidget {
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.8),
-      builder: (context) => ProbabilityResultDialog(
+      builder: (dialogContext) => ProbabilityResultDialog(
         lotteryName: lotteryName,
         lotteryNumber: lotteryNumber,
         probability: probability,
@@ -314,14 +315,9 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
   }
 
   void _handleScanAnother() {
-    _handleDialogClose();
-  }
-
-  void _handleDialogClose() {
-    Navigator.of(context).pop();
-    // Always call the callback to reset the scanner
-    if (widget.onScanAnother != null) {
-      widget.onScanAnother!();
+    // Close dialog and navigate to home
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -336,7 +332,7 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
     final dialogHeight = min(size.height * 0.85, 600.0);
 
     return PopScope(
-      canPop: true,
+      canPop: false, // Prevent default pop behavior
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
           // Call the callback to reset the scanner when dialog is dismissed
@@ -386,7 +382,18 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
                           ),
                         ),
                         IconButton(
-                          onPressed: _handleDialogClose,
+                          onPressed: () {
+                            // Close dialog and navigate to home
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            }
+                            // Navigate to home screen to prevent back button issues
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (context.mounted) {
+                                context.go('/');
+                              }
+                            });
+                          },
                           icon: const Icon(Icons.close, size: 18),
                           style: IconButton.styleFrom(
                             backgroundColor:

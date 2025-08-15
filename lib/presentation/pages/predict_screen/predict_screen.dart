@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +19,7 @@ class PredictScreen extends StatefulWidget {
 
 class _PredictScreenState extends State<PredictScreen>
     with TickerProviderStateMixin {
-  String? selectedPrizeType = '1st'; // Default to 1st prize
+  String? selectedPrizeType = '5th'; // Default to 5th prize
   String? selectedLotteryType; // Add this for lottery selection
   late AnimationController _typewriterController;
   bool _isDisclaimerExpanded = false;
@@ -132,7 +133,10 @@ final List<Map<String, String>> lotteryTypes = [
       elevation: theme.appBarTheme.elevation,
       leading: IconButton(
         icon: Icon(Icons.arrow_back, color: theme.appBarTheme.iconTheme?.color),
-        onPressed: () => context.go('/'),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          context.go('/');
+        },
       ),
       title: Text(
         'predict'.tr(),
@@ -203,6 +207,8 @@ final List<Map<String, String>> lotteryTypes = [
                 );
               }).toList(),
               onChanged: (String? newValue) {
+                // Provide haptic feedback when lottery type is selected
+                HapticFeedback.selectionClick();
                 setState(() {
                   selectedLotteryType = newValue;
                 });
@@ -281,6 +287,8 @@ final List<Map<String, String>> lotteryTypes = [
                 );
               }).toList(),
               onChanged: (String? newValue) {
+                // Provide haptic feedback when prize type is selected
+                HapticFeedback.selectionClick();
                 setState(() {
                   selectedPrizeType = newValue;
                 });
@@ -323,7 +331,13 @@ final List<Map<String, String>> lotteryTypes = [
               ],
             ),
             const SizedBox(height: 24),
-            BlocBuilder<PredictBloc, PredictState>(
+            BlocConsumer<PredictBloc, PredictState>(
+              listener: (context, state) {
+                // Provide haptic feedback when predictions are successfully loaded
+                if (state is PredictLoaded) {
+                  HapticFeedback.mediumImpact();
+                }
+              },
               builder: (context, state) {
                 if (state is PredictInitial) {
                   return _buildEmptyState(theme);
@@ -460,7 +474,11 @@ final List<Map<String, String>> lotteryTypes = [
           ),
           const SizedBox(height: 16),
           TextButton.icon(
-            onPressed: () => _generatePrediction(_getLotteryNameForToday()),
+            onPressed: () {
+              // Provide haptic feedback when retry button is pressed
+              HapticFeedback.lightImpact();
+              _generatePrediction(_getLotteryNameForToday());
+            },
             icon: const Icon(Icons.refresh),
             label: const Text('Try Again'),
             style: TextButton.styleFrom(
@@ -626,6 +644,8 @@ final List<Map<String, String>> lotteryTypes = [
             // Minimal disclaimer bar
             InkWell(
               onTap: () {
+                // Provide haptic feedback when disclaimer is toggled
+                HapticFeedback.lightImpact();
                 setState(() {
                   _isDisclaimerExpanded = !_isDisclaimerExpanded;
                 });
@@ -972,6 +992,8 @@ class _TypewriterNumberCardState extends State<TypewriterNumberCard>
     // Start animation after delay
     Future.delayed(widget.delay, () {
       if (mounted) {
+        // Provide subtle haptic feedback when each number starts appearing
+        HapticFeedback.selectionClick();
         setState(() {
           _isVisible = true;
         });

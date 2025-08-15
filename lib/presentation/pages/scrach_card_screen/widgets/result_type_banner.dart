@@ -97,8 +97,8 @@ class ResultTypeBanner extends StatelessWidget {
 
       case 'result is not published':
         // Case 5: Result Not Published
-        bannerColor = isDark ? Colors.amber[900]!.withValues(alpha: 0.3) : Colors.amber[50]!;
-        iconColor = isDark ? Colors.amber[400]! : Colors.amber[700]!;
+        bannerColor = isDark ? theme.cardColor : Colors.grey[50]!;
+        iconColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
         primaryIcon = Icons.access_time;
         title = 'Result Not Published';
         subtitle = 'Result will be available after 3 PM';
@@ -141,9 +141,20 @@ class ResultTypeBanner extends StatelessWidget {
     bool showPointsButton = false,
     BuildContext? context,
   }) {
+    final double screenWidth = context != null ? MediaQuery.of(context).size.width : 375.0;
+    
+    // Responsive values
+    final double horizontalMargin = (screenWidth * 0.04).clamp(12.0, 20.0);
+    final double borderRadius = (screenWidth * 0.04).clamp(12.0, 18.0);
+    final double padding = (screenWidth * 0.018).clamp(8.0, 12.0);
+    final double iconContainerPadding = (screenWidth * 0.03).clamp(10.0, 14.0);
+    final double iconContainerRadius = (screenWidth * 0.03).clamp(10.0, 14.0);
+    final double iconSize = (screenWidth * 0.06).clamp(20.0, 28.0);
+    final double spacing = (screenWidth * 0.03).clamp(10.0, 16.0);
+    
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(left: 16, right: 16),
+      margin: EdgeInsets.only(left: horizontalMargin, right: horizontalMargin),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [bannerColor, bannerColor.withValues(alpha: 0.7)],
@@ -151,7 +162,7 @@ class ResultTypeBanner extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         border: Border.all(color: iconColor.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: iconColor.withValues(alpha: 0.1),
@@ -161,7 +172,7 @@ class ResultTypeBanner extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 10, bottom: 10, left: 10, right: 10),
+        padding: EdgeInsets.all(padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -170,14 +181,14 @@ class ResultTypeBanner extends StatelessWidget {
               children: [
                 // Primary status icon
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(iconContainerPadding),
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(iconContainerRadius),
                   ),
-                  child: Icon(primaryIcon, color: iconColor, size: 24),
+                  child: Icon(primaryIcon, color: iconColor, size: iconSize),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: spacing),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,14 +198,14 @@ class ResultTypeBanner extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: iconColor,
-                          fontSize: 16,
+                          fontSize: (screenWidth * 0.04).clamp(14.0, 18.0),
                         ),
                       ),
                       Text(
                         subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: iconColor.withValues(alpha: 0.7),
-                          fontSize: 12,
+                          fontSize: (screenWidth * 0.03).clamp(11.0, 14.0),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -203,23 +214,48 @@ class ResultTypeBanner extends StatelessWidget {
                 ),
                 // Navigation button for points earned
                 if (showPointsButton && context != null) ...[
-                  const SizedBox(width: 8),
+                  SizedBox(width: spacing * 0.67),
                   ElevatedButton(
                     onPressed: () => context.go('/lottoPoints'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: iconColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      minimumSize: const Size(60, 32),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: (screenWidth * 0.04).clamp(12.0, 18.0),
+                        vertical: (screenWidth * 0.02).clamp(6.0, 10.0),
+                      ),
+                      minimumSize: Size(
+                        (screenWidth * 0.15).clamp(50.0, 70.0),
+                        (screenWidth * 0.08).clamp(28.0, 36.0),
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(borderRadius * 0.5),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'View ',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: (screenWidth * 0.035).clamp(12.0, 16.0),
                         fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+                // Close button - always show if context is available
+                if (context != null) ...[
+                  SizedBox(width: spacing * 0.5),
+                  GestureDetector(
+                    onTap: () => context.go('/'),
+                    child: Container(
+                      padding: EdgeInsets.all(iconContainerPadding * 0.75),
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(iconContainerRadius * 0.75),
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: iconColor,
+                        size: iconSize * 0.75,
                       ),
                     ),
                   ),

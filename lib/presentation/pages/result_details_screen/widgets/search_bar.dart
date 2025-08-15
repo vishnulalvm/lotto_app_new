@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class FloatingSearchBar extends StatefulWidget {
   final String? hintText;
   final Function(String)? onChanged;
   final Function(String)? onSubmitted;
+  final Function(bool)? onResultsFound; // New callback for haptic feedback
   final double bottomPadding;
 
   const FloatingSearchBar({
@@ -11,6 +13,7 @@ class FloatingSearchBar extends StatefulWidget {
     this.hintText = 'Search...',
     this.onChanged,
     this.onSubmitted,
+    this.onResultsFound,
     this.bottomPadding = 20.0,
   });
 
@@ -118,7 +121,13 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
                 color: textColor,
                 fontSize: 16,
               ),
-              onChanged: widget.onChanged,
+              onChanged: (value) {
+                // Provide light haptic feedback when user starts typing
+                if (value.isNotEmpty && _controller.text.isEmpty) {
+                  HapticFeedback.lightImpact();
+                }
+                widget.onChanged?.call(value);
+              },
               onSubmitted: (value) {
                 widget.onSubmitted?.call(value);
                 // Don't collapse search bar on submit to keep search active
@@ -168,12 +177,16 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
   }
 
   void _expandSearchBar() {
+    // Provide medium haptic feedback when search bar expands
+    HapticFeedback.mediumImpact();
     setState(() {
       _isExpanded = true;
     });
   }
 
   void _collapseSearchBar() {
+    // Provide light haptic feedback when search bar collapses
+    HapticFeedback.lightImpact();
     setState(() {
       _isExpanded = false;
       // Don't clear search when collapsed to maintain search state

@@ -152,47 +152,31 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0,
-        title: Text(
-          'prize_result'.tr(),
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: theme.appBarTheme.iconTheme?.color,
-          ),
-          onPressed: () => context.go('/'),
-        ),
-      ),
-      body: BlocListener<TicketCheckBloc, TicketCheckState>(
-        listener: (context, state) {
-          if (state is TicketCheckSuccess) {
-            setState(() {
-              _ticketResult = state.result;
-            });
-          } else if (state is TicketCheckFailure) {
-            setState(() {
-              _ticketResult = null;
-            });
-          }
-        },
-        child: BlocBuilder<TicketCheckBloc, TicketCheckState>(
-          builder: (context, state) {
-            if (state is TicketCheckLoading) {
-              return _buildLoadingState(theme);
+      body: SafeArea(
+        child: BlocListener<TicketCheckBloc, TicketCheckState>(
+          listener: (context, state) {
+            if (state is TicketCheckSuccess) {
+              setState(() {
+                _ticketResult = state.result;
+              });
             } else if (state is TicketCheckFailure) {
-              return _buildErrorState(theme, state.error);
-            } else if (state is TicketCheckSuccess) {
-              return _buildSuccessState(theme, state.result);
+              setState(() {
+                _ticketResult = null;
+              });
             }
-            return _buildLoadingState(theme);
           },
+          child: BlocBuilder<TicketCheckBloc, TicketCheckState>(
+            builder: (context, state) {
+              if (state is TicketCheckLoading) {
+                return _buildLoadingState(theme);
+              } else if (state is TicketCheckFailure) {
+                return _buildErrorState(theme, state.error);
+              } else if (state is TicketCheckSuccess) {
+                return _buildSuccessState(theme, state.result);
+              }
+              return _buildLoadingState(theme);
+            },
+          ),
         ),
       ),
     );
@@ -204,12 +188,18 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         Column(
           children: [
             Expanded(
-              child: Center(
-                child: ScaleTransition(
-                  scale: _animation,
-                  child: ResultCard(
-                    type: ResultCardType.loading,
-                    theme: theme,
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width * 0.04,
+                ),
+                child: Center(
+                  child: ScaleTransition(
+                    scale: _animation,
+                    child: ResultCard(
+                      type: ResultCardType.loading,
+                      theme: theme,
+                    ),
                   ),
                 ),
               ),
@@ -287,32 +277,38 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
             ),
 
             Expanded(
-              child: Center(
-                child: ScaleTransition(
-                  scale: _animation,
-                  child: shouldShowScratch
-                      ? ResultCard(
-                          type: ResultCardType.scratchCard,
-                          theme: theme,
-                          result: result,
-                          ticketData: widget.ticketData,
-                          scratcherKey: _scratcherKey,
-                          onScratchUpdate: _onScratchUpdate,
-                          onThreshold: () {
-                            if (!_autoRevealTriggered) {
-                              _autoRevealTriggered = true;
-                              _autoRevealScratchCard();
-                            }
-                          },
-                          autoRevealTriggered: _autoRevealTriggered,
-                          scratchProgress: scratchProgress,
-                        )
-                      : ResultCard(
-                          type: ResultCardType.noResult,
-                          theme: theme,
-                          result: result,
-                          ticketData: widget.ticketData,
-                        ),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width * 0.04,
+                ),
+                child: Center(
+                  child: ScaleTransition(
+                    scale: _animation,
+                    child: shouldShowScratch
+                        ? ResultCard(
+                            type: ResultCardType.scratchCard,
+                            theme: theme,
+                            result: result,
+                            ticketData: widget.ticketData,
+                            scratcherKey: _scratcherKey,
+                            onScratchUpdate: _onScratchUpdate,
+                            onThreshold: () {
+                              if (!_autoRevealTriggered) {
+                                _autoRevealTriggered = true;
+                                _autoRevealScratchCard();
+                              }
+                            },
+                            autoRevealTriggered: _autoRevealTriggered,
+                            scratchProgress: scratchProgress,
+                          )
+                        : ResultCard(
+                            type: ResultCardType.noResult,
+                            theme: theme,
+                            result: result,
+                            ticketData: widget.ticketData,
+                          ),
+                  ),
                 ),
               ),
             ),

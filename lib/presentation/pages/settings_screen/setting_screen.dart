@@ -156,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Text('update_now'.tr()),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  _launchUrl('https://play.google.com/store/apps/details?id=com.example.lotto_app');
+                  _launchUrl('https://play.google.com/store/apps/details?id=app.solidapps.lotto');
                 },
               ),
             ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -461,6 +462,8 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
 
     if (_isHighlighted != wasHighlighted) {
       if (_isHighlighted) {
+        // Provide haptic feedback when a search result is found and highlighted
+        HapticFeedback.selectionClick();
         _animationController.forward();
       } else {
         _animationController.reverse();
