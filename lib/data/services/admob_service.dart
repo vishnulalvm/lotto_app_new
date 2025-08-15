@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:async';
+import 'dart:math';
 
 class AdMobService {
   static AdMobService? _instance;
@@ -35,6 +36,18 @@ class AdMobService {
   bool _isLiveVideoAdLoaded = false;
   bool _isLottoPointsAdLoaded = false;
   bool _isNewsFeedAdLoaded = false;
+
+  // Performance tracking
+  final Map<String, DateTime> _loadStartTimes = {};
+  final Map<String, int> _loadAttempts = {};
+  
+  // Rate limiting
+  DateTime? _lastBatchLoadTime;
+  static const Duration _batchLoadCooldown = Duration(seconds: 10);
+  
+  // Maximum concurrent ad loads
+  int _currentLoadOperations = 0;
+  static const int _maxConcurrentLoads = 2;
 
   // Initialization
   static Future<void> initialize() async {
@@ -454,24 +467,121 @@ class AdMobService {
   bool get isLottoPointsAdCached => _isLottoPointsAdLoaded;
   bool get isNewsFeedAdCached => _isNewsFeedAdLoaded;
 
-  // Preload all native ads
+  // Enhanced native ads preloading with smart batching
   Future<void> preloadNativeAds({bool isDarkTheme = false}) async {
-    // Load ads with staggered delays to avoid overwhelming the ad network
-    unawaited(preloadHomeResultsAd(isDarkTheme: isDarkTheme));
+    if (_currentLoadOperations >= _maxConcurrentLoads) {
+      // Queue for later if system is busy
+      Future.delayed(const Duration(seconds: 5), () {
+        preloadNativeAds(isDarkTheme: isDarkTheme);
+      });
+      return;
+    }
     
-    await Future.delayed(const Duration(milliseconds: 200));
-    unawaited(preloadLiveVideoAd(isDarkTheme: isDarkTheme));
+    // Rate limiting for native ads
+    if (_lastBatchLoadTime != null && 
+        DateTime.now().difference(_lastBatchLoadTime!).inSeconds < _batchLoadCooldown.inSeconds) {
+      return;
+    }
     
-    await Future.delayed(const Duration(milliseconds: 200));
-    unawaited(preloadLottoPointsAd(isDarkTheme: isDarkTheme));
+    _lastBatchLoadTime = DateTime.now();
     
-    await Future.delayed(const Duration(milliseconds: 200));
-    unawaited(preloadNewsFeedAd(isDarkTheme: isDarkTheme));
+    // Load high-priority ads first (home screen)
+    unawaited(_loadWithRetry('native_home', () => preloadHomeResultsAd(isDarkTheme: isDarkTheme)));
+    
+    // Stagger other native ads with longer delays
+    await Future.delayed(const Duration(milliseconds: 800));
+    unawaited(_loadWithRetry('native_live', () => preloadLiveVideoAd(isDarkTheme: isDarkTheme)));
+    
+    await Future.delayed(const Duration(milliseconds: 800));
+    unawaited(_loadWithRetry('native_lotto', () => preloadLottoPointsAd(isDarkTheme: isDarkTheme)));
+    
+    await Future.delayed(const Duration(milliseconds: 800));
+    unawaited(_loadWithRetry('native_news', () => preloadNewsFeedAd(isDarkTheme: isDarkTheme)));
+  }
+  
+  // Smart preloading based on app state
+  Future<void> smartPreload({bool isDarkTheme = false, bool isHomeScreen = false}) async {
+    if (isHomeScreen) {
+      // Prioritize home screen ads
+      await _loadWithRetry('native_home', () => preloadHomeResultsAd(isDarkTheme: isDarkTheme));
+      await Future.delayed(const Duration(milliseconds: 300));
+      await _loadWithRetry('interstitial_predict', () => loadInterstitialPredictAd());
+    } else {
+      // Load other ads in background
+      await preloadNativeAds(isDarkTheme: isDarkTheme);
+    }
+  }
+  
+  // Check system load before loading ads
+  bool get canLoadAds => _currentLoadOperations < _maxConcurrentLoads;
+  
+  // Get performance metrics
+  Map<String, dynamic> getPerformanceMetrics() {
+    return {
+      'current_load_operations': _currentLoadOperations,
+      'load_attempts': Map.from(_loadAttempts),
+      'can_load_ads': canLoadAds,
+      'last_batch_load': _lastBatchLoadTime?.toIso8601String(),
+    };
   }
 
-  // Preload ads
-  void preloadAds() {
-    loadInterstitialPredictAd();
-    loadInterstitialSeemoreAd();
+  // Enhanced preload with performance optimization
+  Future<void> preloadAds() async {
+    if (_currentLoadOperations >= _maxConcurrentLoads) {
+      return; // Prevent overwhelming the system
+    }
+    
+    // Rate limiting
+    if (_lastBatchLoadTime != null && 
+        DateTime.now().difference(_lastBatchLoadTime!).inSeconds < _batchLoadCooldown.inSeconds) {
+      return;
+    }
+    
+    _lastBatchLoadTime = DateTime.now();
+    
+    // Load interstitials with staggered timing
+    unawaited(_loadWithRetry('interstitial_predict', () => loadInterstitialPredictAd()));
+    
+    await Future.delayed(const Duration(milliseconds: 500));
+    unawaited(_loadWithRetry('interstitial_seemore', () => loadInterstitialSeemoreAd()));
+  }
+  
+  // Enhanced loading with retry logic and performance tracking
+  Future<void> _loadWithRetry(String adType, Future<void> Function() loadFunction) async {
+    if (_currentLoadOperations >= _maxConcurrentLoads) {
+      return;
+    }
+    
+    _currentLoadOperations++;
+    _loadStartTimes[adType] = DateTime.now();
+    _loadAttempts[adType] = (_loadAttempts[adType] ?? 0) + 1;
+    
+    try {
+      await loadFunction();
+      _logLoadSuccess(adType);
+    } catch (e) {
+      _logLoadFailure(adType, e);
+      
+      // Retry with exponential backoff if attempts < 3
+      if ((_loadAttempts[adType] ?? 0) < 3) {
+        final delay = Duration(seconds: pow(2, _loadAttempts[adType]! - 1).toInt());
+        await Future.delayed(delay);
+        unawaited(_loadWithRetry(adType, loadFunction));
+      }
+    } finally {
+      _currentLoadOperations--;
+    }
+  }
+  
+  void _logLoadSuccess(String adType) {
+    final loadTime = _loadStartTimes[adType];
+    if (loadTime != null) {
+      final duration = DateTime.now().difference(loadTime);
+      debugPrint('✅ Ad loaded: $adType in ${duration.inMilliseconds}ms');
+    }
+  }
+  
+  void _logLoadFailure(String adType, dynamic error) {
+    debugPrint('❌ Ad load failed: $adType - $error');
   }
 }

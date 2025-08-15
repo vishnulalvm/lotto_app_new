@@ -134,16 +134,27 @@ class _SplashScreenState extends State<SplashScreen>
   }
   
   void _preloadAdsInBackground() async {
-    // Run ad preloading in background to avoid blocking home screen
+    // Enhanced preloading with system load awareness
     try {
-      // Preload interstitial and banner ads first (faster)
-      AdMobService.instance.preloadAds();
+      // Only preload if system can handle it
+      if (!AdMobService.instance.canLoadAds) {
+        debugPrint('⚠️ Skipping ad preload - system busy');
+        return;
+      }
       
-      // Preload native ads with slight delay to spread load
-      await Future.delayed(const Duration(milliseconds: 300));
-      await AdMobService.instance.preloadNativeAds();
+      // Preload high-priority ads first (faster loading, critical for UX)
+      await AdMobService.instance.preloadAds();
+      
+      // Check system load before native ads
+      if (AdMobService.instance.canLoadAds) {
+        // Longer delay to let app settle after navigation
+        await Future.delayed(const Duration(milliseconds: 1000));
+        await AdMobService.instance.smartPreload(isHomeScreen: true);
+      }
+      
+      debugPrint('✅ Background ad preload completed');
     } catch (e) {
-      // Silently handle preload errors - ads will load on demand
+      debugPrint('❌ Ad preload failed: $e');
     }
   }
 

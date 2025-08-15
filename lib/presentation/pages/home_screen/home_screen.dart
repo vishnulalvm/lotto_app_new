@@ -19,6 +19,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart'
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,17 +56,25 @@ class _HomeScreenState extends State<HomeScreen>
     // Add observer for app lifecycle changes
     WidgetsBinding.instance.addObserver(this);
 
-    // Track screen view for analytics
+    // Track screen view for analytics (non-blocking)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AnalyticsService.trackScreenView(
-        screenName: 'home_screen',
-        screenClass: 'HomeScreen',
-        parameters: {
-          'is_first_visit': true,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        },
-      );
-      AnalyticsService.trackSessionStart();
+      // Run analytics in background to avoid blocking UI
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'home_screen',
+          screenClass: 'HomeScreen',
+          parameters: {
+            'is_first_visit': true,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+        AnalyticsService.trackSessionStart();
+      });
+      
+      // Preload ads after UI is stable
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _preloadHomeScreenAds();
+      });
     });
 
     // Load data immediately (without UI delays)
@@ -155,7 +164,29 @@ class _HomeScreenState extends State<HomeScreen>
     // Dispose consolidated animation controllers
     _primaryAnimationController.dispose();
     _secondaryAnimationController.dispose();
+    
+    // Dispose any loaded ads to free memory
+    _disposeHomeScreenAds();
     super.dispose();
+  }
+
+  void _preloadHomeScreenAds() async {
+    if (!mounted) return;
+    
+    try {
+      // Only preload if system can handle it
+      if (AdMobService.instance.canLoadAds) {
+        await AdMobService.instance.smartPreload(isHomeScreen: true);
+      }
+    } catch (e) {
+      // Silent fail - ads will load on demand
+      debugPrint('Home screen ad preload failed: $e');
+    }
+  }
+  
+  void _disposeHomeScreenAds() {
+    // Let AdMob service handle cleanup
+    AdMobService.instance.disposeNativeAds();
   }
 
   // Method to show interstitial ad and navigate (commented out - AdMob account not ready)
@@ -303,14 +334,20 @@ class _HomeScreenState extends State<HomeScreen>
         // App came back to foreground - refresh data if it's been a while
         if (mounted) {
           _handleAppResumed();
+          // Preload ads after app resumes
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            if (mounted) _preloadHomeScreenAds();
+          });
         }
         break;
       case AppLifecycleState.paused:
-        // App went to background - cancel periodic timer to save battery
+        // App went to background - cancel periodic timer and dispose ads to save memory
         _periodicRefreshTimer?.cancel();
+        _disposeHomeScreenAds();
         break;
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
+        _disposeHomeScreenAds();
         break;
       case AppLifecycleState.hidden:
         break;

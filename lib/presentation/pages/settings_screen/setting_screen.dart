@@ -578,7 +578,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLanguageDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text('app_language'.tr()),
           content: Column(
@@ -586,22 +586,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _buildLanguageOption(
                 context,
+                dialogContext,
                 'English',
                 const Locale('en'),
               ),
               _buildLanguageOption(
                 context,
+                dialogContext,
                 'Malayalam',
                 const Locale('ml'),
               ),
               _buildLanguageOption(
                 context,
+                dialogContext,
                 'Hindi',
                 const Locale('hi'),
               ),
               _buildLanguageOption(
                 // Added Tamil option
                 context,
+                dialogContext,
                 'Tamil',
                 const Locale('ta'),
               ),
@@ -609,7 +613,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text('close'.tr()),
             ),
           ],
@@ -620,6 +624,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildLanguageOption(
     BuildContext context,
+    BuildContext dialogContext,
     String languageName,
     Locale locale,
   ) {
@@ -629,7 +634,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
       onTap: () {
         context.setLocale(locale);
-        Navigator.of(context).pop();
+        Navigator.of(dialogContext).pop();
       },
     );
   }
