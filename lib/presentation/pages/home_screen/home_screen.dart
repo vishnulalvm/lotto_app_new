@@ -175,10 +175,10 @@ class _HomeScreenState extends State<HomeScreen>
     if (!mounted) return;
     
     try {
-      // Only preload if system can handle it
-      if (AdMobService.instance.canLoadAds) {
-        await AdMobService.instance.smartPreload(isHomeScreen: true);
-      }
+      await AdMobService.instance.preloadAds(
+        adTypes: ['home_results', 'predict_interstitial'],
+        isDarkTheme: Theme.of(context).brightness == Brightness.dark,
+      );
     } catch (e) {
       // Silent fail - ads will load on demand
       debugPrint('Home screen ad preload failed: $e');
@@ -187,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen>
   
   void _disposeHomeScreenAds() {
     // Let AdMob service handle cleanup
-    AdMobService.instance.disposeNativeAds();
+    // Service manages disposal automatically
   }
 
   // Method to show interstitial ad and navigate (commented out - AdMob account not ready)

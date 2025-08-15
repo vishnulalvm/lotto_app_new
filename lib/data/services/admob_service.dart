@@ -1,7 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:async';
-import 'dart:math';
+
+/// Ad loading states for better state management
+enum AdState { idle, loading, loaded, failed, disposed }
+
+/// Ad wrapper to encapsulate state and instance together
+class AdWrapper<T> {
+  final T? ad;
+  final AdState state;
+  final String? error;
+  final DateTime? lastLoadTime;
+
+  const AdWrapper({
+    this.ad,
+    this.state = AdState.idle,
+    this.error,
+    this.lastLoadTime,
+  });
+
+  AdWrapper<T> copyWith({
+    T? ad,
+    AdState? state,
+    String? error,
+    DateTime? lastLoadTime,
+  }) {
+    return AdWrapper<T>(
+      ad: ad ?? this.ad,
+      state: state ?? this.state,
+      error: error ?? this.error,
+      lastLoadTime: lastLoadTime ?? this.lastLoadTime,
+    );
+  }
+
+  bool get isLoaded => state == AdState.loaded && ad != null;
+  bool get isLoading => state == AdState.loading;
+  bool get canLoad => state == AdState.idle || state == AdState.failed;
+  bool get needsReload => state == AdState.failed || 
+    (lastLoadTime != null && DateTime.now().difference(lastLoadTime!).inMinutes > 30);
+}
 
 class AdMobService {
   static AdMobService? _instance;
@@ -19,262 +56,266 @@ class AdMobService {
   static const String nativeLottoPoints = 'ca-app-pub-1386225714525775/5247311376';
   static const String nativeNewsFeed = 'ca-app-pub-1386225714525775/6560393048';
 
-  // Ad instances
-  InterstitialAd? _interstitialPredictAd;
-  InterstitialAd? _interstitialSeemoreAd;
+  // Consolidated ad state management
+  final Map<String, AdWrapper<InterstitialAd>> _interstitialAds = {};
+  final Map<String, AdWrapper<NativeAd>> _nativeAds = {};
   
-  // Native ad cache
-  NativeAd? _cachedHomeResultsAd;
-  NativeAd? _cachedLiveVideoAd;
-  NativeAd? _cachedLottoPointsAd;
-  NativeAd? _cachedNewsFeedAd;
+  // Stream controllers for reactive state management
+  final StreamController<Map<String, AdWrapper<NativeAd>>> _nativeAdsController = 
+      StreamController<Map<String, AdWrapper<NativeAd>>>.broadcast();
+  final StreamController<Map<String, AdWrapper<InterstitialAd>>> _interstitialAdsController = 
+      StreamController<Map<String, AdWrapper<InterstitialAd>>>.broadcast();
 
-  // Ad loading states
-  bool _isInterstitialPredictAdLoaded = false;
-  bool _isInterstitialSeemoreAdLoaded = false;
-  bool _isHomeResultsAdLoaded = false;
-  bool _isLiveVideoAdLoaded = false;
-  bool _isLottoPointsAdLoaded = false;
-  bool _isNewsFeedAdLoaded = false;
-
-  // Performance tracking
-  final Map<String, DateTime> _loadStartTimes = {};
-  final Map<String, int> _loadAttempts = {};
-  
   // Rate limiting
-  DateTime? _lastBatchLoadTime;
-  static const Duration _batchLoadCooldown = Duration(seconds: 10);
+  DateTime? _lastLoadTime;
+  static const Duration _loadCooldown = Duration(seconds: 2);
   
-  // Maximum concurrent ad loads
-  int _currentLoadOperations = 0;
+  // Concurrent load tracking
+  int _activeLoads = 0;
   static const int _maxConcurrentLoads = 2;
+
+  // Public getters for reactive UI
+  Stream<Map<String, AdWrapper<NativeAd>>> get nativeAdsStream => _nativeAdsController.stream;
+  Stream<Map<String, AdWrapper<InterstitialAd>>> get interstitialAdsStream => _interstitialAdsController.stream;
+  
+  Map<String, AdWrapper<NativeAd>> get currentNativeAds => Map.unmodifiable(_nativeAds);
+  Map<String, AdWrapper<InterstitialAd>> get currentInterstitialAds => Map.unmodifiable(_interstitialAds);
 
   // Initialization
   static Future<void> initialize() async {
     await MobileAds.instance.initialize();
   }
 
-  // Get Production Ad Unit IDs
-  String get interstitialPredictAdUnitId => interstitialResultsPredict;
-  String get interstitialSeemoreAdUnitId => interstitialResultsSeemore;
-  String get nativeHomeResultsAdUnitId => nativeHomeResults;
-  String get nativeLiveVideoAdUnitId => nativeLiveVideo;
-  String get nativeLottoPointsAdUnitId => nativeLottoPoints;
-  String get nativeNewsFeedAdUnitId => nativeNewsFeed;
+  // Unified ad loading method
+  Future<void> loadAd(String adType, {bool isDarkTheme = false}) async {
+    if (!_canLoad()) return;
 
-  // Interstitial Predict Ad Methods
-  Future<void> loadInterstitialPredictAd() async {
-    await InterstitialAd.load(
-      adUnitId: interstitialPredictAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialPredictAd = ad;
-          _isInterstitialPredictAdLoaded = true;
-          
-          // Set full screen content callback
-          _interstitialPredictAd?.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _interstitialPredictAd = null;
-              _isInterstitialPredictAdLoaded = false;
-              // Preload next ad
-              loadInterstitialPredictAd();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              _interstitialPredictAd = null;
-              _isInterstitialPredictAdLoaded = false;
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          _isInterstitialPredictAdLoaded = false;
-        },
-      ),
-    );
-  }
+    _activeLoads++;
+    _lastLoadTime = DateTime.now();
 
-  Future<void> showInterstitialPredictAd({
-    Function()? onAdDismissed,
-  }) async {
-    if (_interstitialPredictAd != null && _isInterstitialPredictAdLoaded) {
-      _interstitialPredictAd?.show();
-      
-      // Set callback for when ad is dismissed
-      if (onAdDismissed != null) {
-        _interstitialPredictAd?.fullScreenContentCallback = FullScreenContentCallback(
-          onAdDismissedFullScreenContent: (ad) {
-            ad.dispose();
-            _interstitialPredictAd = null;
-            _isInterstitialPredictAdLoaded = false;
-            onAdDismissed();
-            // Preload next ad
-            loadInterstitialPredictAd();
-          },
-          onAdFailedToShowFullScreenContent: (ad, error) {
-            ad.dispose();
-            _interstitialPredictAd = null;
-            _isInterstitialPredictAdLoaded = false;
-          },
-        );
+    try {
+      if (_isNativeAdType(adType)) {
+        await _loadNativeAd(adType, isDarkTheme: isDarkTheme);
+      } else if (_isInterstitialAdType(adType)) {
+        await _loadInterstitialAd(adType);
       }
+    } finally {
+      _activeLoads--;
     }
   }
 
-  bool get isInterstitialPredictAdLoaded => _isInterstitialPredictAdLoaded;
+  // Get ad with automatic reloading
+  T? getAd<T>(String adType) {
+    if (T == NativeAd) {
+      final wrapper = _nativeAds[adType];
+      if (wrapper?.isLoaded == true) {
+        final ad = wrapper!.ad!;
+        
+        // Remove from cache and trigger reload
+        _updateNativeAdState(adType, const AdWrapper(state: AdState.idle));
+        _scheduleReload(adType);
+        
+        return ad as T;
+      }
+    } else if (T == InterstitialAd) {
+      final wrapper = _interstitialAds[adType];
+      return wrapper?.isLoaded == true ? wrapper!.ad as T : null;
+    }
+    return null;
+  }
 
-  // Interstitial Seemore Ad Methods
-  Future<void> loadInterstitialSeemoreAd() async {
+  // Check ad availability
+  bool isAdLoaded(String adType) {
+    if (_isNativeAdType(adType)) {
+      return _nativeAds[adType]?.isLoaded ?? false;
+    } else if (_isInterstitialAdType(adType)) {
+      return _interstitialAds[adType]?.isLoaded ?? false;
+    }
+    return false;
+  }
+
+  // Batch preloading with automatic management
+  Future<void> preloadAds({
+    List<String> adTypes = const [],
+    bool isDarkTheme = false,
+  }) async {
+    final defaultTypes = adTypes.isEmpty 
+        ? ['home_results', 'predict_interstitial'] 
+        : adTypes;
+
+    final futures = <Future<void>>[];
+    for (final adType in defaultTypes) {
+      if (_shouldLoad(adType)) {
+        futures.add(loadAd(adType, isDarkTheme: isDarkTheme));
+      }
+    }
+
+    await Future.wait(futures);
+  }
+
+  // Convenience methods for specific ad types
+  Future<void> loadHomeResultsAd({bool isDarkTheme = false}) => 
+      loadAd('home_results', isDarkTheme: isDarkTheme);
+  
+  Future<void> loadPredictInterstitialAd() => loadAd('predict_interstitial');
+  
+  NativeAd? getHomeResultsAd() => getAd<NativeAd>('home_results');
+  InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
+  
+  bool get isHomeResultsAdLoaded => isAdLoaded('home_results');
+  bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
+
+  // Show interstitial ad with callback
+  Future<void> showInterstitialAd(String adType, {VoidCallback? onDismissed}) async {
+    final wrapper = _interstitialAds[adType];
+    if (wrapper?.isLoaded != true) return;
+
+    final ad = wrapper!.ad!;
+    
+    // Update state before showing
+    _updateInterstitialAdState(adType, wrapper.copyWith(state: AdState.disposed));
+    
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        onDismissed?.call();
+        _scheduleReload(adType);
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _updateInterstitialAdState(adType, AdWrapper(
+          state: AdState.failed, 
+          error: error.toString(),
+        ));
+        _scheduleReload(adType);
+      },
+    );
+
+    await ad.show();
+  }
+
+  // Clean disposal
+  void dispose() {
+    // Dispose all ads
+    for (final wrapper in _nativeAds.values) {
+      wrapper.ad?.dispose();
+    }
+    for (final wrapper in _interstitialAds.values) {
+      wrapper.ad?.dispose();
+    }
+    
+    _nativeAds.clear();
+    _interstitialAds.clear();
+    
+    _nativeAdsController.close();
+    _interstitialAdsController.close();
+  }
+
+  // Private helper methods
+
+  bool _canLoad() {
+    if (_activeLoads >= _maxConcurrentLoads) return false;
+    if (_lastLoadTime != null && 
+        DateTime.now().difference(_lastLoadTime!).inSeconds < _loadCooldown.inSeconds) {
+      return false;
+    }
+    return true;
+  }
+
+  bool _shouldLoad(String adType) {
+    if (_isNativeAdType(adType)) {
+      final wrapper = _nativeAds[adType];
+      return wrapper?.canLoad ?? true;
+    } else if (_isInterstitialAdType(adType)) {
+      final wrapper = _interstitialAds[adType];
+      return wrapper?.canLoad ?? true;
+    }
+    return false;
+  }
+
+  Future<void> _loadNativeAd(String adType, {bool isDarkTheme = false}) async {
+    _updateNativeAdState(adType, const AdWrapper(state: AdState.loading));
+
+    final adUnitId = _getNativeAdUnitId(adType);
+    if (adUnitId == null) {
+      _updateNativeAdState(adType, const AdWrapper(
+        state: AdState.failed, 
+        error: 'Invalid ad type',
+      ));
+      return;
+    }
+
+    final completer = Completer<void>();
+    
+    final ad = _createNativeAd(
+      adUnitId: adUnitId,
+      isDarkTheme: isDarkTheme,
+      onLoaded: (ad) {
+        _updateNativeAdState(adType, AdWrapper(
+          ad: ad,
+          state: AdState.loaded,
+          lastLoadTime: DateTime.now(),
+        ));
+        completer.complete();
+      },
+      onFailed: (ad, error) {
+        ad.dispose();
+        _updateNativeAdState(adType, AdWrapper(
+          state: AdState.failed,
+          error: error.toString(),
+        ));
+        completer.complete();
+      },
+    );
+
+    ad.load();
+    return completer.future;
+  }
+
+  Future<void> _loadInterstitialAd(String adType) async {
+    _updateInterstitialAdState(adType, const AdWrapper(state: AdState.loading));
+
+    final adUnitId = _getInterstitialAdUnitId(adType);
+    if (adUnitId == null) {
+      _updateInterstitialAdState(adType, const AdWrapper(
+        state: AdState.failed,
+        error: 'Invalid ad type',
+      ));
+      return;
+    }
+
+    final completer = Completer<void>();
+
     await InterstitialAd.load(
-      adUnitId: interstitialSeemoreAdUnitId,
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          _interstitialSeemoreAd = ad;
-          _isInterstitialSeemoreAdLoaded = true;
-          
-          // Set full screen content callback
-          _interstitialSeemoreAd?.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _interstitialSeemoreAd = null;
-              _isInterstitialSeemoreAdLoaded = false;
-              // Preload next ad
-              loadInterstitialSeemoreAd();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              _interstitialSeemoreAd = null;
-              _isInterstitialSeemoreAdLoaded = false;
-            },
-          );
+          _updateInterstitialAdState(adType, AdWrapper(
+            ad: ad,
+            state: AdState.loaded,
+            lastLoadTime: DateTime.now(),
+          ));
+          completer.complete();
         },
         onAdFailedToLoad: (error) {
-          _isInterstitialSeemoreAdLoaded = false;
+          _updateInterstitialAdState(adType, AdWrapper(
+            state: AdState.failed,
+            error: error.toString(),
+          ));
+          completer.complete();
         },
       ),
     );
+
+    return completer.future;
   }
 
-  Future<void> showInterstitialSeemoreAd({
-    Function()? onAdDismissed,
-  }) async {
-    if (_interstitialSeemoreAd != null && _isInterstitialSeemoreAdLoaded) {
-      _interstitialSeemoreAd?.show();
-      
-      // Set callback for when ad is dismissed
-      if (onAdDismissed != null) {
-        _interstitialSeemoreAd?.fullScreenContentCallback = FullScreenContentCallback(
-          onAdDismissedFullScreenContent: (ad) {
-            ad.dispose();
-            _interstitialSeemoreAd = null;
-            _isInterstitialSeemoreAdLoaded = false;
-            onAdDismissed();
-            // Preload next ad
-            loadInterstitialSeemoreAd();
-          },
-          onAdFailedToShowFullScreenContent: (ad, error) {
-            ad.dispose();
-            _interstitialSeemoreAd = null;
-            _isInterstitialSeemoreAdLoaded = false;
-          },
-        );
-      }
-    }
-  }
-
-  bool get isInterstitialSeemoreAdLoaded => _isInterstitialSeemoreAdLoaded;
-
-
-  // Dispose methods
-  void disposeInterstitialPredictAd() {
-    _interstitialPredictAd?.dispose();
-    _interstitialPredictAd = null;
-    _isInterstitialPredictAdLoaded = false;
-  }
-
-  void disposeInterstitialSeemoreAd() {
-    _interstitialSeemoreAd?.dispose();
-    _interstitialSeemoreAd = null;
-    _isInterstitialSeemoreAdLoaded = false;
-  }
-
-  void disposeNativeAds() {
-    _cachedHomeResultsAd?.dispose();
-    _cachedLiveVideoAd?.dispose();
-    _cachedLottoPointsAd?.dispose();
-    _cachedNewsFeedAd?.dispose();
-    
-    _cachedHomeResultsAd = null;
-    _cachedLiveVideoAd = null;
-    _cachedLottoPointsAd = null;
-    _cachedNewsFeedAd = null;
-    
-    _isHomeResultsAdLoaded = false;
-    _isLiveVideoAdLoaded = false;
-    _isLottoPointsAdLoaded = false;
-    _isNewsFeedAdLoaded = false;
-  }
-
-  void disposeAll() {
-    disposeInterstitialPredictAd();
-    disposeInterstitialSeemoreAd();
-    disposeNativeAds();
-  }
-
-  // Legacy Native Ad Methods Removed - All widgets now use optimized news-style methods
-
-  // Create news-styled native ads for different locations
-  NativeAd createNewsStyleNativeHomeResultsAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNewsStyleNativeAd(
-      adUnitId: nativeHomeResultsAdUnitId,
-      listener: listener,
-      isDarkTheme: isDarkTheme,
-    );
-  }
-
-  NativeAd createNewsStyleNativeLiveVideoAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNewsStyleNativeAd(
-      adUnitId: nativeLiveVideoAdUnitId,
-      listener: listener,
-      isDarkTheme: isDarkTheme,
-    );
-  }
-
-  NativeAd createNewsStyleNativeLottoPointsAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNewsStyleNativeAd(
-      adUnitId: nativeLottoPointsAdUnitId,
-      listener: listener,
-      isDarkTheme: isDarkTheme,
-    );
-  }
-
-  NativeAd createNewsStyleNativeNewsFeedAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNewsStyleNativeAd(
-      adUnitId: nativeNewsFeedAdUnitId,
-      listener: listener,
-      isDarkTheme: isDarkTheme,
-    );
-  }
-
-  // Private helper method for consistent styling
-  NativeAd _createNewsStyleNativeAd({
+  NativeAd _createNativeAd({
     required String adUnitId,
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
+    required bool isDarkTheme,
+    required Function(NativeAd) onLoaded,
+    required Function(NativeAd, LoadAdError) onFailed,
   }) {
     final primaryTextColor = isDarkTheme ? Colors.white : Colors.black87;
     final secondaryTextColor = isDarkTheme ? Colors.white70 : Colors.black54;
@@ -283,7 +324,10 @@ class AdMobService {
     
     return NativeAd(
       adUnitId: adUnitId,
-      listener: listener,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) => onLoaded(ad as NativeAd),
+        onAdFailedToLoad: (ad, error) => onFailed(ad as NativeAd, error),
+      ),
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.medium,
@@ -323,265 +367,153 @@ class AdMobService {
     );
   }
 
-  // Native ad preloading methods  
-  Future<void> preloadHomeResultsAd({bool isDarkTheme = false}) async {
-    if (_cachedHomeResultsAd != null) {
-      _cachedHomeResultsAd!.dispose();
-    }
-    
-    _cachedHomeResultsAd = _createNewsStyleNativeAd(
-      adUnitId: nativeHomeResultsAdUnitId,
-      listener: NativeAdListener(
-        onAdLoaded: (ad) => _isHomeResultsAdLoaded = true,
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          _isHomeResultsAdLoaded = false;
-        },
-      ),
-      isDarkTheme: isDarkTheme,
-    );
-    
-    await _cachedHomeResultsAd!.load();
-  }
-  
-  Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) async {
-    if (_cachedLiveVideoAd != null) {
-      _cachedLiveVideoAd!.dispose();
-    }
-    
-    _cachedLiveVideoAd = _createNewsStyleNativeAd(
-      adUnitId: nativeLiveVideoAdUnitId,
-      listener: NativeAdListener(
-        onAdLoaded: (ad) => _isLiveVideoAdLoaded = true,
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          _isLiveVideoAdLoaded = false;
-        },
-      ),
-      isDarkTheme: isDarkTheme,
-    );
-    
-    await _cachedLiveVideoAd!.load();
-  }
-  
-  Future<void> preloadLottoPointsAd({bool isDarkTheme = false}) async {
-    if (_cachedLottoPointsAd != null) {
-      _cachedLottoPointsAd!.dispose();
-    }
-    
-    _cachedLottoPointsAd = _createNewsStyleNativeAd(
-      adUnitId: nativeLottoPointsAdUnitId,
-      listener: NativeAdListener(
-        onAdLoaded: (ad) => _isLottoPointsAdLoaded = true,
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          _isLottoPointsAdLoaded = false;
-        },
-      ),
-      isDarkTheme: isDarkTheme,
-    );
-    
-    await _cachedLottoPointsAd!.load();
-  }
-  
-  Future<void> preloadNewsFeedAd({bool isDarkTheme = false}) async {
-    if (_cachedNewsFeedAd != null) {
-      _cachedNewsFeedAd!.dispose();
-    }
-    
-    _cachedNewsFeedAd = _createNewsStyleNativeAd(
-      adUnitId: nativeNewsFeedAdUnitId,
-      listener: NativeAdListener(
-        onAdLoaded: (ad) => _isNewsFeedAdLoaded = true,
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          _isNewsFeedAdLoaded = false;
-        },
-      ),
-      isDarkTheme: isDarkTheme,
-    );
-    
-    await _cachedNewsFeedAd!.load();
+  void _updateNativeAdState(String adType, AdWrapper<NativeAd> wrapper) {
+    _nativeAds[adType] = wrapper;
+    _nativeAdsController.add(Map.unmodifiable(_nativeAds));
   }
 
-  // Get cached native ads
-  NativeAd? getCachedHomeResultsAd() {
-    if (_isHomeResultsAdLoaded && _cachedHomeResultsAd != null) {
-      final ad = _cachedHomeResultsAd!;
-      _cachedHomeResultsAd = null;
-      _isHomeResultsAdLoaded = false;
-      // Preload next ad in background
-      Future.delayed(const Duration(milliseconds: 100), () {
-        preloadHomeResultsAd();
-      });
-      return ad;
-    }
-    return null;
-  }
-  
-  NativeAd? getCachedLiveVideoAd() {
-    if (_isLiveVideoAdLoaded && _cachedLiveVideoAd != null) {
-      final ad = _cachedLiveVideoAd!;
-      _cachedLiveVideoAd = null;
-      _isLiveVideoAdLoaded = false;
-      // Preload next ad in background
-      Future.delayed(const Duration(milliseconds: 100), () {
-        preloadLiveVideoAd();
-      });
-      return ad;
-    }
-    return null;
-  }
-  
-  NativeAd? getCachedLottoPointsAd() {
-    if (_isLottoPointsAdLoaded && _cachedLottoPointsAd != null) {
-      final ad = _cachedLottoPointsAd!;
-      _cachedLottoPointsAd = null;
-      _isLottoPointsAdLoaded = false;
-      // Preload next ad in background
-      Future.delayed(const Duration(milliseconds: 100), () {
-        preloadLottoPointsAd();
-      });
-      return ad;
-    }
-    return null;
-  }
-  
-  NativeAd? getCachedNewsFeedAd() {
-    if (_isNewsFeedAdLoaded && _cachedNewsFeedAd != null) {
-      final ad = _cachedNewsFeedAd!;
-      _cachedNewsFeedAd = null;
-      _isNewsFeedAdLoaded = false;
-      // Preload next ad in background
-      Future.delayed(const Duration(milliseconds: 100), () {
-        preloadNewsFeedAd();
-      });
-      return ad;
-    }
-    return null;
+  void _updateInterstitialAdState(String adType, AdWrapper<InterstitialAd> wrapper) {
+    _interstitialAds[adType] = wrapper;
+    _interstitialAdsController.add(Map.unmodifiable(_interstitialAds));
   }
 
-  // Check if cached ads are available
-  bool get isHomeResultsAdCached => _isHomeResultsAdLoaded;
-  bool get isLiveVideoAdCached => _isLiveVideoAdLoaded;
-  bool get isLottoPointsAdCached => _isLottoPointsAdLoaded;
-  bool get isNewsFeedAdCached => _isNewsFeedAdLoaded;
-
-  // Enhanced native ads preloading with smart batching
-  Future<void> preloadNativeAds({bool isDarkTheme = false}) async {
-    if (_currentLoadOperations >= _maxConcurrentLoads) {
-      // Queue for later if system is busy
-      Future.delayed(const Duration(seconds: 5), () {
-        preloadNativeAds(isDarkTheme: isDarkTheme);
-      });
-      return;
-    }
-    
-    // Rate limiting for native ads
-    if (_lastBatchLoadTime != null && 
-        DateTime.now().difference(_lastBatchLoadTime!).inSeconds < _batchLoadCooldown.inSeconds) {
-      return;
-    }
-    
-    _lastBatchLoadTime = DateTime.now();
-    
-    // Load high-priority ads first (home screen)
-    unawaited(_loadWithRetry('native_home', () => preloadHomeResultsAd(isDarkTheme: isDarkTheme)));
-    
-    // Stagger other native ads with longer delays
-    await Future.delayed(const Duration(milliseconds: 800));
-    unawaited(_loadWithRetry('native_live', () => preloadLiveVideoAd(isDarkTheme: isDarkTheme)));
-    
-    await Future.delayed(const Duration(milliseconds: 800));
-    unawaited(_loadWithRetry('native_lotto', () => preloadLottoPointsAd(isDarkTheme: isDarkTheme)));
-    
-    await Future.delayed(const Duration(milliseconds: 800));
-    unawaited(_loadWithRetry('native_news', () => preloadNewsFeedAd(isDarkTheme: isDarkTheme)));
-  }
-  
-  // Smart preloading based on app state
-  Future<void> smartPreload({bool isDarkTheme = false, bool isHomeScreen = false}) async {
-    if (isHomeScreen) {
-      // Prioritize home screen ads
-      await _loadWithRetry('native_home', () => preloadHomeResultsAd(isDarkTheme: isDarkTheme));
-      await Future.delayed(const Duration(milliseconds: 300));
-      await _loadWithRetry('interstitial_predict', () => loadInterstitialPredictAd());
-    } else {
-      // Load other ads in background
-      await preloadNativeAds(isDarkTheme: isDarkTheme);
-    }
-  }
-  
-  // Check system load before loading ads
-  bool get canLoadAds => _currentLoadOperations < _maxConcurrentLoads;
-  
-  // Get performance metrics
-  Map<String, dynamic> getPerformanceMetrics() {
-    return {
-      'current_load_operations': _currentLoadOperations,
-      'load_attempts': Map.from(_loadAttempts),
-      'can_load_ads': canLoadAds,
-      'last_batch_load': _lastBatchLoadTime?.toIso8601String(),
-    };
-  }
-
-  // Enhanced preload with performance optimization
-  Future<void> preloadAds() async {
-    if (_currentLoadOperations >= _maxConcurrentLoads) {
-      return; // Prevent overwhelming the system
-    }
-    
-    // Rate limiting
-    if (_lastBatchLoadTime != null && 
-        DateTime.now().difference(_lastBatchLoadTime!).inSeconds < _batchLoadCooldown.inSeconds) {
-      return;
-    }
-    
-    _lastBatchLoadTime = DateTime.now();
-    
-    // Load interstitials with staggered timing
-    unawaited(_loadWithRetry('interstitial_predict', () => loadInterstitialPredictAd()));
-    
-    await Future.delayed(const Duration(milliseconds: 500));
-    unawaited(_loadWithRetry('interstitial_seemore', () => loadInterstitialSeemoreAd()));
-  }
-  
-  // Enhanced loading with retry logic and performance tracking
-  Future<void> _loadWithRetry(String adType, Future<void> Function() loadFunction) async {
-    if (_currentLoadOperations >= _maxConcurrentLoads) {
-      return;
-    }
-    
-    _currentLoadOperations++;
-    _loadStartTimes[adType] = DateTime.now();
-    _loadAttempts[adType] = (_loadAttempts[adType] ?? 0) + 1;
-    
-    try {
-      await loadFunction();
-      _logLoadSuccess(adType);
-    } catch (e) {
-      _logLoadFailure(adType, e);
-      
-      // Retry with exponential backoff if attempts < 3
-      if ((_loadAttempts[adType] ?? 0) < 3) {
-        final delay = Duration(seconds: pow(2, _loadAttempts[adType]! - 1).toInt());
-        await Future.delayed(delay);
-        unawaited(_loadWithRetry(adType, loadFunction));
+  void _scheduleReload(String adType) {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (_shouldLoad(adType)) {
+        loadAd(adType);
       }
-    } finally {
-      _currentLoadOperations--;
+    });
+  }
+
+  // Type checking helpers
+  bool _isNativeAdType(String adType) {
+    return ['home_results', 'live_video', 'lotto_points', 'news_feed'].contains(adType);
+  }
+
+  bool _isInterstitialAdType(String adType) {
+    return ['predict_interstitial', 'seemore_interstitial'].contains(adType);
+  }
+
+  String? _getNativeAdUnitId(String adType) {
+    switch (adType) {
+      case 'home_results': return nativeHomeResults;
+      case 'live_video': return nativeLiveVideo;
+      case 'lotto_points': return nativeLottoPoints;
+      case 'news_feed': return nativeNewsFeed;
+      default: return null;
     }
   }
-  
-  void _logLoadSuccess(String adType) {
-    final loadTime = _loadStartTimes[adType];
-    if (loadTime != null) {
-      final duration = DateTime.now().difference(loadTime);
-      debugPrint('✅ Ad loaded: $adType in ${duration.inMilliseconds}ms');
+
+  String? _getInterstitialAdUnitId(String adType) {
+    switch (adType) {
+      case 'predict_interstitial': return interstitialResultsPredict;
+      case 'seemore_interstitial': return interstitialResultsSeemore;
+      default: return null;
     }
   }
-  
-  void _logLoadFailure(String adType, dynamic error) {
-    debugPrint('❌ Ad load failed: $adType - $error');
+
+  // Legacy method support for backward compatibility
+  @Deprecated('Use getHomeResultsAd() instead')
+  NativeAd createNewsStyleNativeHomeResultsAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNativeAd(
+      adUnitId: nativeHomeResults,
+      isDarkTheme: isDarkTheme,
+      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
+      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
+    );
+  }
+
+  @Deprecated('Use getHomeResultsAd() instead')
+  NativeAd? getCachedHomeResultsAd() => getHomeResultsAd();
+
+  @Deprecated('Use internal load management instead')
+  bool get canLoadAds => _canLoad();
+
+  @Deprecated('Use preloadAds() instead')
+  Future<void> preloadAdsOld() => preloadAds();
+
+  @Deprecated('Use preloadAds() with specific ad types instead')
+  Future<void> smartPreload({bool isDarkTheme = false, bool isHomeScreen = false}) {
+    final adTypes = isHomeScreen 
+        ? ['home_results', 'predict_interstitial']
+        : ['live_video', 'lotto_points', 'news_feed'];
+    return preloadAds(adTypes: adTypes, isDarkTheme: isDarkTheme);
+  }
+
+  @Deprecated('Use dispose() instead')
+  void disposeNativeAds() {
+    for (final wrapper in _nativeAds.values) {
+      wrapper.ad?.dispose();
+    }
+    _nativeAds.clear();
+    _nativeAdsController.add(Map.unmodifiable(_nativeAds));
+  }
+
+  // Additional legacy methods for other ad types
+  @Deprecated('Use loadAd() instead')
+  Future<void> preloadHomeResultsAd({bool isDarkTheme = false}) => 
+      loadHomeResultsAd(isDarkTheme: isDarkTheme);
+
+  @Deprecated('Use loadAd() instead')
+  Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) => 
+      loadAd('live_video', isDarkTheme: isDarkTheme);
+
+  @Deprecated('Use loadAd() instead')
+  Future<void> preloadLottoPointsAd({bool isDarkTheme = false}) => 
+      loadAd('lotto_points', isDarkTheme: isDarkTheme);
+
+  @Deprecated('Use loadAd() instead')
+  Future<void> preloadNewsFeedAd({bool isDarkTheme = false}) => 
+      loadAd('news_feed', isDarkTheme: isDarkTheme);
+
+  @Deprecated('Use getAd() instead')
+  NativeAd? getCachedLiveVideoAd() => getAd<NativeAd>('live_video');
+
+  @Deprecated('Use getAd() instead')
+  NativeAd? getCachedLottoPointsAd() => getAd<NativeAd>('lotto_points');
+
+  @Deprecated('Use getAd() instead')
+  NativeAd? getCachedNewsFeedAd() => getAd<NativeAd>('news_feed');
+
+  @Deprecated('Use _createNativeAd() or loadAd() instead')
+  NativeAd createNewsStyleNativeLiveVideoAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNativeAd(
+      adUnitId: nativeLiveVideo,
+      isDarkTheme: isDarkTheme,
+      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
+      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
+    );
+  }
+
+  @Deprecated('Use _createNativeAd() or loadAd() instead')
+  NativeAd createNewsStyleNativeLottoPointsAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNativeAd(
+      adUnitId: nativeLottoPoints,
+      isDarkTheme: isDarkTheme,
+      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
+      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
+    );
+  }
+
+  @Deprecated('Use _createNativeAd() or loadAd() instead')
+  NativeAd createNewsStyleNativeNewsFeedAd({
+    required NativeAdListener listener,
+    bool isDarkTheme = false,
+  }) {
+    return _createNativeAd(
+      adUnitId: nativeNewsFeed,
+      isDarkTheme: isDarkTheme,
+      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
+      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
+    );
   }
 }

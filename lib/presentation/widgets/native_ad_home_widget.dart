@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -16,117 +15,138 @@ class NativeAdHomeWidget extends StatefulWidget {
 
 class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
   NativeAd? _nativeAd;
-  bool _isAdLoaded = false;
+  AdState _adState = AdState.idle;
   bool _isDarkTheme = false;
-  bool _isLoadingFromCache = false;
-  Timer? _retryTimer;
-
-  _NativeAdHomeWidgetState();
 
   @override
   void initState() {
     super.initState();
-    // Don't access Theme.of(context) in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _tryLoadCachedAd();
+        _initializeAd();
       }
     });
   }
 
-  void _tryLoadCachedAd() {
+  void _initializeAd() {
     if (!mounted) return;
-    
-    // Cancel any existing retry timer before new attempt
-    _retryTimer?.cancel();
     
     _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     
-    // Try to get cached ad first (instant loading)
-    final cachedAd = AdMobService.instance.getCachedHomeResultsAd();
-    if (cachedAd != null) {
-      if (mounted) {
-        // Dispose existing ad before setting new one
-        _nativeAd?.dispose();
-        setState(() {
-          _nativeAd = cachedAd;
-          _isAdLoaded = true;
-          _isLoadingFromCache = true;
-        });
-      }
+    // Try to get existing loaded ad first
+    final existingAd = AdMobService.instance.getHomeResultsAd();
+    if (existingAd != null) {
+      setState(() {
+        _nativeAd = existingAd;
+        _adState = AdState.loaded;
+      });
       return;
     }
     
-    // Fallback to loading new ad if no cache available
-    _loadNativeAdDirect();
+    // Load new ad if none available
+    _loadNewAd();
   }
-  
-  void _loadNativeAdDirect() {
+
+  Future<void> _loadNewAd() async {
     if (!mounted) return;
     
-    // Dispose existing ad before creating new one
-    _nativeAd?.dispose();
+    setState(() {
+      _adState = AdState.loading;
+    });
     
-    _nativeAd = AdMobService.instance.createNewsStyleNativeHomeResultsAd(
-      isDarkTheme: _isDarkTheme,
-      listener: NativeAdListener(
-        onAdLoaded: (ad) {
-          if (mounted) {
-            setState(() {
-              _isAdLoaded = true;
-              _isLoadingFromCache = false;
-            });
-          }
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (mounted) {
-            // Nullify ad reference on failure to prevent memory issues
-            _nativeAd = null;
-            setState(() {
-              _isAdLoaded = false;
-              _isLoadingFromCache = false;
-            });
-            // Cancel any existing retry timer
-            _retryTimer?.cancel();
-            // Setup new retry timer
-            _retryTimer = Timer(const Duration(seconds: 30), () {
-              if (mounted) {
-                _tryLoadCachedAd();
-              }
-            });
-          }
-        },
-        onAdClicked: (ad) {},
-        onAdImpression: (ad) {},
-        onAdClosed: (ad) {},
-        onAdOpened: (ad) {},
-        onAdWillDismissScreen: (ad) {},
-        onPaidEvent: (ad, valueMicros, precision, currencyCode) {},
-      ),
-    );
-
-    _nativeAd?.load();
+    try {
+      await AdMobService.instance.loadHomeResultsAd(isDarkTheme: _isDarkTheme);
+      
+      if (mounted) {
+        final newAd = AdMobService.instance.getHomeResultsAd();
+        if (newAd != null) {
+          setState(() {
+            _nativeAd = newAd;
+            _adState = AdState.loaded;
+          });
+        } else {
+          setState(() {
+            _adState = AdState.failed;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _adState = AdState.failed;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
-    // Cancel retry timer to prevent memory leaks
-    _retryTimer?.cancel();
-    _retryTimer = null;
-    
-    // Dispose and nullify ad reference
-    _nativeAd?.dispose();
-    _nativeAd = null;
-    
+    // Don't dispose the ad here as it's managed by the service
     super.dispose();
+  }
+  
+  Widget _buildAdContent(ThemeData theme) {
+    if (_nativeAd == null || _adState != AdState.loaded) {
+      return Container(
+        height: 120,
+        color: theme.cardColor,
+        child: Center(
+          child: _adState == AdState.loading
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                )
+              : Text(
+                  'ad_unavailable'.tr(),
+                  style: TextStyle(
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    fontSize: 12,
+                  ),
+                ),
+        ),
+      );
+    }
+    
+    try {
+      // Verify ad is still valid by accessing a property
+      final _ = _nativeAd!.adUnitId;
+      return AdWidget(ad: _nativeAd!);
+    } catch (e) {
+      // Ad has been disposed, show fallback and try to reload
+      debugPrint('Ad widget error: $e');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadNewAd();
+        }
+      });
+      return Container(
+        height: 120,
+        color: theme.cardColor,
+        child: Center(
+          child: Text(
+            'ad_unavailable'.tr(),
+            style: TextStyle(
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (!_isAdLoaded || _nativeAd == null) {
+    // Show loading state if ad is not ready
+    if (_adState == AdState.loading) {
       return Card(
         color: theme.cardTheme.color,
         margin: AppResponsive.margin(context, horizontal: 16, vertical: 10),
@@ -152,7 +172,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
               ),
               SizedBox(height: AppResponsive.spacing(context, 8)),
               Text(
-                _isLoadingFromCache ? 'loading_cached_ad'.tr() : 'sponsored_content'.tr(),
+                'sponsored_content'.tr(),
                 style: TextStyle(
                   fontSize: AppResponsive.fontSize(context, 14),
                   fontWeight: FontWeight.w500,
@@ -161,17 +181,56 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppResponsive.spacing(context, 4)),
-              if (!_isAdLoaded)
-                SizedBox(
-                  width: AppResponsive.width(context, 4),
-                  height: AppResponsive.width(context, 4),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      theme.colorScheme.primary.withValues(alpha: 0.6),
-                    ),
+              SizedBox(
+                width: AppResponsive.width(context, 4),
+                height: AppResponsive.width(context, 4),
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.primary.withValues(alpha: 0.6),
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show fallback if failed or no ad
+    if (_adState == AdState.failed || _nativeAd == null) {
+      return Card(
+        color: theme.cardTheme.color,
+        margin: AppResponsive.margin(context, horizontal: 16, vertical: 10),
+        elevation: theme.brightness == Brightness.dark ? 4.0 : 2.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 12)),
+          side: BorderSide(
+            color: theme.brightness == Brightness.dark
+                ? Colors.grey.withValues(alpha: 0.3)
+                : Colors.grey.withValues(alpha: 0.1),
+            width: theme.brightness == Brightness.dark ? 1.0 : 0.5,
+          ),
+        ),
+        child: SizedBox(
+          height: 120,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: AppResponsive.fontSize(context, 24),
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 8)),
+              Text(
+                'ad_unavailable'.tr(),
+                style: TextStyle(
+                  fontSize: AppResponsive.fontSize(context, 12),
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -238,7 +297,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(
                         AppResponsive.spacing(context, 8)),
-                    child: AdWidget(ad: _nativeAd!),
+                    child: _buildAdContent(theme),
                   ),
                 ),
               ],
