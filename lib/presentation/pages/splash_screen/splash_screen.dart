@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/data/services/cache_manager.dart';
@@ -8,6 +7,7 @@ import 'package:lotto_app/data/services/save_results.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/user_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 
@@ -189,8 +189,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkLoginStatus() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      final userService = UserService();
+      final isLoggedIn = await userService.isLoggedIn();
 
       if (!mounted) {
         return;
@@ -203,7 +203,6 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
     } catch (e) {
-
       if (mounted) {
         context.go('/login');
       }

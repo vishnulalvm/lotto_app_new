@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -270,6 +271,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _loadLotteryResults() {
+    // Add haptic feedback for refresh action
+    HapticFeedback.mediumImpact();
+    
     // Track user action
     AnalyticsService.trackUserEngagement(
       action: 'load_lottery_results',
@@ -293,6 +297,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _refreshResults() {
+    // Add haptic feedback for pull-to-refresh
+    HapticFeedback.mediumImpact();
+    
     _lastRefreshTime = DateTime.now();
     context.read<HomeScreenResultsBloc>().add(RefreshLotteryResultsEvent());
   }
@@ -368,6 +375,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Launch website when carousel image is tapped
   Future<void> _launchWebsite() async {
+    // Add haptic feedback for image tap
+    HapticFeedback.lightImpact();
+    
     const String websiteUrl = 'https://lottokeralalotteries.com/';
 
     try {
@@ -421,6 +431,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   // Method to show date picker and navigate to specific date
   Future<void> _showDatePicker() async {
+    // Add haptic feedback for date picker tap
+    HapticFeedback.lightImpact();
+    
     final DateTime? selectedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -446,8 +459,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     if (selectedDate != null) {
-      // Show loading feedback
-
+      // Add confirmation haptic feedback
+      HapticFeedback.selectionClick();
+      
       // Let the BLoC handle the filtering
       if (mounted) {
         context
@@ -665,7 +679,11 @@ class _HomeScreenState extends State<HomeScreen>
             horizontal: AppResponsive.spacing(context, 4),
           ),
           child: GestureDetector(
-            onTap: () => context.go('/lottoPoints'),
+            onTap: () {
+              // Add haptic feedback for Points button
+              HapticFeedback.lightImpact();
+              context.go('/lottoPoints');
+            },
             child: AnimatedBuilder(
               animation: _shimmerAnimation,
               builder: (context, child) {
@@ -796,6 +814,9 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
           onSelected: (value) {
+            // Add haptic feedback for menu selection
+            HapticFeedback.selectionClick();
+            
             switch (value) {
               case 'settings_value': // Match the actual returned value
                 context.push('/settings');
@@ -842,6 +863,9 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildScanButton(ThemeData theme) {
     return AIProbabilityFAB(
       onPressed: () {
+        // Add haptic feedback for FAB press
+        HapticFeedback.heavyImpact();
+        
         // Navigate to the scanner page
         context.pushNamed(RouteNames.probabilityBarcodeScanner);
       },
