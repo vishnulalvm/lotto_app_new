@@ -3,6 +3,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
+import 'dart:async';
 
 class NativeAdHomeWidget extends StatefulWidget {
   const NativeAdHomeWidget({super.key});
@@ -17,6 +18,8 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
   NativeAd? _nativeAd;
   AdState _adState = AdState.idle;
   bool _isDarkTheme = false;
+  static int _widgetCounter = 0;
+  final int _widgetId = ++_widgetCounter;
 
   @override
   void initState() {
@@ -33,18 +36,12 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     
     _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     
-    // Try to get existing loaded ad first
-    final existingAd = AdMobService.instance.getHomeResultsAd();
-    if (existingAd != null) {
-      setState(() {
-        _nativeAd = existingAd;
-        _adState = AdState.loaded;
-      });
-      return;
-    }
-    
-    // Load new ad if none available
-    _loadNewAd();
+    // Each widget creates its own ad instance with a slight delay to avoid rate limiting
+    Future.delayed(Duration(milliseconds: 100 * _widgetId), () {
+      if (mounted) {
+        _loadNewAd();
+      }
+    });
   }
 
   Future<void> _loadNewAd() async {
@@ -55,21 +52,9 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     });
     
     try {
-      await AdMobService.instance.loadHomeResultsAd(isDarkTheme: _isDarkTheme);
-      
-      if (mounted) {
-        final newAd = AdMobService.instance.getHomeResultsAd();
-        if (newAd != null) {
-          setState(() {
-            _nativeAd = newAd;
-            _adState = AdState.loaded;
-          });
-        } else {
-          setState(() {
-            _adState = AdState.failed;
-          });
-        }
-      }
+      // Create a unique ad instance for this widget
+      _nativeAd = _createNativeAd();
+      _nativeAd!.load();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -78,10 +63,77 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
       }
     }
   }
+  
+  NativeAd _createNativeAd() {
+    final primaryTextColor = _isDarkTheme ? Colors.white : Colors.black87;
+    final secondaryTextColor = _isDarkTheme ? Colors.white70 : Colors.black54;
+    final tertiaryTextColor = _isDarkTheme ? Colors.white60 : Colors.black45;
+    final backgroundColor = _isDarkTheme ? Colors.grey[850] : Colors.white;
+    
+    return NativeAd(
+      adUnitId: AdMobService.nativeHomeResults,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          if (mounted) {
+            setState(() {
+              _adState = AdState.loaded;
+            });
+          }
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('Native ad failed to load (Widget #$_widgetId): $error');
+          ad.dispose();
+          if (mounted) {
+            setState(() {
+              _nativeAd = null;
+              _adState = AdState.failed;
+            });
+          }
+        },
+      ),
+      request: const AdRequest(),
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: backgroundColor,
+        cornerRadius: 8.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: Colors.blue[600]!,
+          style: NativeTemplateFontStyle.bold,
+          size: 14.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: primaryTextColor,
+          backgroundColor: Colors.transparent,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: secondaryTextColor,
+          backgroundColor: Colors.transparent,
+          style: NativeTemplateFontStyle.normal,
+          size: 14.0,
+        ),
+        tertiaryTextStyle: NativeTemplateTextStyle(
+          textColor: tertiaryTextColor,
+          backgroundColor: Colors.transparent,
+          style: NativeTemplateFontStyle.normal,
+          size: 12.0,
+        ),
+      ),
+      nativeAdOptions: NativeAdOptions(
+        adChoicesPlacement: AdChoicesPlacement.topRightCorner,
+        mediaAspectRatio: MediaAspectRatio.landscape,
+        shouldRequestMultipleImages: false,
+        shouldReturnUrlsForImageAssets: false,
+      ),
+    );
+  }
 
   @override
   void dispose() {
-    // Don't dispose the ad here as it's managed by the service
+    // Dispose our own ad instance
+    _nativeAd?.dispose();
     super.dispose();
   }
   
@@ -119,12 +171,18 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
       return AdWidget(ad: _nativeAd!);
     } catch (e) {
       // Ad has been disposed, show fallback and try to reload
-      debugPrint('Ad widget error: $e');
+      debugPrint('Ad widget error (Widget #$_widgetId): $e');
+      
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          setState(() {
+            _adState = AdState.loading;
+            _nativeAd = null;
+          });
           _loadNewAd();
         }
       });
+      
       return Container(
         height: 120,
         color: theme.cardColor,

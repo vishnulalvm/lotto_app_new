@@ -670,9 +670,9 @@ class LotteryResultsSection extends StatelessWidget {
     // Group results by date category
     final groupedResults = _groupResultsByDate(data.results);
 
-    // Build widgets with proper ad placement: date divider → result cards → ad
-    int resultCardCount = 0;
+    // Build widgets with single ad placement: date divider → result cards → ad (only once)
     bool isFirstDateGroup = true;
+    bool hasInsertedAd = false;
     
     for (final entry in groupedResults.entries) {
       // Add date divider first
@@ -681,25 +681,12 @@ class LotteryResultsSection extends StatelessWidget {
       // Add result cards for this date
       for (final result in entry.value) {
         widgets.add(_buildResultCard(result, theme, context));
-        resultCardCount++;
         
-        bool shouldInsertAd = false;
-        
-        // For the first date group, show ad after all its result cards are added
-        if (isFirstDateGroup && result == entry.value.last) {
-          shouldInsertAd = true;
-        }
-        // For subsequent cards, show ad after every 5th result card
-        else if (!isFirstDateGroup && resultCardCount % 5 == 0) {
-          shouldInsertAd = true;
-        }
-        
-        // Insert ad if conditions are met and not at the very end
-        if (shouldInsertAd && 
-            !(entry == groupedResults.entries.last && 
-              result == entry.value.last)) {
+        // Only show ONE ad after the first date group is complete
+        if (isFirstDateGroup && result == entry.value.last && !hasInsertedAd) {
           widgets.add(_buildAdDivider(theme, context));
-          widgets.add(const NativeAdHomeWidget());
+          widgets.add(const NativeAdHomeWidget(key: ValueKey('single_ad')));
+          hasInsertedAd = true;
         }
       }
       

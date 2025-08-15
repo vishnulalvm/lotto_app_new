@@ -11,12 +11,14 @@ class AdWrapper<T> {
   final AdState state;
   final String? error;
   final DateTime? lastLoadTime;
+  final int usageCount;
 
   const AdWrapper({
     this.ad,
     this.state = AdState.idle,
     this.error,
     this.lastLoadTime,
+    this.usageCount = 0,
   });
 
   AdWrapper<T> copyWith({
@@ -24,12 +26,14 @@ class AdWrapper<T> {
     AdState? state,
     String? error,
     DateTime? lastLoadTime,
+    int? usageCount,
   }) {
     return AdWrapper<T>(
       ad: ad ?? this.ad,
       state: state ?? this.state,
       error: error ?? this.error,
       lastLoadTime: lastLoadTime ?? this.lastLoadTime,
+      usageCount: usageCount ?? this.usageCount,
     );
   }
 
@@ -111,17 +115,51 @@ class AdMobService {
       if (wrapper?.isLoaded == true) {
         final ad = wrapper!.ad!;
         
-        // Remove from cache and trigger reload
-        _updateNativeAdState(adType, const AdWrapper(state: AdState.idle));
-        _scheduleReload(adType);
+        // Track usage for native ads
+        _updateNativeAdState(adType, wrapper.copyWith(
+          usageCount: wrapper.usageCount + 1,
+        ));
+        
+        // For native ads, don't remove immediately - let multiple widgets use the same ad
+        // Only schedule reload if ad is getting old (30+ minutes) or if explicitly requested
+        if (wrapper.needsReload) {
+          _scheduleReload(adType);
+        }
         
         return ad as T;
       }
     } else if (T == InterstitialAd) {
       final wrapper = _interstitialAds[adType];
-      return wrapper?.isLoaded == true ? wrapper!.ad as T : null;
+      if (wrapper?.isLoaded == true) {
+        final ad = wrapper!.ad!;
+        
+        // For interstitial ads, remove from cache after use (single use)
+        _updateInterstitialAdState(adType, const AdWrapper(state: AdState.idle));
+        _scheduleReload(adType);
+        
+        return ad as T;
+      }
     }
     return null;
+  }
+
+  // Force refresh an ad (useful when ad becomes invalid)
+  Future<void> forceRefreshAd(String adType, {bool isDarkTheme = false}) async {
+    if (_isNativeAdType(adType)) {
+      final wrapper = _nativeAds[adType];
+      if (wrapper?.ad != null) {
+        wrapper!.ad!.dispose();
+      }
+      _updateNativeAdState(adType, const AdWrapper(state: AdState.idle));
+      await loadAd(adType, isDarkTheme: isDarkTheme);
+    } else if (_isInterstitialAdType(adType)) {
+      final wrapper = _interstitialAds[adType];
+      if (wrapper?.ad != null) {
+        wrapper!.ad!.dispose();
+      }
+      _updateInterstitialAdState(adType, const AdWrapper(state: AdState.idle));
+      await loadAd(adType);
+    }
   }
 
   // Check ad availability
@@ -132,6 +170,20 @@ class AdMobService {
       return _interstitialAds[adType]?.isLoaded ?? false;
     }
     return false;
+  }
+  
+  // Debug method to get ad status
+  String getAdStatus(String adType) {
+    if (_isNativeAdType(adType)) {
+      final wrapper = _nativeAds[adType];
+      if (wrapper == null) return 'Not initialized';
+      return 'State: ${wrapper.state}, UsageCount: ${wrapper.usageCount}, Age: ${wrapper.lastLoadTime != null ? DateTime.now().difference(wrapper.lastLoadTime!).inMinutes : "N/A"} min';
+    } else if (_isInterstitialAdType(adType)) {
+      final wrapper = _interstitialAds[adType];
+      if (wrapper == null) return 'Not initialized';
+      return 'State: ${wrapper.state}, Age: ${wrapper.lastLoadTime != null ? DateTime.now().difference(wrapper.lastLoadTime!).inMinutes : "N/A"} min';
+    }
+    return 'Unknown ad type';
   }
 
   // Batch preloading with automatic management
@@ -160,10 +212,38 @@ class AdMobService {
   Future<void> loadPredictInterstitialAd() => loadAd('predict_interstitial');
   
   NativeAd? getHomeResultsAd() => getAd<NativeAd>('home_results');
+  NativeAd? getSharedHomeResultsAd() => getSharedAd<NativeAd>('home_results');
   InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
   
   bool get isHomeResultsAdLoaded => isAdLoaded('home_results');
   bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
+
+  // Get shared ad for multiple widget usage (doesn't increment usage count)
+  T? getSharedAd<T>(String adType) {
+    if (T == NativeAd) {
+      final wrapper = _nativeAds[adType];
+      if (wrapper?.isLoaded == true) {
+        // Validate the ad is still usable
+        try {
+          final ad = wrapper!.ad as NativeAd;
+          // Access a property to check if ad is still valid
+          final _ = ad.adUnitId;
+          return ad as T;
+        } catch (e) {
+          // Ad is disposed, mark as failed and trigger reload
+          _updateNativeAdState(adType, const AdWrapper(state: AdState.failed));
+          _scheduleReload(adType);
+          return null;
+        }
+      }
+    } else if (T == InterstitialAd) {
+      final wrapper = _interstitialAds[adType];
+      if (wrapper?.isLoaded == true) {
+        return wrapper!.ad as T;
+      }
+    }
+    return null;
+  }
 
   // Show interstitial ad with callback
   Future<void> showInterstitialAd(String adType, {VoidCallback? onDismissed}) async {
