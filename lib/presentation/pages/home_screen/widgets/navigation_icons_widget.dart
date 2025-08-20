@@ -327,7 +327,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                           alignment: Alignment.center,
                           transform: Matrix4.identity()..rotateY(math.pi),
                           child: Text(
-                            'get_points'.tr(),
+                            'Get Points',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 11),
@@ -349,32 +349,19 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   void _handleFlipNavTap(bool isShowingFront, Map<String, dynamic> item) {
     HapticFeedback.lightImpact(); // Add haptic feedback
     
-    if (isShowingFront) {
-      // Scanner side - navigate to scanner
-      if (item['route'] != null) {
-        AnalyticsService.trackUserEngagement(
-          action: 'navigation_tap',
-          category: 'navigation',
-          label: item['label'],
-          parameters: {
-            'destination': item['route'],
-            'feature': item['label'],
-          },
-        );
-        context.go(item['route']);
-      }
-    } else {
-      // Get Points side - navigate to lotto points
+    // Always navigate to barcode scanner screen regardless of flip side
+    if (item['route'] != null) {
       AnalyticsService.trackUserEngagement(
         action: 'navigation_tap',
         category: 'navigation',
-        label: 'get_points',
+        label: isShowingFront ? item['label'] : 'scanner_from_points',
         parameters: {
-          'destination': '/lottoPoints',
-          'feature': 'get_points',
+          'destination': item['route'],
+          'feature': isShowingFront ? item['label'] : 'scanner_from_points',
+          'flip_side': isShowingFront ? 'front' : 'back',
         },
       );
-      context.go('/lottoPoints');
+      context.go(item['route']);
     }
   }
 

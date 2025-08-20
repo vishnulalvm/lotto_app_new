@@ -30,6 +30,7 @@ class _ProbabilityBarcodeScannerScreenState
   bool _isNavigatingAway = false;
   bool _isDialogShowing = false;
   DateTime? _lastScanTime;
+  DateTime? _lastDialogDismissTime;
 
   @override
   void initState() {
@@ -163,10 +164,20 @@ class _ProbabilityBarcodeScannerScreenState
           if (navigator.canPop()) {
             // There's a dialog open, just close it
             navigator.pop();
+            _lastDialogDismissTime = DateTime.now();
             return;
           }
 
-          // No dialogs open, navigate away from screen
+          // Check if this back press is too soon after dialog dismissal
+          if (_lastDialogDismissTime != null) {
+            final timeSinceDialogDismiss = DateTime.now().difference(_lastDialogDismissTime!);
+            if (timeSinceDialogDismiss.inMilliseconds < 500) {
+              // Ignore back press if it's within 500ms of dialog dismissal
+              return;
+            }
+          }
+
+          // No dialogs open and sufficient time passed, navigate away from screen
           setState(() {
             _isNavigatingAway = true;
           });

@@ -609,14 +609,6 @@ class _HomeScreenState extends State<HomeScreen>
       centerTitle: true,
       backgroundColor: theme.appBarTheme.backgroundColor,
       elevation: theme.appBarTheme.elevation,
-      // leading: IconButton(
-      //   icon: Icon(
-      //     Icons.notifications,
-      //     color: theme.appBarTheme.actionsIconTheme?.color,
-      //     size: AppResponsive.fontSize(context, 24),
-      //   ),
-      //   onPressed: () => context.go('/notifications'),
-      // ),
       title: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
         buildWhen: (previous, current) {
           // Only rebuild when offline status changes

@@ -57,6 +57,7 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
   late Animation<double> _pulseAnimation;
   
   bool _animationsCompleted = false;
+  bool _isInfoExpanded = false;
 
   // All emojis for different probability ranges
   final List<String> allEmojis = ['😞', '😐', '🤞', '😊', '🎉'];
@@ -267,6 +268,88 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
   }
 
 
+  Widget _buildInfoSection() {
+    final theme = Theme.of(context);
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _isInfoExpanded = !_isInfoExpanded;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.withValues(alpha: 0.15),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.info_outline,
+                  color: Colors.blue,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _isInfoExpanded 
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'probability_info'.tr(),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'probability_disclaimer_text'.tr(),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      'probability_info_short'.tr(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+              ),
+              Icon(
+                _isInfoExpanded ? Icons.expand_less : Icons.expand_more,
+                color: Colors.blue,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmojiRow() {
     final probabilityTheme = _getProbabilityTheme();
     
@@ -327,9 +410,9 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
     final probabilityTheme = _getProbabilityTheme();
     final size = MediaQuery.of(context).size;
 
-    // Increased dialog size and made it responsive
+    // Increased dialog size for better content fit
     final dialogWidth = min(size.width * 0.9, 450.0);
-    final dialogHeight = min(size.height * 0.85, 600.0);
+    final dialogHeight = min(size.height * 0.9, 650.0);
 
     return PopScope(
       canPop: false, // Prevent default pop behavior
@@ -406,7 +489,7 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
                     ),
                   ),
 
-                  // Main content - reduced horizontal padding
+                  // Main content - removed scroll, using spaceEvenly layout
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -499,6 +582,9 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
                       ),
                     ),
                   ),
+
+                  // Information section
+                  _buildInfoSection(),
 
                   // All emojis at bottom - reduced padding
                   _buildEmojiRow(),
