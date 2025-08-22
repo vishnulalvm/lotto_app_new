@@ -41,7 +41,7 @@ class _NativeAdWidgetState extends State<NativePointAdWidget> {
     }
   }
 
-  void _tryLoadCachedAd() {
+  void _tryLoadCachedAd() async {
     if (!mounted) return;
     
     // Cancel any existing retry timer
@@ -49,8 +49,8 @@ class _NativeAdWidgetState extends State<NativePointAdWidget> {
     
     _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     
-    // Try to get cached ad first (instant loading)
-    final cachedAd = AdMobService.instance.getCachedLottoPointsAd();
+    // Try to get cached ad first using modern API
+    final cachedAd = AdMobService.instance.getAd<NativeAd>('lotto_points');
     if (cachedAd != null) {
       if (mounted) {
         // Dispose existing ad before setting new one
@@ -65,55 +65,55 @@ class _NativeAdWidgetState extends State<NativePointAdWidget> {
     }
     
     // Fallback to loading new ad if no cache available
-    _loadNativeAdDirect();
+    await _loadNativeAdDirect();
   }
   
-  void _loadNativeAdDirect() {
+  Future<void> _loadNativeAdDirect() async {
     if (!mounted) return;
     
     // Dispose existing ad before creating new one
     _nativeAd?.dispose();
+    _nativeAd = null;
     
-    // Use news-style ad format for better performance
-    _nativeAd = AdMobService.instance.createNewsStyleNativeLottoPointsAd(
-      isDarkTheme: _isDarkTheme,
-      listener: NativeAdListener(
-        onAdLoaded: (ad) {
-          if (mounted) {
-            setState(() {
-              _isAdLoaded = true;
-              _isLoadingFromCache = false;
-            });
-          }
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (mounted) {
-            // Nullify ad reference on failure
-            _nativeAd = null;
-            setState(() {
-              _isAdLoaded = false;
-              _isLoadingFromCache = false;
-            });
-            // Setup retry timer
-            _retryTimer?.cancel();
-            _retryTimer = Timer(const Duration(seconds: 30), () {
-              if (mounted) {
-                _tryLoadCachedAd();
-              }
-            });
-          }
-        },
-        onAdClicked: (ad) {},
-        onAdImpression: (ad) {},
-        onAdClosed: (ad) {},
-        onAdOpened: (ad) {},
-        onAdWillDismissScreen: (ad) {},
-        onPaidEvent: (ad, valueMicros, precision, currencyCode) {},
-      ),
-    );
-
-    _nativeAd?.load();
+    try {
+      // Use modern AdMobService API to load lotto points ad
+      await AdMobService.instance.loadAd('lotto_points', isDarkTheme: _isDarkTheme);
+      
+      // Get the loaded ad from the service
+      _nativeAd = AdMobService.instance.getAd<NativeAd>('lotto_points');
+      
+      if (mounted) {
+        if (_nativeAd != null) {
+          setState(() {
+            _isAdLoaded = true;
+            _isLoadingFromCache = false;
+          });
+        } else {
+          setState(() {
+            _isAdLoaded = false;
+            _isLoadingFromCache = false;
+          });
+          _scheduleRetry();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAdLoaded = false;
+          _isLoadingFromCache = false;
+        });
+        _scheduleRetry();
+      }
+    }
+  }
+  
+  void _scheduleRetry() {
+    _retryTimer?.cancel();
+    _retryTimer = Timer(const Duration(seconds: 30), () {
+      if (mounted) {
+        _tryLoadCachedAd();
+      }
+    });
   }
 
   @override

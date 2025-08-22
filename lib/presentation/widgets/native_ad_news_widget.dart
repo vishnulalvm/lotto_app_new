@@ -20,31 +20,28 @@ class _NativeAdNewsWidgetState extends State<NativeAdNewsWidget> {
     _loadNativeAd();
   }
 
-  void _loadNativeAd() {
-    _nativeAd = AdMobService.instance.createNewsStyleNativeNewsFeedAd(
-      isDarkTheme: true, // News screen uses dark theme
-      listener: NativeAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          setState(() {
-            _isAdLoaded = false;
-          });
-        },
-        onAdClicked: (ad) {},
-        onAdImpression: (ad) {},
-        onAdClosed: (ad) {},
-        onAdOpened: (ad) {},
-        onAdWillDismissScreen: (ad) {},
-        onPaidEvent: (ad, valueMicros, precision, currencyCode) {},
-      ),
-    );
-
-    _nativeAd?.load();
+  void _loadNativeAd() async {
+    // Use the modern AdMobService API to load news feed native ads
+    try {
+      await AdMobService.instance.loadAd('news_feed', isDarkTheme: true);
+      
+      // Get the loaded ad from the service
+      _nativeAd = AdMobService.instance.getAd<NativeAd>('news_feed');
+      
+      if (_nativeAd != null) {
+        setState(() {
+          _isAdLoaded = true;
+        });
+      } else {
+        setState(() {
+          _isAdLoaded = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isAdLoaded = false;
+      });
+    }
   }
 
   @override

@@ -490,7 +490,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     final ticketData = {
       'ticketNumber': BarcodeValidator.cleanTicketNumber(barcodeValue),
       'date': formattedDate,
-      'phoneNumber': '', // TODO: Get this from user input or preferences
+      'phoneNumber': '',
     };
 
     setState(() {

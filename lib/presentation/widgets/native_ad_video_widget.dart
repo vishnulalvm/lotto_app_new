@@ -21,30 +21,28 @@ class _NativeAdVideoWidgetState extends State<NativeAdVideoWidget> {
     _loadNativeAd();
   }
 
-  void _loadNativeAd() {
-    _nativeAd = AdMobService.instance.createNewsStyleNativeLiveVideoAd(
-      listener: NativeAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          setState(() {
-            _isAdLoaded = false;
-          });
-        },
-        onAdClicked: (ad) {},
-        onAdImpression: (ad) {},
-        onAdClosed: (ad) {},
-        onAdOpened: (ad) {},
-        onAdWillDismissScreen: (ad) {},
-        onPaidEvent: (ad, valueMicros, precision, currencyCode) {},
-      ),
-    );
-
-    _nativeAd?.load();
+  void _loadNativeAd() async {
+    // Use the modern AdMobService API to load live video native ads
+    try {
+      await AdMobService.instance.loadAd('live_video');
+      
+      // Get the loaded ad from the service
+      _nativeAd = AdMobService.instance.getAd<NativeAd>('live_video');
+      
+      if (_nativeAd != null) {
+        setState(() {
+          _isAdLoaded = true;
+        });
+      } else {
+        setState(() {
+          _isAdLoaded = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isAdLoaded = false;
+      });
+    }
   }
 
   @override
