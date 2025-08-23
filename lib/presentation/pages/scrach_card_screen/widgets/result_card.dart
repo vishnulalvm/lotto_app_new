@@ -33,14 +33,14 @@ class ResultCard extends StatelessWidget {
   final ThemeData theme;
   final TicketCheckResponseModel? result;
   final Map<String, dynamic>? ticketData;
-  
+
   // Scratch card specific properties
   final GlobalKey<ScratcherState>? scratcherKey;
   final Function(double)? onScratchUpdate;
   final VoidCallback? onThreshold;
   final bool autoRevealTriggered;
   final double scratchProgress;
-  
+
   // Size and styling (now optional - will be calculated responsively)
   final double? width;
   final double? height;
@@ -64,7 +64,7 @@ class ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final responsiveSize = _getResponsiveSize(screenSize);
-    
+
     return Container(
       width: width ?? responsiveSize.width,
       height: height ?? responsiveSize.height,
@@ -77,31 +77,31 @@ class ResultCard extends StatelessWidget {
   ResponsiveCardSize _getResponsiveSize(Size screenSize) {
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
-    
+
     // Calculate card size as percentage of screen width with min/max constraints
     double cardWidth = screenWidth * 0.85; // 85% of screen width
     cardWidth = cardWidth.clamp(280.0, 300.0); // Min 280, Max 300
-    
+
     // Maintain aspect ratio (1:1 for square cards)
     double cardHeight = cardWidth;
-    
+
     // For no-result cards, allow slightly taller if needed
     if (type == ResultCardType.noResult) {
       cardHeight = cardWidth.clamp(280.0, 300.0);
     }
-    
+
     // Adjust for very small screens (iPhone SE, etc.)
     if (screenWidth < 375) {
       cardWidth = screenWidth * 0.90;
       cardHeight = cardWidth;
     }
-    
+
     // Adjust for very tall screens to ensure card fits
     if (cardHeight > screenHeight * 0.6) {
       cardHeight = screenHeight * 0.6;
       cardWidth = cardHeight;
     }
-    
+
     return ResponsiveCardSize(
       width: cardWidth,
       height: cardHeight,
@@ -111,25 +111,25 @@ class ResultCard extends StatelessWidget {
       bodyFontSize: _getResponsiveBodySize(cardWidth),
     );
   }
-  
+
   double _getResponsivePadding(double cardWidth) {
     if (cardWidth < 300) return 16.0;
     if (cardWidth < 320) return 20.0;
     return 24.0;
   }
-  
+
   double _getResponsiveIconSize(double cardWidth) {
     if (cardWidth < 300) return 45.0;
     if (cardWidth < 320) return 50.0;
     return 55.0;
   }
-  
+
   double _getResponsiveTitleSize(double cardWidth) {
     if (cardWidth < 300) return 16.0;
     if (cardWidth < 320) return 17.0;
     return 18.0;
   }
-  
+
   double _getResponsiveBodySize(double cardWidth) {
     if (cardWidth < 300) return 14.0;
     if (cardWidth < 320) return 15.0;
@@ -152,7 +152,8 @@ class ResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCardContent(BuildContext context, ResponsiveCardSize responsiveSize) {
+  Widget _buildCardContent(
+      BuildContext context, ResponsiveCardSize responsiveSize) {
     switch (type) {
       case ResultCardType.loading:
         return _buildLoadingContent(responsiveSize);
@@ -177,7 +178,8 @@ class ResultCard extends StatelessWidget {
               CircularProgressIndicator(
                 color: theme.primaryColor,
               ),
-              SizedBox(height: responsiveSize.padding * 0.67), // Responsive spacing
+              SizedBox(
+                  height: responsiveSize.padding * 0.67), // Responsive spacing
               Text(
                 'checking_ticket'.tr(),
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -203,19 +205,22 @@ class ResultCard extends StatelessWidget {
     Color iconColor;
     Color primaryTextColor;
     Color secondaryTextColor;
-    
+
     if (result!.responseType == ResponseType.previousLoser) {
       // Previous result styling - bluish theme
-      cardColor = isDark ? Colors.blue[900]!.withValues(alpha: 0.15) : Colors.blue[50]!;
+      cardColor =
+          isDark ? Colors.blue[900]!.withValues(alpha: 0.15) : Colors.blue[50]!;
       iconColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
       primaryTextColor = isDark ? Colors.blue[300]! : Colors.blue[700]!;
       secondaryTextColor = isDark ? Colors.blue[200]! : Colors.blue[500]!;
     } else {
-      // Result not published styling - amber theme
-      cardColor = isDark ? Colors.amber[900]!.withValues(alpha: 0.15) : Colors.amber[50]!;
-      iconColor = isDark ? Colors.amber[400]! : Colors.amber[600]!;
-      primaryTextColor = isDark ? Colors.amber[300]! : Colors.amber[700]!;
-      secondaryTextColor = isDark ? Colors.amber[200]! : Colors.amber[600]!;
+      // Result not published styling - orange theme
+      cardColor = isDark
+          ? Colors.orange[900]!.withValues(alpha: 0.15)
+          : Colors.orange[50]!;
+      iconColor = isDark ? Colors.orange[400]! : Colors.orange[700]!;
+      primaryTextColor = isDark ? Colors.orange[300]! : Colors.orange[800]!;
+      secondaryTextColor = isDark ? Colors.orange[200]! : Colors.orange[700]!;
     }
 
     return Container(
@@ -228,7 +233,6 @@ class ResultCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-
         borderRadius: BorderRadius.circular(16),
       ),
       child: Stack(
@@ -306,9 +310,9 @@ class ResultCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-    
                         if (result!.drawDate.isNotEmpty &&
-                            result!.responseType == ResponseType.previousLoser) ...[
+                            result!.responseType ==
+                                ResponseType.previousLoser) ...[
                           SizedBox(height: responsiveSize.padding * 0.2),
                           Text(
                             '${'Ticket name'}: ${result!.lotteryName}',
@@ -343,9 +347,8 @@ class ResultCard extends StatelessWidget {
       key: scratcherKey,
       brushSize: brushSize,
       threshold: 50,
-      color: theme.brightness == Brightness.dark
-          ? Colors.grey[800]!
-          : Colors.grey,
+      color:
+          theme.brightness == Brightness.dark ? Colors.grey[800]! : Colors.grey,
       image: Image.asset('assets/images/scrachcard.png'),
       onChange: (value) => onScratchUpdate?.call(value / 100),
       onThreshold: onThreshold,
@@ -488,8 +491,9 @@ class ResultCard extends StatelessWidget {
       ];
     } else {
       // Show points for currentLoser if available, otherwise show no prize
-      if (result!.responseType == ResponseType.currentLoser && 
-          result!.points != null && result!.points! > 0) {
+      if (result!.responseType == ResponseType.currentLoser &&
+          result!.points != null &&
+          result!.points! > 0) {
         return [
           Text(
             '🎁 +${result!.points} Points',
@@ -565,7 +569,9 @@ class ResultCard extends StatelessWidget {
           top: cardHeight * 0.2,
           right: cardWidth * 0.12,
           child: Icon(
-            result!.isWinner ? Icons.card_giftcard_outlined : Icons.close_outlined,
+            result!.isWinner
+                ? Icons.card_giftcard_outlined
+                : Icons.close_outlined,
             color: iconColor,
             size: iconSize,
           ),
@@ -594,7 +600,8 @@ class ResultCard extends StatelessWidget {
         ...List.generate(8, (index) {
           final random = Random(index);
           return Positioned(
-            top: (cardHeight * 0.07) + random.nextDouble() * (cardHeight * 0.86),
+            top:
+                (cardHeight * 0.07) + random.nextDouble() * (cardHeight * 0.86),
             left: (cardWidth * 0.07) + random.nextDouble() * (cardWidth * 0.86),
             child: Container(
               width: responsiveSize.width * 0.025,
@@ -672,7 +679,8 @@ class ResultCard extends StatelessWidget {
     }
   }
 
-  Widget _buildNoResultBackgroundIcons(ResponsiveCardSize responsiveSize, Color iconColor) {
+  Widget _buildNoResultBackgroundIcons(
+      ResponsiveCardSize responsiveSize, Color iconColor) {
     final double cardWidth = responsiveSize.width;
     final double cardHeight = responsiveSize.height;
     final Color decorativeColor = iconColor.withValues(alpha: 0.1);
@@ -711,7 +719,8 @@ class ResultCard extends StatelessWidget {
         ),
         // Decorative dots
         ...List.generate(6, (index) {
-          final random = Random(index + 100); // Different seed for no-result cards
+          final random =
+              Random(index + 100); // Different seed for no-result cards
           return Positioned(
             top: (cardHeight * 0.1) + random.nextDouble() * (cardHeight * 0.8),
             left: (cardWidth * 0.08) + random.nextDouble() * (cardWidth * 0.84),

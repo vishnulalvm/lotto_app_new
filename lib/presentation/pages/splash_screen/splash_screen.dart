@@ -250,7 +250,7 @@ class _SplashScreenState extends State<SplashScreen>
             ),
             // Company name at bottom center
             Padding(
-              padding: const EdgeInsets.only(bottom: 40),
+              padding: const EdgeInsets.only(bottom: 60),
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Text(

@@ -27,12 +27,12 @@ class ScratchCardBottomSheet extends StatelessWidget {
     final double horizontalPadding = screenWidth * 0.05; // 5% of screen width
     final double verticalPadding = screenHeight * 0.025; // 2.5% of screen height
     final double spacing = screenHeight * 0.02; // 2% for general spacing
-    final double smallSpacing = screenHeight * 0.015; // 1.5% for small spacing
+// 1.5% for small spacing
 
     return Container(
       padding: EdgeInsets.symmetric(
-        vertical: verticalPadding.clamp(12.0, 22.0),
-        horizontal: horizontalPadding.clamp(12.0, 20.0),
+        vertical: verticalPadding.clamp(12.0, 12.0),
+        horizontal: horizontalPadding.clamp(12.0, 14.0),
       ),
       decoration: BoxDecoration(
         color: theme.cardColor,
@@ -76,8 +76,6 @@ class ScratchCardBottomSheet extends StatelessWidget {
           Divider(
             color: isDark ? Colors.grey[600] : Colors.grey[300],
           ),
-
-          SizedBox(height: smallSpacing.clamp(8.0, 16.0)),
 
           // Kerala Lottery Logo and text
           _buildFooter(context, theme, screenWidth),

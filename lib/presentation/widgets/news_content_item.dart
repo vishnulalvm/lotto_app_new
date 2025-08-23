@@ -268,7 +268,7 @@ class _NewsContentItemState extends State<NewsContentItem> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 36),
                 ],
               ),
             ),

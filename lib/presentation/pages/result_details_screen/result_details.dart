@@ -1026,7 +1026,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                       // Implement search on submit
                       _performSearch(query);
                     },
-                    bottomPadding: 20.0,
+                    bottomPadding: 50.0,
                   );
                 }
               }

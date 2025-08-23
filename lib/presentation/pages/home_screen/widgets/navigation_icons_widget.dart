@@ -300,11 +300,10 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                               ),
                             ),
                             child: Center(
-                              child: Image.asset(
-                                'assets/icons/lotto_points.png',
-                                width: _iconSize * 0.8,
-                                height: _iconSize * 0.8,
-                                fit: BoxFit.contain,
+                              child: Icon(
+                                Icons.redeem,
+                                color: Colors.white,
+                                size: _iconSize * 0.8,
                               ),
                             ),
                           ),
@@ -327,7 +326,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                           alignment: Alignment.center,
                           transform: Matrix4.identity()..rotateY(math.pi),
                           child: Text(
-                            'Get Points',
+                            'Cashbacks',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 11),
