@@ -23,6 +23,31 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   late TabController _tabController;
   final UserService _userService = UserService();
 
+  // Dummy data for cashback rewards
+  final List<Map<String, dynamic>> cashRewards = [
+    {
+      'amount': 1000,
+      'status': 'available', // available, claimed, expired
+      'date': '9 Oct 2020',
+      'availableIn': '12:34',
+      'type': 'cashback'
+    },
+    {
+      'amount': 1000,
+      'status': 'available',
+      'date': '9 Oct 2020',
+      'availableIn': null,
+      'type': 'cashback'
+    },
+    {
+      'amount': 500,
+      'status': 'available',
+      'date': '9 Oct 2020',
+      'availableIn': null,
+      'type': 'cashback'
+    },
+  ];
+
   // Dummy data for redeem options
   final List<Map<String, dynamic>> redeemOptions = [
     {
@@ -587,6 +612,88 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       ),
       child: CustomScrollView(
         slivers: [
+          // Cash Rewards Section Header
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: AppResponsive.padding(context, horizontal: 6, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.redeem,
+                    color: theme.primaryColor,
+                    size: AppResponsive.fontSize(context, 20),
+                  ),
+                  SizedBox(width: AppResponsive.spacing(context, 8)),
+                  Text(
+                    'Cash Rewards',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: AppResponsive.fontSize(context, 18),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Cash Rewards Grid
+          SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.95,
+              crossAxisSpacing: AppResponsive.spacing(context, 8),
+              mainAxisSpacing: AppResponsive.spacing(context, 8),
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (index < cashRewards.length) {
+                  return _buildCashRewardCard(
+                    cashRewards[index],
+                    theme,
+                    key: ValueKey('cash_reward_$index'),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+              childCount: cashRewards.length,
+            ),
+          ),
+
+          // Section Divider
+          SliverToBoxAdapter(
+            child: Container(
+              margin: AppResponsive.margin(context, vertical: 10, horizontal: 6),
+              child: Column(
+                children: [
+                  Divider(
+                    color: theme.dividerColor.withValues(alpha: 0.3),
+                    thickness: 1,
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 16)),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_activity,
+                        color: theme.primaryColor,
+                        size: AppResponsive.fontSize(context, 20),
+                      ),
+                      SizedBox(width: AppResponsive.spacing(context, 8)),
+                      Text(
+                        'redeem_points'.tr(),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontSize: AppResponsive.fontSize(context, 18),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+              
+                ],
+              ),
+            ),
+          ),
+
+          // Redeem Cards Grid
           SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -900,6 +1007,214 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCashRewardCard(Map<String, dynamic> reward, ThemeData theme, {Key? key}) {
+    final bool isAvailable = reward['status'] == 'available';
+    
+    return Container(
+      key: key,
+    
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isAvailable 
+              ? [
+                  theme.primaryColor,
+                  theme.primaryColor.withValues(alpha: 0.8),
+                ]
+              : [
+                  Colors.grey[600]!,
+                  Colors.grey[700]!,
+                ],
+        ),
+        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+        boxShadow: [
+          BoxShadow(
+            color: isAvailable 
+                ? theme.primaryColor.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Big celebration icon in background
+          Positioned(
+            top: 20,
+            right: -20,
+            child: Icon(
+              Icons.celebration,
+              size: 120,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          // Background decorative elements
+          Positioned(
+            top: 20,
+            left: 20,
+            child: Icon(
+              Icons.redeem,
+              size: 24,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          Positioned(
+            bottom: 30,
+            left: 30,
+            child: Icon(
+              Icons.star_outline,
+              size: 18,
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+          Positioned(
+            top: 60,
+            left: 40,
+            child: Icon(
+              Icons.circle,
+              size: 12,
+              color: Colors.white.withValues(alpha: 0.1),
+            ),
+          ),
+          // Main content
+          Padding(
+            padding: AppResponsive.padding(context, horizontal: 16, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: AppResponsive.spacing(context, 8)),
+                
+                // Amount
+                Text(
+                  '₹${reward['amount']}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: AppResponsive.fontSize(context, 32),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: AppResponsive.spacing(context, 1)),
+                
+                // Description
+                Text(
+                  'Cashback received',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: AppResponsive.fontSize(context, 12),
+                  ),
+                ),
+                SizedBox(height: AppResponsive.spacing(context, 6)),
+                
+                // Date
+                Text(
+                  reward['date'],
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: AppResponsive.fontSize(context, 12),
+                  ),
+                ),
+                
+                SizedBox(height: AppResponsive.spacing(context, 12)),
+                
+                // Claim button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isAvailable ? () => _showClaimDialog(reward) : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: theme.primaryColor,
+                      padding: AppResponsive.padding(context, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 6)),
+                      ),
+                      elevation: 0,
+                      minimumSize: Size.zero,
+                    ),
+                    child: Text(
+                      'Claim',
+                      style: TextStyle(
+                        fontSize: AppResponsive.fontSize(context, 14),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClaimDialog(Map<String, dynamic> reward) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: theme.dialogTheme.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.redeem,
+                color: theme.primaryColor,
+                size: AppResponsive.fontSize(context, 24),
+              ),
+              SizedBox(width: AppResponsive.spacing(context, 8)),
+              Text(
+                'Claim Cashback',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 18),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Claim your ₹${reward['amount']} cashback reward?',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: AppResponsive.fontSize(context, 14),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showComingSoonDialog();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Claim',
+                style: TextStyle(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
