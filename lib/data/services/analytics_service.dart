@@ -98,7 +98,7 @@ class AnalyticsService {
     };
 
     await _analytics?.logEvent(
-      name: 'user_engagement',
+      name: 'custom_user_engagement',
       parameters: eventParameters,
     );
   }
@@ -217,7 +217,7 @@ class AnalyticsService {
       final sessionDuration = DateTime.now().millisecondsSinceEpoch - sessionStart;
       
       await _analytics?.logEvent(
-        name: 'session_end',
+        name: 'custom_session_end',
         parameters: {
           'session_duration': sessionDuration,
           'timestamp': DateTime.now().millisecondsSinceEpoch,

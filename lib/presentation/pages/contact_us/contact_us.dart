@@ -8,61 +8,63 @@ class ContactBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 8),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'contact_us'.tr(),
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+            Text(
+              'contact_us'.tr(),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          _buildContactOption(
-            context,
-            icon: Icons.chat_bubble_outline,
-            title: 'chat_with_us'.tr(),
-            onTap: () => _launchWhatsApp('hello_assistance'.tr()),
-            theme: theme,
-          ),
-          _buildContactOption(
-            context,
-            icon: Icons.phone_outlined,
-            title: 'call_us'.tr(),
-            onTap: () => _makePhoneCall('6238970003'),
-            theme: theme,
-          ),
-          _buildContactOption(
-            context,
-            icon: Icons.feedback_outlined,
-            title: 'send_feedback'.tr(),
-            onTap: () => _launchWhatsApp('feedback_message'.tr()),
-            theme: theme,
-          ),
-          _buildContactOption(
-            context,
-            icon: Icons.error_outline,
-            title: 'report_problem'.tr(),
-            onTap: () => _launchWhatsApp('report_problem_message'.tr()),
-            theme: theme,
-          ),
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+            _buildContactOption(
+              context,
+              icon: Icons.chat_bubble_outline,
+              title: 'chat_with_us'.tr(),
+              onTap: () => _launchWhatsApp('hello_assistance'.tr()),
+              theme: theme,
+            ),
+            _buildContactOption(
+              context,
+              icon: Icons.phone_outlined,
+              title: 'call_us'.tr(),
+              onTap: () => _makePhoneCall('6238970003'),
+              theme: theme,
+            ),
+            _buildContactOption(
+              context,
+              icon: Icons.feedback_outlined,
+              title: 'send_feedback'.tr(),
+              onTap: () => _launchWhatsApp('feedback_message'.tr()),
+              theme: theme,
+            ),
+            _buildContactOption(
+              context,
+              icon: Icons.error_outline,
+              title: 'report_problem'.tr(),
+              onTap: () => _launchWhatsApp('report_problem_message'.tr()),
+              theme: theme,
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

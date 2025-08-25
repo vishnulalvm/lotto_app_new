@@ -62,56 +62,49 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.sizeAnimation,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: _cachedGradientColors,
-              stops: const [0.0, 0.3, 0.7, 1.0],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _primaryRed.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _cachedGradientColors,
+          stops: const [0.0, 0.3, 0.7, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryRed.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: FloatingActionButton.extended(
-            onPressed: widget.onPressed,
-            backgroundColor: Colors.transparent,
-            foregroundColor:
-                widget.theme.floatingActionButtonTheme.foregroundColor,
-            elevation: 0,
-            icon: Icon(
-              Icons.auto_awesome,
-              size: AppResponsive.fontSize(context, 24),
-            ),
-            label: SizeTransition(
-              sizeFactor: widget.sizeAnimation,
-              axis: Axis.horizontal,
-              axisAlignment: -1.0,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 3.0 * widget.sizeAnimation.value,
-                ),
-                child: Text(
-                  'ai_probability'.tr(),
-                  style: TextStyle(
-                    fontSize: AppResponsive.fontSize(context, 14),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        onPressed: widget.onPressed,
+        backgroundColor: Colors.transparent,
+        foregroundColor:
+            widget.theme.floatingActionButtonTheme.foregroundColor,
+        elevation: 0,
+        icon: Icon(
+          Icons.auto_awesome,
+          size: AppResponsive.fontSize(context, 24),
+        ),
+        label: SizeTransition(
+          sizeFactor: widget.sizeAnimation,
+          axis: Axis.horizontal,
+          axisAlignment: -1.0,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 3.0),
+            child: Text(
+              'ai_probability'.tr(),
+              style: TextStyle(
+                fontSize: AppResponsive.fontSize(context, 14),
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

@@ -14,7 +14,6 @@ class LotteryResultsSection extends StatelessWidget {
   final VoidCallback onLoadLotteryResults;
   final VoidCallback onShowDatePicker;
   final Animation<double> blinkAnimation;
-  final Animation<double> badgeShimmerAnimation;
   final String Function(DateTime) formatDateForDisplay;
 
   const LotteryResultsSection({
@@ -22,7 +21,6 @@ class LotteryResultsSection extends StatelessWidget {
     required this.onLoadLotteryResults,
     required this.onShowDatePicker,
     required this.blinkAnimation,
-    required this.badgeShimmerAnimation,
     required this.formatDateForDisplay,
   });
 
@@ -429,8 +427,7 @@ class LotteryResultsSection extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: firstRow
-                          .map((prize) => _buildConsolationPrizeContainer(
-                              prize, theme, context))
+                          .map((prize) => ConsolationPrizeContainer(prize: prize))
                           .toList(),
                     ),
 
@@ -442,8 +439,7 @@ class LotteryResultsSection extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: secondRow
-                          .map((prize) => _buildConsolationPrizeContainer(
-                              prize, theme, context))
+                          .map((prize) => ConsolationPrizeContainer(prize: prize))
                           .toList(),
                     ),
 
@@ -537,38 +533,39 @@ class LotteryResultsSection extends StatelessWidget {
                 : result.isLive
                     ? AnimatedBuilder(
                         animation: blinkAnimation,
+                        child: Container(
+                          padding: AppResponsive.padding(context,
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(
+                                  AppResponsive.spacing(context, 8)),
+                              bottomRight: Radius.circular(
+                                  AppResponsive.spacing(context, 8)),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'live_badge'.tr(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: AppResponsive.fontSize(context, 10),
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
                         builder: (context, child) {
                           return Opacity(
                             opacity: blinkAnimation.value,
-                            child: Container(
-                              padding: AppResponsive.padding(context,
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(
-                                      AppResponsive.spacing(context, 8)),
-                                  bottomRight: Radius.circular(
-                                      AppResponsive.spacing(context, 8)),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                'live_badge'.tr(),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: AppResponsive.fontSize(context, 10),
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
+                            child: child,
                           );
                         },
                       )
@@ -588,26 +585,6 @@ class LotteryResultsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildConsolationPrizeContainer(
-      String prize, ThemeData theme, BuildContext context) {
-    return Container(
-      padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: theme.brightness == Brightness.light
-            ? Colors.grey[200]
-            : const Color(0xFF2A2A2A),
-        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 4)),
-      ),
-      child: Text(
-        prize,
-        style: TextStyle(
-          fontSize: AppResponsive.fontSize(context, 13),
-          fontWeight: FontWeight.w500,
-          color: theme.textTheme.bodyMedium?.color,
-        ),
-      ),
-    );
-  }
 
   Widget _buildResultsList(
     HomeScreenResultsModel data,
@@ -858,80 +835,78 @@ class LotteryResultsSection extends StatelessWidget {
     required String text,
     IconData? icon,
   }) {
-    return AnimatedBuilder(
-      animation: badgeShimmerAnimation,
-      builder: (context, child) {
-        return Stack(
-          children: [
-            // Base badge container
-            Container(
-              padding: AppResponsive.padding(context, horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                gradient: gradient,
-                color: backgroundColor,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
-                  bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: shadowColor,
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: child,
-            ),
-            // Shimmer overlay
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
-                  bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.white.withValues(alpha: 0.3),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                      begin: Alignment(badgeShimmerAnimation.value - 1, 0),
-                      end: Alignment(badgeShimmerAnimation.value, 0),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              color: Colors.white,
-              size: AppResponsive.fontSize(context, 12),
-            ),
-            SizedBox(width: AppResponsive.spacing(context, 4)),
-          ],
-          Text(
-            text,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: AppResponsive.fontSize(context, 10),
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
+    return Container(
+        padding: AppResponsive.padding(context, horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          color: backgroundColor,
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
+            bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
           ),
-        ],
-      ),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                color: Colors.white,
+                size: AppResponsive.fontSize(context, 12),
+              ),
+              SizedBox(width: AppResponsive.spacing(context, 4)),
+            ],
+            Text(
+              text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: AppResponsive.fontSize(context, 10),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
     );
   }
 
+}
+
+class ConsolationPrizeContainer extends StatelessWidget {
+  final String prize;
+
+  const ConsolationPrizeContainer({
+    super.key,
+    required this.prize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.brightness == Brightness.light
+            ? Colors.grey[200]
+            : const Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 4)),
+      ),
+      child: Text(
+        prize,
+        style: TextStyle(
+          fontSize: AppResponsive.fontSize(context, 13),
+          fontWeight: FontWeight.w500,
+          color: theme.textTheme.bodyMedium?.color,
+        ),
+      ),
+    );
+  }
 }

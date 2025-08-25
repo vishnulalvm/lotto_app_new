@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -40,9 +39,6 @@ class _HomeScreenState extends State<HomeScreen>
   // All animations driven by the two controllers
   late Animation<double> _fabAnimation;
   late Animation<double> _blinkAnimation;
-  late Animation<double> _rotationAnimation;
-  late Animation<double> _shimmerAnimation;
-  late Animation<double> _badgeShimmerAnimation;
 
   bool _isExpanded = true;
   bool _isScrollingDown = false;
@@ -121,32 +117,6 @@ class _HomeScreenState extends State<HomeScreen>
       curve: const Interval(0.0, 0.17, curve: Curves.easeInOut), // 0-1 sec of 6 sec cycle
     ));
 
-    // Rotation animation (1-2.5 seconds in the cycle)
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 3.0, // 3 full rotations
-    ).animate(CurvedAnimation(
-      parent: _secondaryAnimationController,
-      curve: const Interval(0.17, 0.42, curve: Curves.easeInOutCubic), // 1-2.5 sec
-    ));
-
-    // Shimmer animation (2.5-4.5 seconds in the cycle)
-    _shimmerAnimation = Tween<double>(
-      begin: -1.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _secondaryAnimationController,
-      curve: const Interval(0.42, 0.75, curve: Curves.easeInOut), // 2.5-4.5 sec
-    ));
-
-    // Badge shimmer animation (4.5-6 seconds in the cycle)
-    _badgeShimmerAnimation = Tween<double>(
-      begin: -1.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _secondaryAnimationController,
-      curve: const Interval(0.75, 1.0, curve: Curves.easeInOut), // 4.5-6 sec
-    ));
 
     _primaryAnimationController.forward();
   }
@@ -412,6 +382,37 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  /// Launch WhatsApp group when community menu item is tapped
+  Future<void> _launchWhatsAppGroup() async {
+    // Add haptic feedback for menu selection
+    HapticFeedback.lightImpact();
+    
+    const String whatsappGroupUrl = 'https://chat.whatsapp.com/Lp7h3ft3I0xAsbGoLx9IW2?mode=ems_share_t';
+
+    try {
+      final Uri url = Uri.parse(whatsappGroupUrl);
+
+      // Check if the URL can be launched
+      final bool canLaunch = await canLaunchUrl(url);
+
+      if (canLaunch) {
+        // Try to launch the URL with external application mode for WhatsApp
+        final bool launched = await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!launched) {
+          _showErrorSnackBar('could_not_open_whatsapp'.tr());
+        }
+      } else {
+        _showErrorSnackBar('could_not_open_whatsapp'.tr());
+      }
+    } catch (e) {
+      _showErrorSnackBar('error_opening_whatsapp'.tr());
+    }
+  }
+
   /// Show error snackbar for website launch failures
   void _showErrorSnackBar(String message) {
     if (mounted) {
@@ -589,7 +590,6 @@ class _HomeScreenState extends State<HomeScreen>
                     onLoadLotteryResults: _loadLotteryResults,
                     onShowDatePicker: _showDatePicker,
                     blinkAnimation: _blinkAnimation,
-                    badgeShimmerAnimation: _badgeShimmerAnimation,
                     formatDateForDisplay: _formatDateForDisplay,
                   ),
                   SizedBox(height: AppResponsive.spacing(context, 100)),
@@ -676,107 +676,61 @@ class _HomeScreenState extends State<HomeScreen>
               HapticFeedback.lightImpact();
               context.go('/lottoPoints');
             },
-            child: AnimatedBuilder(
-              animation: _shimmerAnimation,
-              builder: (context, child) {
-                return Stack(
+            child: Container(
+                height: AppResponsive.fontSize(context, 26),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppResponsive.spacing(context, 6),
+                  vertical: AppResponsive.spacing(context, 4),
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 204, 61, 25), // Gold
+                      Color.fromARGB(255, 206, 71, 4), // Light Gold
+                      Color.fromARGB(255, 229, 92, 38), // Gold
+                    ],
+                    stops: [0.0, 0.5, 1.0],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    AppResponsive.spacing(context, 18),
+                  ),
+                  border: Border.all(
+                    color: Color(0xFFFFE55C).withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Original button
-                    Container(
-                      height: AppResponsive.fontSize(context, 26),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppResponsive.spacing(context, 6),
-                        vertical: AppResponsive.spacing(context, 4),
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color.fromARGB(255, 204, 61, 25), // Gold
-                            Color.fromARGB(255, 206, 71, 4), // Light Gold
-                            Color.fromARGB(255, 229, 92, 38), // Gold
-                          ],
-                          stops: [0.0, 0.5, 1.0],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 18),
-                        ),
-                        border: Border.all(
-                          color: Color(0xFFFFE55C).withValues(alpha: 0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: child,
-                    ),
-                    // Shimmer overlay
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 18),
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                Colors.white.withValues(alpha: 0.4),
-                                Colors.transparent,
-                              ],
-                              stops: [0.0, 0.5, 1.0],
-                              begin: Alignment(_shimmerAnimation.value - 1, 0),
-                              end: Alignment(_shimmerAnimation.value, 0),
-                              transform: GradientRotation(
-                                  math.pi / 4), // 45 degree angle
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedBuilder(
-                    animation: _rotationAnimation,
-                    builder: (context, child) {
-                      return Transform.rotate(
-                        angle: _rotationAnimation.value *
-                            2 *
-                            math.pi, // Convert to radians (3 full rotations)
-                        child: child,
-                      );
-                    },
-                    child: Image.asset(
+                    Image.asset(
                       'assets/icons/lotto_points.png',
                       width: AppResponsive.fontSize(context, 14),
                       height: AppResponsive.fontSize(context, 14),
                       fit: BoxFit.contain,
                     ),
-                  ),
-                  SizedBox(width: AppResponsive.spacing(context, 4)),
-                  Text(
-                    "Points",
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 10),
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          offset: Offset(0, 1),
-                          blurRadius: 2,
-                        ),
-                      ],
+                    SizedBox(width: AppResponsive.spacing(context, 4)),
+                    Text(
+                      "Points",
+                      style: TextStyle(
+                        fontSize: AppResponsive.fontSize(context, 10),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
 
         PopupMenuButton<String>(
           icon: Icon(
@@ -798,6 +752,13 @@ class _HomeScreenState extends State<HomeScreen>
               context, // Pass context
             ),
             _buildPopupMenuItem(
+              'community_value', // The actual value returned when selected
+              Icons.group,
+              'community', // This is the translation key
+              Theme.of(context),
+              context, // Pass context
+            ),
+            _buildPopupMenuItem(
               'contact_value', // The actual value returned when selected
               Icons.contact_support,
               'contact_us', // This is the translation key
@@ -812,6 +773,9 @@ class _HomeScreenState extends State<HomeScreen>
             switch (value) {
               case 'settings_value': // Match the actual returned value
                 context.push('/settings');
+                break;
+              case 'community_value': // Match the actual returned value
+                _launchWhatsAppGroup();
                 break;
               case 'contact_value': // Match the actual returned value
                 showContactSheet(context);

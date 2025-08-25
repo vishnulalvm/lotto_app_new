@@ -12,6 +12,7 @@ class SimpleCarouselWidget extends StatefulWidget {
   final Duration autoPlayInterval;
   final Color? gradientStartColor;
   final Color? gradientEndColor;
+  
   const SimpleCarouselWidget({
     super.key,
     required this.images,
@@ -30,52 +31,45 @@ class SimpleCarouselWidget extends StatefulWidget {
 
 class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
     with AutomaticKeepAliveClientMixin {
-  // Preload controller for better performance
-  final PageController _pageController = PageController();
-
-  // Keep alive to prevent rebuilds when scrolling
+  
+  // Keep alive to prevent rebuilds when scrolling in a list/tab
   @override
   bool get wantKeepAlive => true;
 
-
-  @override
-  void didUpdateWidget(SimpleCarouselWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Check if images have changed
-    if (!_listEquals(oldWidget.images, widget.images)) {
-      setState(() {
-        // Trigger rebuild when images change
-      });
-    }
-  }
-
-  // Helper method to compare lists
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  List<String> get _displayImages {
-    return widget.images;
-  }
+  // REMOVED: didUpdateWidget and _listEquals are not needed.
+  // The build method is automatically called when widget.images changes.
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Call super for AutomaticKeepAliveClientMixin
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    // Return a placeholder if there are no images to prevent errors
+    if (widget.images.isEmpty) {
+      return SizedBox(
+        height: widget.height ?? AppResponsive.height(context, AppResponsive.isMobile(context) ? 15 : 20),
+        child: _buildGradientPlaceholder(),
+      );
+    }
 
     return Padding(
       padding: AppResponsive.padding(context, horizontal: 16, vertical: 8),
-      child: CarouselSlider(
+      child: CarouselSlider.builder(
+        itemCount: widget.images.length,
+        itemBuilder: (context, index, realIndex) {
+          final imageUrl = widget.images[index];
+          return GestureDetector(
+            onTap: widget.onImageTap,
+            child: Container(
+              width: AppResponsive.width(context, 100),
+              margin: AppResponsive.margin(context, horizontal: 0),
+              child: ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                child: _buildCarouselImage(imageUrl),
+              ),
+            ),
+          );
+        },
         options: CarouselOptions(
           height: widget.height ??
               AppResponsive.height(
@@ -85,43 +79,18 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
           enlargeCenterPage: true,
           viewportFraction: widget.viewportFraction ??
               (AppResponsive.isMobile(context) ? 0.85 : 0.7),
-          // Add performance optimizations
-          enableInfiniteScroll: _displayImages.length > 1,
+          enableInfiniteScroll: widget.images.length > 1,
           pauseAutoPlayOnTouch: true,
           pauseAutoPlayOnManualNavigate: true,
         ),
-        items: _displayImages.map((imageUrl) {
-          return Builder(
-            builder: (BuildContext context) {
-              return GestureDetector(
-                onTap: widget.onImageTap,
-                child: Container(
-                  width: AppResponsive.width(context, 100),
-                  margin: AppResponsive.margin(context, horizontal: 0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                        AppResponsive.spacing(context, 8)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                        AppResponsive.spacing(context, 8)),
-                    child: _buildCarouselImage(imageUrl),
-                  ),
-                ),
-              );
-            },
-          );
-        }).toList(),
       ),
     );
   }
 
   Widget _buildCarouselImage(String imageUrl) {
-    // Check if it's a URL or local asset
-    if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
+    if (imageUrl.startsWith('http')) {
       return _buildNetworkImage(imageUrl);
     } else {
-      // Local asset image
       return Image.asset(
         imageUrl,
         fit: BoxFit.none,
@@ -138,17 +107,16 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
       errorWidget: (context, url, error) => _buildErrorWidget(),
       fadeInDuration: const Duration(milliseconds: 200),
       fadeOutDuration: const Duration(milliseconds: 200),
-      // Optimize memory usage with smaller cache sizes
       memCacheWidth: 600,
       memCacheHeight: 400,
       maxWidthDiskCache: 800,
       maxHeightDiskCache: 600,
-      // Add performance optimizations
       useOldImageOnUrlChange: true,
-      filterQuality: FilterQuality.low, // Faster rendering for carousel
+      filterQuality: FilterQuality.low,
     );
   }
 
+  // ... (Your _buildGradientPlaceholder, _buildShimmerEffect, and _buildErrorWidget methods remain the same)
   Widget _buildGradientPlaceholder() {
     final startColor = widget.gradientStartColor ?? Colors.pink.shade100;
     final endColor = widget.gradientEndColor ?? Colors.pink.shade300;
@@ -177,13 +145,13 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: Colors.white.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Loading...',
                 style: TextStyle(
-                  color: endColor.withValues(alpha: 0.8),
+                  color: endColor.withOpacity(0.8),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -203,9 +171,9 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            Colors.white.withValues(alpha: 0.8),
+            Colors.white.withOpacity(0.8),
             (widget.gradientStartColor ?? Colors.pink.shade100)
-                .withValues(alpha: 0.6),
+                .withOpacity(0.6),
           ],
         ),
       ),

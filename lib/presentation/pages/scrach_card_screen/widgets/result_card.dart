@@ -443,7 +443,8 @@ class ResultCard extends StatelessWidget {
       case ResponseType.currentWinner:
         return 'congratulations'.tr();
       case ResponseType.currentLoser:
-        if (result!.points != null && result!.points! > 0) {
+        if ((result!.cashBack != null && result!.cashBack! > 0) || 
+            (result!.points != null && result!.points! > 0)) {
           return 'better_luck_next_time'.tr();
         }
         return 'better_luck_next_time'.tr();
@@ -490,44 +491,70 @@ class ResultCard extends StatelessWidget {
         ],
       ];
     } else {
-      // Show points for currentLoser if available, otherwise show no prize
-      if (result!.responseType == ResponseType.currentLoser &&
-          result!.points != null &&
-          result!.points! > 0) {
-        return [
-          Text(
-            '🎁 +${result!.points} Points',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: responsiveSize.titleFontSize * 1.35,
+      // Check for cash back first, then points, otherwise show no prize
+      if (result!.responseType == ResponseType.currentLoser) {
+        // Show cash back if available
+        if (result!.cashBack != null && result!.cashBack! > 0) {
+          return [
+            Text(
+              '💰 ${result!.formattedCashBack} Cash Back',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: responsiveSize.titleFontSize * 1.35,
+              ),
             ),
-          ),
-          SizedBox(height: responsiveSize.padding * 0.17),
-          Text(
-            'You Earned Points',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontStyle: FontStyle.italic,
-              fontSize: responsiveSize.bodyFontSize * 1.05,
+            SizedBox(height: responsiveSize.padding * 0.17),
+            Text(
+              'You Earned Cash Back!',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontStyle: FontStyle.italic,
+                fontSize: responsiveSize.bodyFontSize * 1.05,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: responsiveSize.padding * 0.33),
-        ];
-      } else {
-        return [
-          Text(
-            'no_prize'.tr(),
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: responsiveSize.titleFontSize * 1.35,
+            SizedBox(height: responsiveSize.padding * 0.33),
+          ];
+        }
+        // Show points if available and no cash back
+        else if (result!.points != null && result!.points! > 0) {
+          return [
+            Text(
+              '🎁 +${result!.points} Points',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: responsiveSize.titleFontSize * 1.35,
+              ),
             ),
-          ),
-          SizedBox(height: responsiveSize.padding * 0.33),
-        ];
+            SizedBox(height: responsiveSize.padding * 0.17),
+            Text(
+              'You Earned Points',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontStyle: FontStyle.italic,
+                fontSize: responsiveSize.bodyFontSize * 1.05,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: responsiveSize.padding * 0.33),
+          ];
+        }
       }
+      
+      // No cash back or points - show no prize
+      return [
+        Text(
+          'no_prize'.tr(),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: responsiveSize.titleFontSize * 1.35,
+          ),
+        ),
+        SizedBox(height: responsiveSize.padding * 0.33),
+      ];
     }
   }
 

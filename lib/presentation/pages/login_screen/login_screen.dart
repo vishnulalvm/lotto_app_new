@@ -388,7 +388,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   .textTheme.bodyLarge?.color,
                                             ),
                                             decoration: InputDecoration(
-                                              hintText: 'mobile_number'.tr(),
+                                              hintText: 'whatsapp_number'.tr(),
                                               hintStyle: TextStyle(
                                                 // Use theme hint color
                                                 color: theme

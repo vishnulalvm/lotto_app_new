@@ -565,7 +565,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   bool get _isLiveHours {
     final now = DateTime.now();
     return (now.hour >= 15 && now.hour < 16) ||
-        (now.hour == 16 && now.minute <= 20);
+        (now.hour == 16 && now.minute <= 10);
   }
 
   // Helper method to check if result is today's and live

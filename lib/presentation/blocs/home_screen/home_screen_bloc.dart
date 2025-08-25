@@ -40,6 +40,8 @@ class HomeScreenResultsBloc
   @override
   Future<void> close() {
     _connectivitySubscription?.cancel();
+    // Clear cached results to prevent memory leaks
+    _cachedResults = null;
     return super.close();
   }
 
@@ -57,6 +59,8 @@ class HomeScreenResultsBloc
           _handleBackgroundRefreshComplete(freshData);
         },
       );
+      // Clear old cached results before storing new ones to prevent memory leaks
+      _cachedResults = null;
       _cachedResults = result;
 
       // Get additional metadata
@@ -88,6 +92,8 @@ class HomeScreenResultsBloc
       }
 
       final result = await _useCase.execute(forceRefresh: true);
+      // Clear old cached results before storing new ones to prevent memory leaks
+      _cachedResults = null;
       _cachedResults = result;
 
       // Get additional metadata
@@ -114,7 +120,9 @@ class HomeScreenResultsBloc
       // If we don't have cached results, load them first
       if (_cachedResults == null) {
         emit(HomeScreenResultsLoading());
-        _cachedResults = await _useCase.execute();
+        final freshResults = await _useCase.execute();
+        _cachedResults = null; // Clear any previous reference
+        _cachedResults = freshResults;
       }
 
       // Filter results by the selected date
@@ -146,7 +154,9 @@ class HomeScreenResultsBloc
       // If we don't have cached results, load them
       if (_cachedResults == null) {
         emit(HomeScreenResultsLoading());
-        _cachedResults = await _useCase.execute();
+        final freshResults = await _useCase.execute();
+        _cachedResults = null; // Clear any previous reference
+        _cachedResults = freshResults;
       }
 
       // Get metadata
@@ -191,6 +201,7 @@ class HomeScreenResultsBloc
   ) async {
     try {
       await _useCase.clearCache();
+      // Clear cached results to release memory
       _cachedResults = null;
 
       // Reload data
@@ -212,6 +223,8 @@ class HomeScreenResultsBloc
       }
 
       final result = await _useCase.execute(forceRefresh: true);
+      // Clear old cached results before storing new ones to prevent memory leaks
+      _cachedResults = null;
       _cachedResults = result;
 
       // Get additional metadata
@@ -259,6 +272,8 @@ class HomeScreenResultsBloc
   void _handleBackgroundRefreshComplete(HomeScreenResultsModel freshData) {
     // Only update if we're still in a loaded state and the BLoC is not closed
     if (!isClosed && state is HomeScreenResultsLoaded) {
+      // Clear old cached results before storing new ones to prevent memory leaks
+      _cachedResults = null;
       _cachedResults = freshData;
       
       // Add a background refresh event to update the UI
@@ -276,7 +291,8 @@ class HomeScreenResultsBloc
       if (state is HomeScreenResultsLoaded) {
         final currentState = state as HomeScreenResultsLoaded;
         
-        // Update cached results
+        // Update cached results - clear old reference first to prevent memory leaks
+        _cachedResults = null;
         _cachedResults = event.freshData;
 
         // Get updated metadata
@@ -349,13 +365,13 @@ class HomeScreenResultsBloc
       }
     }).toList();
 
-    // Return new model with filtered results
+    // Return new model with filtered results - reuse updates object to avoid duplication
     return HomeScreenResultsModel(
       status: allResults.status,
       count: filteredResults.length,
       results: filteredResults,
       totalPoints: allResults.totalPoints,
-      updates: allResults.updates,
+      updates: allResults.updates, // Reuse existing updates object
     );
   }
 

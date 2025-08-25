@@ -231,116 +231,142 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
 
   Widget _buildOptimizedFlipNavItem(
       BuildContext context, Map<String, dynamic> item, ThemeData theme) {
-    // Use cached values instead of recalculating
+    // Build the front and back widgets just ONCE. They are expensive.
+    final Widget frontSide = _buildNavItemContent(
+      context: context,
+      theme: theme,
+      icon: item['icon'],
+      label: item['label'],
+      isFront: true,
+    );
+
+    final Widget backSide = _buildNavItemContent(
+      context: context,
+      theme: theme,
+      icon: Icons.redeem,
+      label: 'Cashbacks',
+      isFront: false,
+    );
 
     return AnimatedBuilder(
       animation: _flipAnimation,
       builder: (context, child) {
         final isShowingFront = _flipAnimation.value < 0.5;
         final flipValue = _flipAnimation.value * math.pi;
-        
-        // Cache transform matrix to avoid recalculation
+
+        // The builder's only job is to apply the transform, which is cheap.
         final transform = Matrix4.identity()
           ..setEntry(3, 2, 0.001)
           ..rotateY(flipValue);
-        
-        return Transform(
-          alignment: Alignment.center,
-          transform: transform,
-          child: GestureDetector(
-            onTap: () => _handleFlipNavTap(isShowingFront, item),
-            onPanEnd: _handleSwipe,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: _containerSize,
-                  height: _containerSize,
-                  decoration: BoxDecoration(
-                    // Use cached gradient colors
-                    gradient: isShowingFront
-                        ? null
-                        : LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              _isDark ? _darkRedGradientStart : _lightRedGradientStart,
-                              _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
-                            ],
-                            stops: const [0.0, 1.0],
-                          ),
-                    color: isShowingFront
-                        ? (_isDark ? _darkBackground : _lightBackground)
-                        : null,
-                    shape: BoxShape.circle,
-                  ),
-                  child: isShowingFront
-                      ? Icon(
-                          item['icon'],
-                          color: theme.iconTheme.color,
-                          size: _iconSize,
-                        )
-                      : Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()..rotateY(math.pi),
-                          child: Container(
-                            width: _smallIconSize,
-                            height: _smallIconSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                center: Alignment.center,
-                                radius: 0.8,
-                                colors: [
-                                  _isDark ? _darkRedGradientStart : _lightRedGradientStart,
-                                  _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
-                                ],
-                                stops: const [0.0, 1.0],
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.redeem,
-                                color: Colors.white,
-                                size: _iconSize * 0.8,
-                              ),
-                            ),
-                          ),
-                        ),
-                ),
-                SizedBox(height: _spacing),
-                SizedBox(
-                  width: _textWidth,
-                  child: isShowingFront
-                      ? Text(
-                          item['label'],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: AppResponsive.fontSize(context, 12),
-                            fontWeight: FontWeight.w500,
-                            color: theme.textTheme.bodyMedium?.color,
-                          ),
-                        )
-                      : Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()..rotateY(math.pi),
-                          child: Text(
-                            'Cashbacks',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 11),
-                              fontWeight: FontWeight.w600,
-                              color: _isDark ? _vibrantRed : _primaryRed,
-                            ),
-                          ),
-                        ),
-                ),
-              ],
-            ),
+
+        return GestureDetector(
+          onTap: () => _handleFlipNavTap(isShowingFront, item),
+          onPanEnd: _handleSwipe,
+          child: Transform(
+            transform: transform,
+            alignment: Alignment.center,
+            // We show either the pre-built front or back side.
+            child: isShowingFront ? frontSide : backSide,
           ),
         );
       },
+    );
+  }
+
+  // Helper method to build the content of each side
+  Widget _buildNavItemContent({
+    required BuildContext context,
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required bool isFront,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: _containerSize,
+          height: _containerSize,
+          decoration: BoxDecoration(
+            gradient: isFront
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                      _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+            color: isFront
+                ? (_isDark ? _darkBackground : _lightBackground)
+                : null,
+            shape: BoxShape.circle,
+          ),
+          child: isFront
+              ? Icon(
+                  icon,
+                  color: theme.iconTheme.color,
+                  size: _iconSize,
+                )
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(math.pi),
+                  child: Container(
+                    width: _smallIconSize,
+                    height: _smallIconSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: 0.8,
+                        colors: [
+                          _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                          _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
+                        ],
+                        stops: const [0.0, 1.0],
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        icon,
+                        color: Colors.white,
+                        size: _iconSize * 0.8,
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+        SizedBox(height: _spacing),
+        SizedBox(
+          width: _textWidth,
+          child: isFront
+              ? Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 12),
+                    fontWeight: FontWeight.w500,
+                    color: theme.textTheme.bodyMedium?.color,
+                  ),
+                )
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(math.pi),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppResponsive.fontSize(context, 11),
+                      fontWeight: FontWeight.w600,
+                      color: _isDark ? _vibrantRed : _primaryRed,
+                    ),
+                  ),
+                ),
+        ),
+      ],
     );
   }
   
