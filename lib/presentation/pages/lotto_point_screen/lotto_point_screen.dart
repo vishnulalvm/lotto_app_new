@@ -29,21 +29,25 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   // Get cashback rewards from API data
   List<Map<String, dynamic>> _getCashbackRewards(UserPointsState state) {
     if (state is UserPointsLoaded) {
-      return state.userPoints.data.cashbackHistory.map((cashback) => {
-        'amount': cashback.amount.toInt(),
-        'status': cashback.isClaimed ? 'claimed' : 'available',
-        'date': cashback.formattedDate,
-        'cashbackId': cashback.cashbackId,
-        'type': 'cashback'
-      }).toList();
+      return state.userPoints.data.cashbackHistory
+          .map((cashback) => {
+                'amount': cashback.amount.toInt(),
+                'status': cashback.isClaimed ? 'claimed' : 'available',
+                'date': cashback.formattedDate,
+                'cashbackId': cashback.cashbackId,
+                'type': 'cashback'
+              })
+          .toList();
     } else if (state is UserPointsRefreshing) {
-      return state.userPoints.data.cashbackHistory.map((cashback) => {
-        'amount': cashback.amount.toInt(),
-        'status': cashback.isClaimed ? 'claimed' : 'available',
-        'date': cashback.formattedDate,
-        'cashbackId': cashback.cashbackId,
-        'type': 'cashback'
-      }).toList();
+      return state.userPoints.data.cashbackHistory
+          .map((cashback) => {
+                'amount': cashback.amount.toInt(),
+                'status': cashback.isClaimed ? 'claimed' : 'available',
+                'date': cashback.formattedDate,
+                'cashbackId': cashback.cashbackId,
+                'type': 'cashback'
+              })
+          .toList();
     }
     return [];
   }
@@ -80,19 +84,18 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       'points': 1000,
       'price': '₹50'
     },
-       {
+    {
       'name': 'STHREE SAKTHI LOTTERY',
       'image': 'assets/images/sthreesakthi.jpg',
       'points': 1000,
       'price': '₹50'
     },
-           {
+    {
       'name': 'SUVARNA KERALAM LOTTERY',
       'image': 'assets/images/suvarnna-keralam.jpg',
       'points': 1000,
       'price': '₹50'
     },
-    
   ];
 
   // Animation variables
@@ -122,7 +125,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
     // Fetch user points data
     _fetchUserPoints();
-    
+
     // Preload rewarded ad for cashback claims
     _adMobService.loadCashbackClaimRewardedAd();
   }
@@ -157,7 +160,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     _animationController.reset();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        HapticFeedback.lightImpact(); // Initial haptic feedback when animation starts
+        HapticFeedback
+            .lightImpact(); // Initial haptic feedback when animation starts
         _animationController.forward();
       }
     });
@@ -174,11 +178,11 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void _addHapticFeedbackDuringAnimation(int startingPoints, int totalPoints) {
     // Add haptic feedback at key points during the animation
     int pointsDifference = totalPoints - startingPoints;
-    
+
     if (pointsDifference > 0) {
       // Add haptic feedback at 25%, 50%, and 75% of animation
       List<double> hapticPoints = [0.25, 0.5, 0.75];
-      
+
       for (double point in hapticPoints) {
         Future.delayed(Duration(milliseconds: (2000 * point).round()), () {
           if (mounted && _animationController.isAnimating) {
@@ -618,7 +622,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           // Cash Rewards Section Header
           SliverToBoxAdapter(
             child: Padding(
-              padding: AppResponsive.padding(context, horizontal: 6, vertical: 8),
+              padding:
+                  AppResponsive.padding(context, horizontal: 6, vertical: 8),
               child: Row(
                 children: [
                   Icon(
@@ -638,7 +643,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
             ),
           ),
-          
+
           // Cash Rewards Grid or Empty State
           _getCashbackRewards(state).isEmpty
               ? SliverToBoxAdapter(
@@ -647,7 +652,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     margin: AppResponsive.margin(context, horizontal: 6),
                     decoration: BoxDecoration(
                       color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 16)),
                       border: Border.all(
                         color: theme.dividerColor.withValues(alpha: 0.3),
                         width: 1,
@@ -709,7 +715,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           // Section Divider
           SliverToBoxAdapter(
             child: Container(
-              margin: AppResponsive.margin(context, vertical: 10, horizontal: 6),
+              margin:
+                  AppResponsive.margin(context, vertical: 10, horizontal: 6),
               child: Column(
                 children: [
                   Divider(
@@ -734,7 +741,6 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                       ),
                     ],
                   ),
-              
                 ],
               ),
             ),
@@ -753,9 +759,10 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 // Calculate actual redeem item index considering single ad
                 int redeemIndex = index;
                 if (index > 3) {
-                  redeemIndex = index - 1; // Account for single ad at position 3
+                  redeemIndex =
+                      index - 1; // Account for single ad at position 3
                 }
-                
+
                 // Check if this position should show an ad
                 // CRITICAL FIX: AdMob Policy Compliance - Maximum 1 ad per screen
                 bool shouldShowAd = false;
@@ -763,21 +770,21 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   // Show only ONE ad at position 3 (middle of screen) if enough content
                   shouldShowAd = true;
                 }
-                
+
                 if (shouldShowAd) {
                   return _buildNativeAdCard(theme, key: ValueKey('ad_$index'));
                 }
-                
+
                 // Show redeem card if we have one
                 if (redeemIndex >= 0 && redeemIndex < redeemOptions.length) {
                   return _buildRedeemCard(
-                    redeemOptions[redeemIndex], 
-                    theme, 
+                    redeemOptions[redeemIndex],
+                    theme,
                     totalPoints,
                     key: ValueKey('redeem_$redeemIndex'),
                   );
                 }
-                
+
                 // Return empty container if no more items
                 return const SizedBox.shrink();
               },
@@ -795,7 +802,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         NativePointAdWidget(
           key: key,
           height: null, // Let grid control height via aspect ratio
-          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          borderRadius:
+              BorderRadius.circular(AppResponsive.spacing(context, 16)),
           margin: EdgeInsets.zero, // No margin as grid handles spacing
         ),
         // CRITICAL: AdMob Policy Compliance - Clear Ad Label
@@ -831,7 +839,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   }
 
   Widget _buildRedeemCard(
-      Map<String, dynamic> item, ThemeData theme, int totalPoints, {Key? key}) {
+      Map<String, dynamic> item, ThemeData theme, int totalPoints,
+      {Key? key}) {
     final canRedeem = totalPoints >= item['points'];
 
     return Container(
@@ -840,9 +849,10 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
         border: Border.all(
-          color: canRedeem 
+          color: canRedeem
               ? theme.primaryColor.withValues(alpha: 0.3)
-              : (theme.dividerTheme.color ?? theme.colorScheme.outline).withValues(alpha: 0.3),
+              : (theme.dividerTheme.color ?? theme.colorScheme.outline)
+                  .withValues(alpha: 0.3),
           width: 1.0,
         ),
         boxShadow: [
@@ -853,7 +863,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: canRedeem 
+            color: canRedeem
                 ? theme.primaryColor.withValues(alpha: 0.05)
                 : Colors.transparent,
             blurRadius: 20,
@@ -866,18 +876,20 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: canRedeem ? () => _showComingSoonDialog() : null,
-          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          borderRadius:
+              BorderRadius.circular(AppResponsive.spacing(context, 16)),
           child: Padding(
-            padding: AppResponsive.padding(context, horizontal: 12, vertical: 12),
+            padding:
+                AppResponsive.padding(context, horizontal: 12, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 // Lottery Image with modern styling
                 Container(
                   height: AppResponsive.height(context, 8),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 10)),
+                    borderRadius: BorderRadius.circular(
+                        AppResponsive.spacing(context, 10)),
                     image: DecorationImage(
                       image: AssetImage(item['image']),
                       fit: BoxFit.cover,
@@ -892,7 +904,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 10)),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 10)),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -933,7 +946,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                             'Price: ',
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 11),
-                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -952,10 +966,12 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
                       // Redeem feature information
                       Container(
-                        padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+                        padding: AppResponsive.padding(context,
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: theme.primaryColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 6)),
+                          borderRadius: BorderRadius.circular(
+                              AppResponsive.spacing(context, 6)),
                           border: Border.all(
                             color: theme.primaryColor.withValues(alpha: 0.15),
                             width: 0.5,
@@ -974,7 +990,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                                 'Use your points to get this lottery ticket',
                                 style: TextStyle(
                                   fontSize: AppResponsive.fontSize(context, 10),
-                                  color: theme.primaryColor.withValues(alpha: 0.9),
+                                  color:
+                                      theme.primaryColor.withValues(alpha: 0.9),
                                   fontWeight: FontWeight.w500,
                                   height: 1.2,
                                 ),
@@ -993,7 +1010,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                         width: double.infinity,
                         height: AppResponsive.height(context, 3.8),
                         decoration: BoxDecoration(
-                          gradient: canRedeem 
+                          gradient: canRedeem
                               ? LinearGradient(
                                   colors: [
                                     theme.primaryColor,
@@ -1004,20 +1021,27 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                                 )
                               : null,
                           color: canRedeem ? null : theme.disabledColor,
-                          borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
-                          boxShadow: canRedeem ? [
-                            BoxShadow(
-                              color: theme.primaryColor.withValues(alpha: 0.2),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ] : null,
+                          borderRadius: BorderRadius.circular(
+                              AppResponsive.spacing(context, 8)),
+                          boxShadow: canRedeem
+                              ? [
+                                  BoxShadow(
+                                    color: theme.primaryColor
+                                        .withValues(alpha: 0.2),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: canRedeem ? () => _showComingSoonDialog() : null,
-                            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                            onTap: canRedeem
+                                ? () => _showComingSoonDialog()
+                                : null,
+                            borderRadius: BorderRadius.circular(
+                                AppResponsive.spacing(context, 8)),
                             child: Center(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1026,17 +1050,23 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                                   Icon(
                                     Icons.redeem,
                                     size: AppResponsive.fontSize(context, 14),
-                                    color: canRedeem ? Colors.white : 
-                                        theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                                    color: canRedeem
+                                        ? Colors.white
+                                        : theme.textTheme.bodyMedium?.color
+                                            ?.withValues(alpha: 0.6),
                                   ),
-                                  SizedBox(width: AppResponsive.spacing(context, 6)),
+                                  SizedBox(
+                                      width: AppResponsive.spacing(context, 6)),
                                   Text(
                                     'Redeem ${item['points']} pts',
                                     style: TextStyle(
-                                      fontSize: AppResponsive.fontSize(context, 12),
+                                      fontSize:
+                                          AppResponsive.fontSize(context, 12),
                                       fontWeight: FontWeight.w700,
-                                      color: canRedeem ? Colors.white : 
-                                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                                      color: canRedeem
+                                          ? Colors.white
+                                          : theme.textTheme.bodyMedium?.color
+                                              ?.withValues(alpha: 0.6),
                                       letterSpacing: 0.1,
                                     ),
                                   ),
@@ -1057,18 +1087,18 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  Widget _buildCashRewardCard(Map<String, dynamic> reward, ThemeData theme, {Key? key}) {
+  Widget _buildCashRewardCard(Map<String, dynamic> reward, ThemeData theme,
+      {Key? key}) {
     final bool isAvailable = reward['status'] == 'available';
     final bool isClaimed = reward['status'] == 'claimed';
-    
+
     return Container(
       key: key,
-    
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isAvailable 
+          colors: isAvailable
               ? [
                   theme.primaryColor,
                   theme.primaryColor.withValues(alpha: 0.8),
@@ -1086,7 +1116,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
         boxShadow: [
           BoxShadow(
-            color: isAvailable 
+            color: isAvailable
                 ? theme.primaryColor.withValues(alpha: 0.3)
                 : Colors.black.withValues(alpha: 0.2),
             blurRadius: 12,
@@ -1136,12 +1166,13 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           ),
           // Main content
           Padding(
-            padding: AppResponsive.padding(context, horizontal: 16, vertical: 16),
+            padding:
+                AppResponsive.padding(context, horizontal: 16, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: AppResponsive.spacing(context, 8)),
-                
+
                 // Amount
                 Text(
                   '₹${reward['amount']}',
@@ -1152,7 +1183,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ),
                 ),
                 SizedBox(height: AppResponsive.spacing(context, 1)),
-                
+
                 // Description
                 Text(
                   isClaimed ? 'Cashback claimed' : 'Cashback received',
@@ -1162,7 +1193,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   ),
                 ),
                 SizedBox(height: AppResponsive.spacing(context, 6)),
-                
+
                 // Date
                 Text(
                   reward['date'],
@@ -1171,20 +1202,23 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     fontSize: AppResponsive.fontSize(context, 12),
                   ),
                 ),
-                
+
                 SizedBox(height: AppResponsive.spacing(context, 12)),
-                
+
                 // Claim button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isAvailable ? () => _showClaimDialog(reward) : null,
+                    onPressed:
+                        isAvailable ? () => _showClaimDialog(reward) : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: isClaimed ? Colors.green[600] : theme.primaryColor,
+                      foregroundColor:
+                          isClaimed ? Colors.green[600] : theme.primaryColor,
                       padding: AppResponsive.padding(context, vertical: 8),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 6)),
+                        borderRadius: BorderRadius.circular(
+                            AppResponsive.spacing(context, 6)),
                       ),
                       elevation: 0,
                       minimumSize: Size.zero,
@@ -1201,7 +1235,11 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                           SizedBox(width: AppResponsive.spacing(context, 4)),
                         ],
                         Text(
-                          isClaimed ? 'Claimed' : isAvailable ? 'Claim' : 'Unavailable',
+                          isClaimed
+                              ? 'Claimed'
+                              : isAvailable
+                                  ? 'Claim'
+                                  : 'Unavailable',
                           style: TextStyle(
                             fontSize: AppResponsive.fontSize(context, 14),
                             fontWeight: FontWeight.bold,
@@ -1222,114 +1260,115 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void _showClaimDialog(Map<String, dynamic> reward) {
     showDialog(
       context: context,
-      barrierDismissible: false, 
+      barrierDismissible: false,
       builder: (BuildContext context) {
         final theme = Theme.of(context);
 
         return PopScope(
           canPop: false,
-             onPopInvoked: (bool didPop) {
-          // If something tries to pop this route and fails (because canPop is false),
-          // this is your chance to handle it manually.
-          if (didPop) return;
-          
-          // This is where you manually close the dialog for the back button.
-          Navigator.of(context).pop(); 
-        },
+          onPopInvokedWithResult: (bool didPop, dynamic _) {
+            if (didPop) return;
+
+            // Manually handle the pop
+            Navigator.of(context).pop();
+          },
           child: AlertDialog(
             backgroundColor: theme.dialogTheme.backgroundColor,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+              borderRadius:
+                  BorderRadius.circular(AppResponsive.spacing(context, 16)),
             ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.redeem,
-                color: theme.primaryColor,
-                size: AppResponsive.fontSize(context, 24),
-              ),
-              SizedBox(width: AppResponsive.spacing(context, 8)),
-              Text(
-                'Claim Cashback',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: AppResponsive.fontSize(context, 18),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.redeem,
+                  color: theme.primaryColor,
+                  size: AppResponsive.fontSize(context, 24),
                 ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Claim your ₹${reward['amount']} cashback reward?',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                ),
-              ),
-              if (reward['cashbackId'] != null) ...[
-                SizedBox(height: AppResponsive.spacing(context, 8)),
-                Container(
-                  padding: AppResponsive.padding(context, horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
-                    border: Border.all(
-                      color: theme.dividerColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: AppResponsive.fontSize(context, 16),
-                        color: theme.primaryColor,
-                      ),
-                      SizedBox(width: AppResponsive.spacing(context, 8)),
-                      Expanded(
-                        child: Text(
-                          'ID: ${reward['cashbackId']}',
-                          style: TextStyle(
-                            fontSize: AppResponsive.fontSize(context, 12),
-                            color: theme.textTheme.bodySmall?.color,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                    ],
+                SizedBox(width: AppResponsive.spacing(context, 8)),
+                Text(
+                  'Claim Cashback',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: AppResponsive.fontSize(context, 18),
                   ),
                 ),
               ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Claim your ₹${reward['amount']} cashback reward?',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: AppResponsive.fontSize(context, 14),
+                  ),
+                ),
+                if (reward['cashbackId'] != null) ...[
+                  SizedBox(height: AppResponsive.spacing(context, 8)),
+                  Container(
+                    padding: AppResponsive.padding(context,
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(
+                          AppResponsive.spacing(context, 8)),
+                      border: Border.all(
+                        color: theme.dividerColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: AppResponsive.fontSize(context, 16),
+                          color: theme.primaryColor,
+                        ),
+                        SizedBox(width: AppResponsive.spacing(context, 8)),
+                        Expanded(
+                          child: Text(
+                            'ID: ${reward['cashbackId']}',
+                            style: TextStyle(
+                              fontSize: AppResponsive.fontSize(context, 12),
+                              color: theme.textTheme.bodySmall?.color,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 14),
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showRewardedAdForClaim(reward);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Claim',
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 14),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showRewardedAdForClaim(reward);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Claim',
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
           ),
         );
       },
@@ -1349,48 +1388,49 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               borderRadius:
                   BorderRadius.circular(AppResponsive.spacing(context, 16)),
             ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: theme.primaryColor,
-                size: AppResponsive.fontSize(context, 24),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: theme.primaryColor,
+                  size: AppResponsive.fontSize(context, 24),
+                ),
+                SizedBox(width: AppResponsive.spacing(context, 8)),
+                Text(
+                  'coming_soon'.tr(),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: AppResponsive.fontSize(context, 18),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'feature_under_development'.tr(),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: AppResponsive.fontSize(context, 14),
               ),
-              SizedBox(width: AppResponsive.spacing(context, 8)),
-              Text(
-                'coming_soon'.tr(),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: AppResponsive.fontSize(context, 18),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.primaryColor,
+                ),
+                child: Text(
+                  'ok'.tr(),
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 14),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
-          ),
-          content: Text(
-            'feature_under_development'.tr(),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: AppResponsive.fontSize(context, 14),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.primaryColor,
-              ),
-              child: Text(
-                'ok'.tr(),
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
           ),
         );
       },
     );
   }
+
   void _showRewardedAdForClaim(Map<String, dynamic> reward) {
     // Load ad if not available
     if (!_adMobService.isCashbackClaimRewardedAdLoaded) {
@@ -1411,7 +1451,9 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       onFailed: (error) {
         // Ad failed to show - show error message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not load reward ad. Please try again later.')),
+          SnackBar(
+              content:
+                  Text('Could not load reward ad. Please try again later.')),
         );
       },
     );
@@ -1427,67 +1469,67 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           child: AlertDialog(
             backgroundColor: theme.dialogTheme.backgroundColor,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+              borderRadius:
+                  BorderRadius.circular(AppResponsive.spacing(context, 16)),
             ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: AppResponsive.fontSize(context, 24),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: AppResponsive.fontSize(context, 24),
+                ),
+                SizedBox(width: AppResponsive.spacing(context, 8)),
+                Text(
+                  'Cashback Claimed!',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: AppResponsive.fontSize(context, 18),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Congratulations! You have successfully claimed ₹${reward['amount']} cashback.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: AppResponsive.fontSize(context, 14),
               ),
-              SizedBox(width: AppResponsive.spacing(context, 8)),
-              Text(
-                'Cashback Claimed!',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: AppResponsive.fontSize(context, 18),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Launch WhatsApp with claim request
+                  _launchWhatsAppClaimRequest(reward);
+                  // Refresh the points to update the UI
+                  _fetchUserPoints();
+                  // Preload next ad
+                  _adMobService.loadCashbackClaimRewardedAd();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Great!',
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 14),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
-          ),
-          content: Text(
-            'Congratulations! You have successfully claimed ₹${reward['amount']} cashback.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: AppResponsive.fontSize(context, 14),
-            ),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Launch WhatsApp with claim request
-                _launchWhatsAppClaimRequest(reward);
-                // Refresh the points to update the UI
-                _fetchUserPoints();
-                // Preload next ad
-                _adMobService.loadCashbackClaimRewardedAd();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Great!',
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
           ),
         );
       },
     );
   }
 
-
   Future<void> _launchWhatsAppClaimRequest(Map<String, dynamic> reward) async {
     try {
       // Get user ID from user service
       final phoneNumber = await _userService.getPhoneNumber();
       final userId = phoneNumber ?? 'Unknown';
-      
+
       // Format the claim message
       final message = '''🎉 *Cashback Claim Request*
 
@@ -1499,14 +1541,14 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 Please process my cashback claim. I have completed the required ad and am eligible for this reward.
 
 Thank you! 🙏''';
-      
+
       // WhatsApp number (with country code, no + sign)
       const whatsappNumber = '916238970003';
-      
+
       // Create WhatsApp URL
       final encodedMessage = Uri.encodeComponent(message);
       final whatsappUrl = 'https://wa.me/$whatsappNumber?text=$encodedMessage';
-      
+
       // Launch WhatsApp
       final Uri url = Uri.parse(whatsappUrl);
       if (await canLaunchUrl(url)) {
@@ -1516,7 +1558,8 @@ Thank you! 🙏''';
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Could not open WhatsApp. Please make sure WhatsApp is installed.'),
+              content: Text(
+                  'Could not open WhatsApp. Please make sure WhatsApp is installed.'),
               backgroundColor: Colors.red,
             ),
           );
