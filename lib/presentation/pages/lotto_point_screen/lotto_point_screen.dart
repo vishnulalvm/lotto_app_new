@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_event.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_state.dart';
@@ -22,31 +24,29 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final UserService _userService = UserService();
+  final AdMobService _adMobService = AdMobService.instance;
 
-  // Dummy data for cashback rewards
-  final List<Map<String, dynamic>> cashRewards = [
-    {
-      'amount': 1000,
-      'status': 'available', // available, claimed, expired
-      'date': '9 Oct 2020',
-      'availableIn': '12:34',
-      'type': 'cashback'
-    },
-    {
-      'amount': 1000,
-      'status': 'available',
-      'date': '9 Oct 2020',
-      'availableIn': null,
-      'type': 'cashback'
-    },
-    {
-      'amount': 500,
-      'status': 'available',
-      'date': '9 Oct 2020',
-      'availableIn': null,
-      'type': 'cashback'
-    },
-  ];
+  // Get cashback rewards from API data
+  List<Map<String, dynamic>> _getCashbackRewards(UserPointsState state) {
+    if (state is UserPointsLoaded) {
+      return state.userPoints.data.cashbackHistory.map((cashback) => {
+        'amount': cashback.amount.toInt(),
+        'status': cashback.isClaimed ? 'claimed' : 'available',
+        'date': cashback.formattedDate,
+        'cashbackId': cashback.cashbackId,
+        'type': 'cashback'
+      }).toList();
+    } else if (state is UserPointsRefreshing) {
+      return state.userPoints.data.cashbackHistory.map((cashback) => {
+        'amount': cashback.amount.toInt(),
+        'status': cashback.isClaimed ? 'claimed' : 'available',
+        'date': cashback.formattedDate,
+        'cashbackId': cashback.cashbackId,
+        'type': 'cashback'
+      }).toList();
+    }
+    return [];
+  }
 
   // Dummy data for redeem options
   final List<Map<String, dynamic>> redeemOptions = [
@@ -122,6 +122,9 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
     // Fetch user points data
     _fetchUserPoints();
+    
+    // Preload rewarded ad for cashback claims
+    _adMobService.loadCashbackClaimRewardedAd();
   }
 
   Future<void> _fetchUserPoints() async {
@@ -636,28 +639,72 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             ),
           ),
           
-          // Cash Rewards Grid
-          SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.95,
-              crossAxisSpacing: AppResponsive.spacing(context, 8),
-              mainAxisSpacing: AppResponsive.spacing(context, 8),
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index < cashRewards.length) {
-                  return _buildCashRewardCard(
-                    cashRewards[index],
-                    theme,
-                    key: ValueKey('cash_reward_$index'),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-              childCount: cashRewards.length,
-            ),
-          ),
+          // Cash Rewards Grid or Empty State
+          _getCashbackRewards(state).isEmpty
+              ? SliverToBoxAdapter(
+                  child: Container(
+                    height: AppResponsive.height(context, 15),
+                    margin: AppResponsive.margin(context, horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+                      border: Border.all(
+                        color: theme.dividerColor.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.redeem,
+                          size: AppResponsive.fontSize(context, 40),
+                          color: theme.disabledColor,
+                        ),
+                        SizedBox(height: AppResponsive.spacing(context, 8)),
+                        Text(
+                          'No cashback rewards available',
+                          style: TextStyle(
+                            fontSize: AppResponsive.fontSize(context, 16),
+                            color: theme.disabledColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: AppResponsive.spacing(context, 4)),
+                        Text(
+                          'Complete lottery checks to earn cashback',
+                          style: TextStyle(
+                            fontSize: AppResponsive.fontSize(context, 12),
+                            color: theme.disabledColor.withValues(alpha: 0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.95,
+                    crossAxisSpacing: AppResponsive.spacing(context, 8),
+                    mainAxisSpacing: AppResponsive.spacing(context, 8),
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final cashRewards = _getCashbackRewards(state);
+                      if (index < cashRewards.length) {
+                        return _buildCashRewardCard(
+                          cashRewards[index],
+                          theme,
+                          key: ValueKey('cash_reward_$index'),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                    childCount: _getCashbackRewards(state).length,
+                  ),
+                ),
 
           // Section Divider
           SliverToBoxAdapter(
@@ -1012,6 +1059,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
   Widget _buildCashRewardCard(Map<String, dynamic> reward, ThemeData theme, {Key? key}) {
     final bool isAvailable = reward['status'] == 'available';
+    final bool isClaimed = reward['status'] == 'claimed';
     
     return Container(
       key: key,
@@ -1025,10 +1073,15 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   theme.primaryColor,
                   theme.primaryColor.withValues(alpha: 0.8),
                 ]
-              : [
-                  Colors.grey[600]!,
-                  Colors.grey[700]!,
-                ],
+              : isClaimed
+                  ? [
+                      Colors.green[600]!,
+                      Colors.green[700]!,
+                    ]
+                  : [
+                      Colors.grey[600]!,
+                      Colors.grey[700]!,
+                    ],
         ),
         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
         boxShadow: [
@@ -1102,7 +1155,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                 
                 // Description
                 Text(
-                  'Cashback received',
+                  isClaimed ? 'Cashback claimed' : 'Cashback received',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: AppResponsive.fontSize(context, 12),
@@ -1128,7 +1181,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     onPressed: isAvailable ? () => _showClaimDialog(reward) : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: theme.primaryColor,
+                      foregroundColor: isClaimed ? Colors.green[600] : theme.primaryColor,
                       padding: AppResponsive.padding(context, vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 6)),
@@ -1136,12 +1189,25 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                       elevation: 0,
                       minimumSize: Size.zero,
                     ),
-                    child: Text(
-                      'Claim',
-                      style: TextStyle(
-                        fontSize: AppResponsive.fontSize(context, 14),
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (isClaimed) ...[
+                          Icon(
+                            Icons.check_circle,
+                            size: AppResponsive.fontSize(context, 16),
+                            color: Colors.green[600],
+                          ),
+                          SizedBox(width: AppResponsive.spacing(context, 4)),
+                        ],
+                        Text(
+                          isClaimed ? 'Claimed' : isAvailable ? 'Claim' : 'Unavailable',
+                          style: TextStyle(
+                            fontSize: AppResponsive.fontSize(context, 14),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1179,11 +1245,50 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
             ],
           ),
-          content: Text(
-            'Claim your ₹${reward['amount']} cashback reward?',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: AppResponsive.fontSize(context, 14),
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Claim your ₹${reward['amount']} cashback reward?',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+              if (reward['cashbackId'] != null) ...[
+                SizedBox(height: AppResponsive.spacing(context, 8)),
+                Container(
+                  padding: AppResponsive.padding(context, horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+                    border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: AppResponsive.fontSize(context, 16),
+                        color: theme.primaryColor,
+                      ),
+                      SizedBox(width: AppResponsive.spacing(context, 8)),
+                      Expanded(
+                        child: Text(
+                          'ID: ${reward['cashbackId']}',
+                          style: TextStyle(
+                            fontSize: AppResponsive.fontSize(context, 12),
+                            color: theme.textTheme.bodySmall?.color,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
           actions: [
             TextButton(
@@ -1198,7 +1303,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _showComingSoonDialog();
+                _showRewardedAdForClaim(reward);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primaryColor,
@@ -1269,5 +1374,145 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
         );
       },
     );
+  }
+  void _showRewardedAdForClaim(Map<String, dynamic> reward) {
+    // Load ad if not available
+    if (!_adMobService.isCashbackClaimRewardedAdLoaded) {
+      _adMobService.loadCashbackClaimRewardedAd();
+    }
+
+    // Show the rewarded ad
+    _adMobService.showRewardedAd(
+      'cashback_claim_rewarded',
+      onRewardEarned: () {
+        // User completed the ad - show confirmation dialog
+        _showCashbackClaimedDialog(reward);
+      },
+      onDismissed: () {
+        // User dismissed the ad without completing it
+        // Do nothing - they didn't earn the reward
+      },
+      onFailed: (error) {
+        // Ad failed to show - show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load reward ad. Please try again later.')),
+        );
+      },
+    );
+  }
+
+  void _showCashbackClaimedDialog(Map<String, dynamic> reward) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: theme.dialogTheme.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: AppResponsive.fontSize(context, 24),
+              ),
+              SizedBox(width: AppResponsive.spacing(context, 8)),
+              Text(
+                'Cashback Claimed!',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 18),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Congratulations! You have successfully claimed ₹${reward['amount']} cashback.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: AppResponsive.fontSize(context, 14),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Launch WhatsApp with claim request
+                _launchWhatsAppClaimRequest(reward);
+                // Refresh the points to update the UI
+                _fetchUserPoints();
+                // Preload next ad
+                _adMobService.loadCashbackClaimRewardedAd();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Great!',
+                style: TextStyle(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  Future<void> _launchWhatsAppClaimRequest(Map<String, dynamic> reward) async {
+    try {
+      // Get user ID from user service
+      final phoneNumber = await _userService.getPhoneNumber();
+      final userId = phoneNumber ?? 'Unknown';
+      
+      // Format the claim message
+      final message = '''🎉 *Cashback Claim Request*
+
+👤 *User ID:* $userId
+💰 *Amount:* ₹${reward['amount']}
+📋 *Cashback ID:* ${reward['cashbackId'] ?? 'N/A'}
+📅 *Date:* ${reward['date']}
+
+Please process my cashback claim. I have completed the required ad and am eligible for this reward.
+
+Thank you! 🙏''';
+      
+      // WhatsApp number (with country code, no + sign)
+      const whatsappNumber = '916238970003';
+      
+      // Create WhatsApp URL
+      final encodedMessage = Uri.encodeComponent(message);
+      final whatsappUrl = 'https://wa.me/$whatsappNumber?text=$encodedMessage';
+      
+      // Launch WhatsApp
+      final Uri url = Uri.parse(whatsappUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback - show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open WhatsApp. Please make sure WhatsApp is installed.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Handle any errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening WhatsApp: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

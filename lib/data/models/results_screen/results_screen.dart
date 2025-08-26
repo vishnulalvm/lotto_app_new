@@ -32,6 +32,7 @@ class LotteryResultModel {
   final List<PrizeModel> prizes;
   final bool isPublished;
   final bool isBumper;
+  final bool reOrder;
   final String createdAt;
   final String updatedAt;
 
@@ -45,6 +46,7 @@ class LotteryResultModel {
     required this.prizes,
     required this.isPublished,
     required this.isBumper,
+    this.reOrder = true,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -62,6 +64,7 @@ class LotteryResultModel {
           .toList() ?? [],
       isPublished: json['is_published'] ?? false,
       isBumper: json['is_bumper'] ?? false,
+      reOrder: json['re_order'] ?? true,
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
@@ -78,6 +81,7 @@ class LotteryResultModel {
       'prizes': prizes.map((prize) => prize.toJson()).toList(),
       'is_published': isPublished,
       'is_bumper': isBumper,
+      're_order': reOrder,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -134,6 +138,11 @@ class LotteryResultModel {
     }
     
     return orderedPrizes;
+  }
+  
+  // Get prize with ticket numbers ordered based on reOrder field
+  List<String> getPrizeTicketNumbers(PrizeModel prize) {
+    return prize.getAllTicketNumbers(shouldReOrder: reOrder);
   }
 }
 
@@ -222,7 +231,7 @@ class PrizeModel {
   }
 
   // Get all ticket numbers as a list (works for both formats)
-  List<String> get allTicketNumbers {
+  List<String> getAllTicketNumbers({bool shouldReOrder = true}) {
     List<String> allNumbers = [];
     
     // Add tickets from tickets array
@@ -240,11 +249,16 @@ class PrizeModel {
       );
     }
     
-    // Sort ticket numbers in ascending order
-    allNumbers.sort();
+    // Sort ticket numbers only if shouldReOrder is true
+    if (shouldReOrder) {
+      allNumbers.sort();
+    }
     
     return allNumbers;
   }
+  
+  // Backward compatibility getter
+  List<String> get allTicketNumbers => getAllTicketNumbers();
 
   // Get ticket numbers with locations (only for tickets array)
   List<TicketModel> get ticketsWithLocation => tickets;
@@ -256,8 +270,8 @@ class PrizeModel {
   bool get isSingleTicket => allTicketNumbers.length == 1;
 
   // For backward compatibility - returns the old format
-  @Deprecated('Use allTicketNumbers instead')
-  List<String> get ticketNumbersList => allTicketNumbers;
+  @Deprecated('Use getAllTicketNumbers instead')
+  List<String> get ticketNumbersList => getAllTicketNumbers();
 }
 
 class TicketModel {

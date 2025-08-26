@@ -12,6 +12,7 @@ import 'package:lotto_app/presentation/blocs/results_screen/results_details_scre
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_state.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/dynamic_prize_sections_widget.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_bar.dart';
+import 'package:lotto_app/core/widgets/in_app_review_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 // import 'package:lotto_app/data/services/admob_service.dart';
@@ -1148,6 +1149,11 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 ticketGlobalKeys: _ticketGlobalKeys,
                 isLiveHours: _isLiveHours,
                 newlyUpdatedTickets: _newlyUpdatedTickets,
+              ),
+              // In-app review widget - triggers after user views results
+              const InAppReviewWidget(
+                viewThreshold: 3,
+                daysAfterInstall: 7,
               ),
               const SizedBox(height: 6),
               _buildContactSection(theme),
