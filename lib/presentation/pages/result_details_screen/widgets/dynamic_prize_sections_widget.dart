@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 import 'package:shimmer/shimmer.dart';
 
-class DynamicPrizeSectionsWidget extends StatefulWidget {
+class DynamicPrizeSectionsWidget extends StatelessWidget {
   final LotteryResultModel result;
   final List<Map<String, dynamic>> allLotteryNumbers;
-  final String highlightedTicketNumber; // Changed from int highlightedIndex
+  final ValueNotifier<String> highlightedTicketNotifier; // Changed to ValueNotifier
   final Map<String, GlobalKey> ticketGlobalKeys; // Add GlobalKeys for auto-scroll
   final bool isLiveHours; // Add isLiveHours parameter
   final Set<String> newlyUpdatedTickets; // Add set of newly updated tickets
@@ -15,64 +15,18 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
     super.key,
     required this.result,
     required this.allLotteryNumbers,
-    required this.highlightedTicketNumber, // Updated parameter
+    required this.highlightedTicketNotifier, // Updated parameter
     required this.ticketGlobalKeys, // Add GlobalKeys parameter
     this.isLiveHours = false, // Default to false
     this.newlyUpdatedTickets = const {}, // Default to empty set
   });
 
   @override
-  State<DynamicPrizeSectionsWidget> createState() =>
-      _DynamicPrizeSectionsWidgetState();
-}
-
-class _DynamicPrizeSectionsWidgetState
-    extends State<DynamicPrizeSectionsWidget> {
-  
-  Set<String> _shimmeringTickets = {};
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize shimmering tickets with newly updated ones
-    _shimmeringTickets = Set.from(widget.newlyUpdatedTickets);
-    
-    // If there are new tickets and we're in live hours, start shimmer effect
-    if (widget.isLiveHours && _shimmeringTickets.isNotEmpty) {
-      _startShimmerEffect();
-    }
-  }
-
-  @override
-  void didUpdateWidget(DynamicPrizeSectionsWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    
-    // Check if new tickets have been added
-    if (widget.isLiveHours && widget.newlyUpdatedTickets != oldWidget.newlyUpdatedTickets) {
-      _shimmeringTickets = Set.from(widget.newlyUpdatedTickets);
-      if (_shimmeringTickets.isNotEmpty) {
-        _startShimmerEffect();
-      }
-    }
-  }
-
-  void _startShimmerEffect() {
-    // Show shimmer for 2 seconds, then reveal the actual values
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        setState(() {
-          _shimmeringTickets.clear();
-        });
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Column(
-      children: _buildDynamicPrizeSections(theme, widget.result),
+      children: _buildDynamicPrizeSections(theme, result),
     );
   }
 
@@ -155,17 +109,17 @@ class _DynamicPrizeSectionsWidgetState
                 const SizedBox(height: 10),
                 ...prize.ticketsWithLocation.map((ticket) {
                   final keyId = '${prize.prizeTypeFormatted}_${ticket.ticketNumber}';
-                  final globalKey = widget.ticketGlobalKeys[keyId];
+                  final globalKey = ticketGlobalKeys[keyId];
                   return _HighlightedTicketWidget(
                     key: globalKey ?? ValueKey('${prize.prizeType}_${ticket.ticketNumber}'),
                     ticketNumber: ticket.ticketNumber,
                     category: prize.prizeTypeFormatted,
                     location: ticket.location,
-                    allLotteryNumbers: widget.allLotteryNumbers,
-                    highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
+                    allLotteryNumbers: allLotteryNumbers,
+                    highlightedTicketNotifier: highlightedTicketNotifier, // Updated to use ValueNotifier
                     theme: theme,
                     variant: TicketVariant.withLocation,
-                    isShimmering: _shimmeringTickets.contains(ticket.ticketNumber),
+                    isNewlyUpdated: newlyUpdatedTickets.contains(ticket.ticketNumber),
                   );
                 }),
               ],
@@ -199,16 +153,16 @@ class _DynamicPrizeSectionsWidgetState
                 else
                   () {
                     final keyId = '${prize.prizeTypeFormatted}_${ticketNumbers.first}';
-                    final globalKey = widget.ticketGlobalKeys[keyId];
+                    final globalKey = ticketGlobalKeys[keyId];
                       return _HighlightedTicketWidget(
                       key: globalKey ?? ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
                       ticketNumber: ticketNumbers.first,
                       category: prize.prizeTypeFormatted,
-                      allLotteryNumbers: widget.allLotteryNumbers,
-                      highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
+                      allLotteryNumbers: allLotteryNumbers,
+                      highlightedTicketNotifier: highlightedTicketNotifier, // Updated to use ValueNotifier
                       theme: theme,
                       variant: TicketVariant.singleLarge,
-                      isShimmering: _shimmeringTickets.contains(ticketNumbers.first),
+                      isNewlyUpdated: newlyUpdatedTickets.contains(ticketNumbers.first),
                     );
                   }(),
               ],
@@ -231,18 +185,18 @@ class _DynamicPrizeSectionsWidgetState
           runSpacing: 10.0,
           children: ticketNumbers.map((ticketNumber) {
             final keyId = '${category}_$ticketNumber';
-            final globalKey = widget.ticketGlobalKeys[keyId];
+            final globalKey = ticketGlobalKeys[keyId];
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
                 key: globalKey ?? ValueKey('${category}_$ticketNumber'),
                 ticketNumber: ticketNumber,
                 category: category,
-                allLotteryNumbers: widget.allLotteryNumbers,
-                highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
+                allLotteryNumbers: allLotteryNumbers,
+                highlightedTicketNotifier: highlightedTicketNotifier, // Updated to use ValueNotifier
                 theme: theme,
                 variant: TicketVariant.twoColumn,
-                isShimmering: _shimmeringTickets.contains(ticketNumber),
+                isNewlyUpdated: newlyUpdatedTickets.contains(ticketNumber),
               ),
             );
           }).toList(),
@@ -295,18 +249,18 @@ class _DynamicPrizeSectionsWidgetState
           runSpacing: 12.0,
           children: numbers.map((number) {
             final keyId = '${category}_$number';
-            final globalKey = widget.ticketGlobalKeys[keyId];
+            final globalKey = ticketGlobalKeys[keyId];
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
                 key: globalKey ?? ValueKey('${category}_$number'),
                 ticketNumber: number,
                 category: category,
-                allLotteryNumbers: widget.allLotteryNumbers,
-                highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
+                allLotteryNumbers: allLotteryNumbers,
+                highlightedTicketNotifier: highlightedTicketNotifier, // Updated to use ValueNotifier
                 theme: theme,
                 variant: TicketVariant.consolationGrid,
-                isShimmering: _shimmeringTickets.contains(number),
+                isNewlyUpdated: newlyUpdatedTickets.contains(number),
               ),
             );
           }).toList(),
@@ -327,18 +281,18 @@ class _DynamicPrizeSectionsWidgetState
           runSpacing: 8.0,
           children: numbers.map((number) {
             final keyId = '${category}_$number';
-            final globalKey = widget.ticketGlobalKeys[keyId];
+            final globalKey = ticketGlobalKeys[keyId];
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
                 key: globalKey ?? ValueKey('${category}_$number'),
                 ticketNumber: number,
                 category: category,
-                allLotteryNumbers: widget.allLotteryNumbers,
-                highlightedTicketNumber: widget.highlightedTicketNumber, // Updated
+                allLotteryNumbers: allLotteryNumbers,
+                highlightedTicketNotifier: highlightedTicketNotifier, // Updated to use ValueNotifier
                 theme: theme,
                 variant: TicketVariant.standardGrid,
-                isShimmering: _shimmeringTickets.contains(number),
+                isNewlyUpdated: newlyUpdatedTickets.contains(number),
               ),
             );
           }).toList(),
@@ -397,10 +351,10 @@ class _HighlightedTicketWidget extends StatefulWidget {
   final String category;
   final String? location;
   final List<Map<String, dynamic>> allLotteryNumbers;
-  final String highlightedTicketNumber; // Changed from int highlightedIndex
+  final ValueNotifier<String> highlightedTicketNotifier; // Changed to ValueNotifier
   final ThemeData theme;
   final TicketVariant variant;
-  final bool isShimmering; // Add shimmer state
+  final bool isNewlyUpdated; // Renamed from isShimmering for clarity
 
   const _HighlightedTicketWidget({
     super.key,
@@ -408,10 +362,10 @@ class _HighlightedTicketWidget extends StatefulWidget {
     required this.category,
     this.location,
     required this.allLotteryNumbers,
-    required this.highlightedTicketNumber, // Updated parameter
+    required this.highlightedTicketNotifier, // Updated parameter
     required this.theme,
     required this.variant,
-    this.isShimmering = false, // Default to false
+    this.isNewlyUpdated = false, // Default to false
   });
 
   @override
@@ -423,8 +377,7 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-
-  bool _isHighlighted = false;
+  bool _isShimmering = false;
 
   @override
   void initState() {
@@ -443,44 +396,18 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
       curve: Curves.easeInOut,
     ));
 
-    _updateHighlightStatus();
-  }
-
-  @override
-  void didUpdateWidget(_HighlightedTicketWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Update highlight status when highlightedTicketNumber changes
-    if (widget.highlightedTicketNumber != oldWidget.highlightedTicketNumber) {
-      _updateHighlightStatus();
+    // Handle shimmer effect locally if this ticket is newly updated
+    if (widget.isNewlyUpdated) {
+      _isShimmering = true;
+      // Stop shimmering this specific ticket after a delay
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          setState(() {
+            _isShimmering = false;
+          });
+        }
+      });
     }
-  }
-
-  void _updateHighlightStatus() {
-    final wasHighlighted = _isHighlighted;
-    _isHighlighted = _checkIfHighlighted();
-
-    if (_isHighlighted != wasHighlighted) {
-      if (_isHighlighted) {
-        // Provide haptic feedback when a search result is found and highlighted
-        HapticFeedback.selectionClick();
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    }
-  }
-
-  bool _checkIfHighlighted() {
-    // Return false if no search query
-    if (widget.highlightedTicketNumber.isEmpty) {
-      return false;
-    }
-
-    // Check if this ticket number matches the search query
-    // Support both exact match and partial match for better UX
-    return widget.ticketNumber.toLowerCase().contains(
-        widget.highlightedTicketNumber.toLowerCase());
   }
 
   @override
@@ -489,75 +416,102 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
     super.dispose();
   }
 
+  bool _checkIfHighlighted(String highlightedTicketNumber) {
+    // Return false if no search query
+    if (highlightedTicketNumber.isEmpty) {
+      return false;
+    }
+
+    // Check if this ticket number matches the search query
+    // Support both exact match and partial match for better UX
+    return widget.ticketNumber.toLowerCase().contains(
+        highlightedTicketNumber.toLowerCase());
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        final content = Transform.scale(
-          scale: _scaleAnimation.value,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-            padding: _getPadding(),
-            decoration: _getDecoration(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeInOut,
-                  style: _getTextStyle(),
-                  child: Text(
-                    widget.ticketNumber,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                if (widget.location != null && widget.location!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: widget.theme.textTheme.bodySmall?.color,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          widget.location!,
-                          style: widget.theme.textTheme.bodyLarge?.copyWith(
-                            color: widget.theme.textTheme.bodySmall?.color,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-
-        // Wrap with shimmer effect if isShimmering is true
-        if (widget.isShimmering) {
-          return Shimmer.fromColors(
-            baseColor: widget.theme.brightness == Brightness.dark
-                ? Colors.grey[800]!
-                : Colors.grey[300]!,
-            highlightColor: widget.theme.brightness == Brightness.dark
-                ? Colors.grey[600]!
-                : Colors.grey[100]!,
-            period: const Duration(milliseconds: 1000),
-            child: content,
-          );
+    return ValueListenableBuilder<String>(
+      valueListenable: widget.highlightedTicketNotifier,
+      builder: (context, highlightedNumber, child) {
+        final isHighlighted = _checkIfHighlighted(highlightedNumber);
+        
+        // Update animation based on highlight status
+        if (isHighlighted && _animationController.value == 0) {
+          HapticFeedback.selectionClick();
+          _animationController.forward();
+        } else if (!isHighlighted && _animationController.value == 1) {
+          _animationController.reverse();
         }
 
-        return content;
+        return AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            final content = Transform.scale(
+              scale: _scaleAnimation.value,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+                padding: _getPadding(),
+                decoration: _getDecoration(isHighlighted: isHighlighted),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      style: _getTextStyle(isHighlighted: isHighlighted),
+                      child: Text(
+                        widget.ticketNumber,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    if (widget.location != null && widget.location!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: widget.theme.textTheme.bodySmall?.color,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              widget.location!,
+                              style: widget.theme.textTheme.bodyLarge?.copyWith(
+                                color: widget.theme.textTheme.bodySmall?.color,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+
+            // Wrap with shimmer effect if this ticket is newly updated
+            if (_isShimmering) {
+              return Shimmer.fromColors(
+                baseColor: widget.theme.brightness == Brightness.dark
+                    ? Colors.grey[800]!
+                    : Colors.grey[300]!,
+                highlightColor: widget.theme.brightness == Brightness.dark
+                    ? Colors.grey[600]!
+                    : Colors.grey[100]!,
+                period: const Duration(milliseconds: 1000),
+                child: content,
+              );
+            }
+
+            return content;
+          },
+        );
       },
     );
   }
@@ -577,27 +531,27 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
     }
   }
 
-  BoxDecoration _getDecoration() {
-    final baseColor = _isHighlighted
+  BoxDecoration _getDecoration({required bool isHighlighted}) {
+    final baseColor = isHighlighted
         ? (widget.theme.brightness == Brightness.dark
             ? const Color(0xFF2D1B1B)
             : const Color(0xFFFFEBEE))
         : widget.theme.scaffoldBackgroundColor;
 
-    final borderColor = _isHighlighted
+    final borderColor = isHighlighted
         ? widget.theme.primaryColor
         : (widget.theme.dividerTheme.color ??
             (widget.theme.brightness == Brightness.dark
                 ? const Color(0xFF424242)
                 : Colors.grey[400]!));
 
-    final borderWidth = _isHighlighted ? 2.0 : 1.0;
+    final borderWidth = isHighlighted ? 2.0 : 1.0;
     final borderRadius = widget.variant == TicketVariant.singleLarge
         ? 12.0
         : (widget.variant == TicketVariant.standardGrid ? 6.0 : 8.0);
 
     List<BoxShadow>? shadows;
-    if (_isHighlighted) {
+    if (isHighlighted) {
       final shadowBlur =
           widget.variant == TicketVariant.singleLarge ? 12.0 : 8.0;
       final shadowOffset = widget.variant == TicketVariant.singleLarge
@@ -634,7 +588,7 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
     );
   }
 
-  TextStyle _getTextStyle() {
+  TextStyle _getTextStyle({required bool isHighlighted}) {
     final baseStyle = switch (widget.variant) {
       TicketVariant.withLocation => widget.theme.textTheme.titleLarge!,
       TicketVariant.singleLarge => widget.theme.textTheme.displaySmall!,
@@ -661,8 +615,8 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
 
     return baseStyle.copyWith(
       fontWeight: FontWeight.bold,
-      fontSize: _isHighlighted ? highlightedFontSize : baseFontSize,
-      color: _isHighlighted ? widget.theme.primaryColor : baseStyle.color,
+      fontSize: isHighlighted ? highlightedFontSize : baseFontSize,
+      color: isHighlighted ? widget.theme.primaryColor : baseStyle.color,
       letterSpacing: widget.variant == TicketVariant.singleLarge ? 1.5 : 0.5,
     );
   }

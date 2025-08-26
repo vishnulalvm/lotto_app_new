@@ -1222,13 +1222,25 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void _showClaimDialog(Map<String, dynamic> reward) {
     showDialog(
       context: context,
+      barrierDismissible: false, 
       builder: (BuildContext context) {
         final theme = Theme.of(context);
-        return AlertDialog(
-          backgroundColor: theme.dialogTheme.backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
-          ),
+
+        return PopScope(
+          canPop: false,
+             onPopInvoked: (bool didPop) {
+          // If something tries to pop this route and fails (because canPop is false),
+          // this is your chance to handle it manually.
+          if (didPop) return;
+          
+          // This is where you manually close the dialog for the back button.
+          Navigator.of(context).pop(); 
+        },
+          child: AlertDialog(
+            backgroundColor: theme.dialogTheme.backgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+            ),
           title: Row(
             children: [
               Icon(
@@ -1318,6 +1330,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
             ),
           ],
+          ),
         );
       },
     );
@@ -1328,12 +1341,14 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       context: context,
       builder: (BuildContext context) {
         final theme = Theme.of(context);
-        return AlertDialog(
-          backgroundColor: theme.dialogTheme.backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppResponsive.spacing(context, 16)),
-          ),
+        return PopScope(
+          canPop: true,
+          child: AlertDialog(
+            backgroundColor: theme.dialogTheme.backgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(AppResponsive.spacing(context, 16)),
+            ),
           title: Row(
             children: [
               Icon(
@@ -1371,6 +1386,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
             ),
           ],
+          ),
         );
       },
     );
@@ -1406,11 +1422,13 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: theme.dialogTheme.backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
-          ),
+        return PopScope(
+          canPop: true,
+          child: AlertDialog(
+            backgroundColor: theme.dialogTheme.backgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+            ),
           title: Row(
             children: [
               Icon(
@@ -1457,6 +1475,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
             ),
           ],
+          ),
         );
       },
     );

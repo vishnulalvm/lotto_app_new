@@ -7,7 +7,7 @@ class FloatingSearchBar extends StatefulWidget {
   final Function(String)? onChanged;
   final Function(String)? onSubmitted;
   final Function(bool)? onResultsFound; // New callback for haptic feedback
-  final double bottomPadding;
+
   final bool clearOnClose; // Customizable state management on collapse
   final Duration debounceDuration; // Debounce duration for onChanged
 
@@ -17,7 +17,6 @@ class FloatingSearchBar extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.onResultsFound,
-    this.bottomPadding = 20.0,
     this.clearOnClose = true,
     this.debounceDuration = const Duration(milliseconds: 300),
   });
@@ -59,42 +58,33 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
         ? backgroundColor.withValues(alpha: 0.4)
         : backgroundColor.withValues(alpha: 0.3);
 
-    final maxExpandedWidth = screenWidth - 32.0; // 16px padding on each side
+    // When expanded, take full width with 12px padding on both ends
     final expandedWidth = _isExpanded
-        ? (maxExpandedWidth > 400.0 ? 400.0 : maxExpandedWidth)
+        ? screenWidth - 24  // 12px padding on each side
         : 56.0;
 
     // Smooth bi-directional animation
     const animationDuration = Duration(milliseconds: 300);
 
-    return Positioned(
-      left: 16,
-      right: 16,
-      
-      bottom: widget.bottomPadding,
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: AnimatedContainer(
-          duration: animationDuration,
-          curve: Curves.easeInOut,
-          width: expandedWidth,
-          height: 56,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: shadowColor,
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return AnimatedContainer(
+      duration: animationDuration,
+      curve: Curves.easeInOut,
+      width: expandedWidth,
+      height: 56,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: _isExpanded
-              ? _buildExpandedSearchBar(context, onBackgroundColor)
-              : _buildCollapsedSearchButton(context, onBackgroundColor),
-        ),
+        ],
       ),
+      child: _isExpanded
+          ? _buildExpandedSearchBar(context, onBackgroundColor)
+          : _buildCollapsedSearchButton(context, onBackgroundColor),
     );
   }
 
@@ -121,7 +111,7 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
               decoration: InputDecoration(
                 hintText: widget.hintText,
                 hintStyle: TextStyle(
-                  color: textColor.withOpacity(0.7),
+                  color: textColor.withValues(alpha: 0.7),
                   fontSize: 16,
                 ),
                 border: InputBorder.none,
@@ -209,13 +199,13 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
   void _collapseSearchBar() {
     // Provide light haptic feedback when search bar collapses
     HapticFeedback.lightImpact();
-    
+
     // Cancel any pending debounced calls
     _debounceTimer?.cancel();
-    
+
     // Unfocus the text field to dismiss keyboard
     _focusNode.unfocus();
-    
+
     setState(() {
       _isExpanded = false;
       if (widget.clearOnClose) {

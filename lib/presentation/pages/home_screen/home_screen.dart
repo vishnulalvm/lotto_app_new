@@ -649,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen>
             onTap: () {
               // Add haptic feedback for Points button
               HapticFeedback.lightImpact();
-              context.go('/lottoPoints');
+              context.push('/lottoPoints');
             },
             child: Container(
               height: AppResponsive.fontSize(context, 26),

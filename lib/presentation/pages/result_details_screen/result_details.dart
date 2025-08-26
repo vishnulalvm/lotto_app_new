@@ -72,9 +72,15 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   Set<String> _newlyUpdatedTickets = {};
   LotteryResultModel? _previousResult;
 
+  // ValueNotifier for highlighted ticket to avoid rebuilding entire widget tree
+  late final ValueNotifier<String> _highlightedTicketNotifier;
+
   @override
   void initState() {
     super.initState();
+
+    // Initialize ValueNotifier for highlighting
+    _highlightedTicketNotifier = ValueNotifier<String>('');
 
     // Initialize blink animation controller for live indicator
     _blinkAnimationController = AnimationController(
@@ -137,6 +143,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   void dispose() {
     _scrollController.dispose();
     _blinkAnimationController.dispose();
+    _highlightedTicketNotifier.dispose();
     super.dispose();
   }
 
@@ -259,45 +266,54 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
 
   // Updated method to handle search functionality with minimum length and smart fallback
   void _performSearch(String query) {
-    setState(() {
-      _searchQuery = query.trim();
-      _lastSearchQuery = _searchQuery;
+    _searchQuery = query.trim();
+    _lastSearchQuery = _searchQuery;
+    
+    // Update the ValueNotifier - this will only rebuild the individual ticket widgets that need highlighting
+    _highlightedTicketNotifier.value = _searchQuery.length >= _minSearchLength ? _searchQuery : '';
  
-      // Only perform search if query is empty or meets minimum length
-      if (_searchQuery.isEmpty) {
+    // Only perform search if query is empty or meets minimum length
+    if (_searchQuery.isEmpty) {
+      setState(() {
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
-        _clearTicketKeys();
         _hasShownNoResultsToast = false;
-      } else if (_searchQuery.length >= _minSearchLength) {
-        _filteredLotteryNumbers = _performSmartSearch(_searchQuery);
+      });
+      _clearTicketKeys();
+    } else if (_searchQuery.length >= _minSearchLength) {
+      final searchResults = _performSmartSearch(_searchQuery);
+      
+      setState(() {
+        _filteredLotteryNumbers = searchResults;
+      });
 
-        // Provide haptic feedback when search results are found
-        if (_filteredLotteryNumbers.isNotEmpty) {
-          HapticFeedback.lightImpact();
-        }
+      // Provide haptic feedback when search results are found
+      if (_filteredLotteryNumbers.isNotEmpty) {
+        HapticFeedback.lightImpact();
+      }
 
-        // Generate GlobalKeys for matched tickets
-        _generateTicketKeys();
-        _checkAndShowNoResultsToast();
+      // Generate GlobalKeys for matched tickets
+      _generateTicketKeys();
+      _checkAndShowNoResultsToast();
 
-        // Schedule auto-scroll after widget rebuild completes
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          // Add additional delay to ensure widgets are fully built with new keys
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (mounted &&
-                _searchQuery == _lastSearchQuery &&
-                _filteredLotteryNumbers.isNotEmpty) {
-              _triggerAutoScroll();
-            }
-          });
+      // Schedule auto-scroll after widget rebuild completes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Add additional delay to ensure widgets are fully built with new keys
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted &&
+              _searchQuery == _lastSearchQuery &&
+              _filteredLotteryNumbers.isNotEmpty) {
+            _triggerAutoScroll();
+          }
         });
-      } else {
+      });
+    } else {
+      setState(() {
         // If query is less than minimum length, show all numbers
         _filteredLotteryNumbers = List.from(_allLotteryNumbers);
-        _clearTicketKeys();
         _hasShownNoResultsToast = false; // Reset flag
-      }
-    });
+      });
+      _clearTicketKeys();
+    }
   }
 
   // Smart search with fallback logic
@@ -917,6 +933,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(theme, context),
+      floatingActionButton: _buildFloatingActionButton(),
       body: Stack(
         children: [
           BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
@@ -956,82 +973,6 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
               } else {
                 return _buildInitialWidget(theme);
               }
-            },
-          ),
-          // Add FloatingSearchBar or refresh button based on live hours
-          BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
-            builder: (context, state) {
-              if (state is LotteryResultDetailsLoaded &&
-                  _allLotteryNumbers.isNotEmpty) {
-                if (widget.isNew && _isLiveHours) {
-                  // Show refresh button only for new lottery during live hours
-                  return Positioned(
-                    bottom: 20,
-                    left: 16,
-                    right: 16,
-                    child: FloatingActionButton.extended(
-                      onPressed: _isRefreshing
-                          ? null
-                          : () {
-                              if (widget.uniqueId != null) {
-                                setState(() {
-                                  _isRefreshing = true;
-                                });
-                                context.read<LotteryResultDetailsBloc>().add(
-                                      RefreshLotteryResultDetailsEvent(
-                                          widget.uniqueId!),
-                                    );
-                              }
-                            },
-                      backgroundColor: _isRefreshing
-                          ? theme.colorScheme.surface
-                          : theme.primaryColor,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      elevation: 4,
-                      icon: _isRefreshing
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            )
-                          : const Icon(Icons.refresh,
-                              size: 24, color: Colors.white),
-                      label: Text(
-                        _isRefreshing ? 'Refreshing...' : 'Refresh',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: _isRefreshing
-                                ? theme.colorScheme.onSurface
-                                : Colors.white),
-                      ),
-                      tooltip: _isRefreshing
-                          ? 'Refreshing results...'
-                          : 'Refresh results',
-                    ),
-                  );
-                } else {
-                  // Show search bar during non-live hours
-                  return FloatingSearchBar(
-                    hintText: 'Eg. PV409930,',
-                    onChanged: (query) {
-                      // Implement real-time search
-                      _performSearch(query);
-                    },
-                    onSubmitted: (query) {
-                      // Implement search on submit
-                      _performSearch(query);
-                    },
-                    bottomPadding: 50.0,
-                  );
-                }
-              }
-              return const SizedBox.shrink();
             },
           ),
           // Fixed live indicator at top of screen
@@ -1145,7 +1086,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 allLotteryNumbers: _isSearchActive
                     ? _filteredLotteryNumbers
                     : _allLotteryNumbers,
-                highlightedTicketNumber: _isSearchActive ? _searchQuery : '',
+                highlightedTicketNotifier: _highlightedTicketNotifier,
                 ticketGlobalKeys: _ticketGlobalKeys,
                 isLiveHours: _isLiveHours,
                 newlyUpdatedTickets: _newlyUpdatedTickets,
@@ -1372,6 +1313,69 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget? _buildFloatingActionButton() {
+    return BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+      builder: (context, state) {
+        if (state is LotteryResultDetailsLoaded && _allLotteryNumbers.isNotEmpty) {
+          if (widget.isNew && _isLiveHours) {
+            // Show refresh button only for new lottery during live hours
+            final theme = Theme.of(context);
+            return FloatingActionButton.extended(
+              onPressed: _isRefreshing
+                  ? null
+                  : () {
+                      if (widget.uniqueId != null) {
+                        setState(() {
+                          _isRefreshing = true;
+                        });
+                        context.read<LotteryResultDetailsBloc>().add(
+                              RefreshLotteryResultDetailsEvent(widget.uniqueId!),
+                            );
+                      }
+                    },
+              backgroundColor: _isRefreshing
+                  ? theme.colorScheme.surface
+                  : theme.primaryColor,
+              foregroundColor: theme.colorScheme.onPrimary,
+              elevation: 4,
+              icon: _isRefreshing
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.refresh, size: 24, color: Colors.white),
+              label: Text(
+                _isRefreshing ? 'Refreshing...' : 'Refresh',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: _isRefreshing
+                        ? theme.colorScheme.onSurface
+                        : Colors.white),
+              ),
+              tooltip: _isRefreshing ? 'Refreshing results...' : 'Refresh results',
+            );
+          } else {
+            // Show FloatingSearchBar as FAB during non-live hours
+            return FloatingSearchBar(
+              hintText: 'Eg. PV409930,',
+              onChanged: (query) => _performSearch(query),
+              onSubmitted: (query) => _performSearch(query),
+// No bottom padding since it's now a FAB
+            );
+          }
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
