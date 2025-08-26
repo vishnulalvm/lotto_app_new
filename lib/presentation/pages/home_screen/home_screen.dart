@@ -17,7 +17,6 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
-import 'package:lotto_app/presentation/widgets/rate_us_dialog.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 
@@ -31,11 +30,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late ScrollController _scrollController;
-  
+
   // Consolidated animation controllers
   late AnimationController _primaryAnimationController;
   late AnimationController _secondaryAnimationController;
-  
+
   // All animations driven by the two controllers
   late Animation<double> _fabAnimation;
   late Animation<double> _blinkAnimation;
@@ -67,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen>
         );
         AnalyticsService.trackSessionStart();
       });
-      
+
       // Preload ads after UI is stable
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) _preloadHomeScreenAds();
@@ -82,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    
+
     _initializeAnimations();
     _startAttentionAnimations();
     _showLanguageDialogIfNeeded();
@@ -97,7 +96,8 @@ class _HomeScreenState extends State<HomeScreen>
 
     // Secondary controller for attention-grabbing animations
     _secondaryAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 6000), // Longer cycle for all effects
+      duration:
+          const Duration(milliseconds: 6000), // Longer cycle for all effects
       vsync: this,
     );
 
@@ -114,9 +114,9 @@ class _HomeScreenState extends State<HomeScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _secondaryAnimationController,
-      curve: const Interval(0.0, 0.17, curve: Curves.easeInOut), // 0-1 sec of 6 sec cycle
+      curve: const Interval(0.0, 0.17,
+          curve: Curves.easeInOut), // 0-1 sec of 6 sec cycle
     ));
-
 
     _primaryAnimationController.forward();
   }
@@ -131,11 +131,11 @@ class _HomeScreenState extends State<HomeScreen>
     _attentionAnimationTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    
+
     // Dispose consolidated animation controllers
     _primaryAnimationController.dispose();
     _secondaryAnimationController.dispose();
-    
+
     // Dispose any loaded ads to free memory
     _disposeHomeScreenAds();
     super.dispose();
@@ -143,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _preloadHomeScreenAds() async {
     if (!mounted) return;
-    
+
     try {
       await AdMobService.instance.preloadAds(
         adTypes: ['home_results', 'predict_interstitial'],
@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen>
       debugPrint('Home screen ad preload failed: $e');
     }
   }
-  
+
   void _disposeHomeScreenAds() {
     // Let AdMob service handle cleanup
     // Service manages disposal automatically
@@ -190,10 +190,11 @@ class _HomeScreenState extends State<HomeScreen>
   void _startAttentionAnimations() {
     // Start the secondary animation controller cycle immediately
     _secondaryAnimationController.forward();
-    
+
     // Use Timer.periodic instead of Future.delayed chains for better performance
     _attentionAnimationTimer = Timer.periodic(
-      const Duration(seconds: 8), // Repeat every 8 seconds (6 sec animation + 2 sec pause)
+      const Duration(
+          seconds: 8), // Repeat every 8 seconds (6 sec animation + 2 sec pause)
       (timer) {
         if (mounted) {
           _secondaryAnimationController.reset();
@@ -243,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _loadLotteryResults() {
     // Add haptic feedback for refresh action
     HapticFeedback.mediumImpact();
-    
+
     // Track user action
     AnalyticsService.trackUserEngagement(
       action: 'load_lottery_results',
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen>
     // Load from cache first (fast), then immediately trigger background refresh
     // Remove UI delays - let the BLoC handle cache-first then network pattern
     context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
-    
+
     // Trigger background refresh immediately without delay
     if (mounted) {
       _refreshResultsInBackground();
@@ -269,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _refreshResults() {
     // Add haptic feedback for pull-to-refresh
     HapticFeedback.mediumImpact();
-    
+
     _lastRefreshTime = DateTime.now();
     context.read<HomeScreenResultsBloc>().add(RefreshLotteryResultsEvent());
   }
@@ -347,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _launchWebsite() async {
     // Add haptic feedback for image tap
     HapticFeedback.lightImpact();
-    
+
     const String websiteUrl = 'https://lottokeralalotteries.com/';
 
     try {
@@ -386,8 +387,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _launchWhatsAppGroup() async {
     // Add haptic feedback for menu selection
     HapticFeedback.lightImpact();
-    
-    const String whatsappGroupUrl = 'https://chat.whatsapp.com/Lp7h3ft3I0xAsbGoLx9IW2?mode=ems_share_t';
+
+    const String whatsappGroupUrl =
+        'https://chat.whatsapp.com/Lp7h3ft3I0xAsbGoLx9IW2?mode=ems_share_t';
 
     try {
       final Uri url = Uri.parse(whatsappGroupUrl);
@@ -434,7 +436,7 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _showDatePicker() async {
     // Add haptic feedback for date picker tap
     HapticFeedback.lightImpact();
-    
+
     final DateTime? selectedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -462,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (selectedDate != null) {
       // Add confirmation haptic feedback
       HapticFeedback.selectionClick();
-      
+
       // Let the BLoC handle the filtering
       if (mounted) {
         context
@@ -491,116 +493,89 @@ class _HomeScreenState extends State<HomeScreen>
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  /// Handle back button press and show rating dialog
-  Future<bool> _handleBackPress() async {
-    await RateUsDialog.incrementBackButtonCount();
-
-    final shouldShowDialog = await RateUsDialog.shouldShowRatingDialog();
-    if (shouldShowDialog && mounted) {
-      await RateUsDialog.show(context);
-      // If user rated, we can still exit. If they dismissed, also allow exit.
-      return true;
-    }
-
-    // Allow normal back navigation
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          final shouldExit = await _handleBackPress();
-          if (shouldExit && context.mounted) {
-            // Exit the app
-            Navigator.of(context).pop();
-          }
-        }
-      },
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _buildAppBar(theme),
-        body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-          listener: (context, state) {
-            // Clear any existing snackbars first
-            ScaffoldMessenger.of(context).clearSnackBars();
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: _buildAppBar(theme),
+      body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+        listener: (context, state) {
+          // Clear any existing snackbars first
+          ScaffoldMessenger.of(context).clearSnackBars();
 
-            if (state is HomeScreenResultsError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${'error_prefix'.tr()}${state.message}'),
-                  backgroundColor: Colors.red,
-                  action: SnackBarAction(
-                    label: 'retry'.tr(),
-                    textColor: Colors.white,
-                    onPressed: _loadLotteryResults,
-                  ),
+          if (state is HomeScreenResultsError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${'error_prefix'.tr()}${state.message}'),
+                backgroundColor: Colors.red,
+                action: SnackBarAction(
+                  label: 'retry'.tr(),
+                  textColor: Colors.white,
+                  onPressed: _loadLotteryResults,
                 ),
-              );
-            }
-          },
-          child: RefreshIndicator(
-            onRefresh: () async {
-              _refreshResults();
-            },
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  // Replace _buildCarousel() with the custom widget
-                  BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                    buildWhen: (previous, current) {
-                      // Only rebuild if images actually changed
-                      if (previous is HomeScreenResultsLoaded &&
-                          current is HomeScreenResultsLoaded) {
-                        return previous.data.updates.allImages !=
-                            current.data.updates.allImages;
-                      }
-                      return previous.runtimeType != current.runtimeType;
-                    },
-                    builder: (context, state) {
-                      List<String> carouselImages = [];
-
-                      // Get images from API response
-                      if (state is HomeScreenResultsLoaded) {
-                        carouselImages = state.data.updates.allImages;
-                      }
-
-                      return SimpleCarouselWidget(
-                        images: carouselImages,
-                        onImageTap: () => _launchWebsite(),
-                        // Optional: Customize colors to match your theme
-                        gradientStartColor: Colors.pink.shade100,
-                        gradientEndColor: Colors.pink.shade300,
-                        // Optional: Custom settings
-
-                        autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 4),
-                      );
-                    },
-                  ),
-                  SizedBox(height: AppResponsive.spacing(context, 5)),
-                  const NavigationIconsWidget(),
-                  SizedBox(height: AppResponsive.spacing(context, 10)),
-                  LotteryResultsSection(
-                    onLoadLotteryResults: _loadLotteryResults,
-                    onShowDatePicker: _showDatePicker,
-                    blinkAnimation: _blinkAnimation,
-                    formatDateForDisplay: _formatDateForDisplay,
-                  ),
-                  SizedBox(height: AppResponsive.spacing(context, 100)),
-                ],
               ),
+            );
+          }
+        },
+        child: RefreshIndicator(
+          onRefresh: () async {
+            _refreshResults();
+          },
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // Replace _buildCarousel() with the custom widget
+                BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                  buildWhen: (previous, current) {
+                    // Only rebuild if images actually changed
+                    if (previous is HomeScreenResultsLoaded &&
+                        current is HomeScreenResultsLoaded) {
+                      return previous.data.updates.allImages !=
+                          current.data.updates.allImages;
+                    }
+                    return previous.runtimeType != current.runtimeType;
+                  },
+                  builder: (context, state) {
+                    List<String> carouselImages = [];
+
+                    // Get images from API response
+                    if (state is HomeScreenResultsLoaded) {
+                      carouselImages = state.data.updates.allImages;
+                    }
+
+                    return SimpleCarouselWidget(
+                      images: carouselImages,
+                      onImageTap: () => _launchWebsite(),
+                      // Optional: Customize colors to match your theme
+                      gradientStartColor: Colors.pink.shade100,
+                      gradientEndColor: Colors.pink.shade300,
+                      // Optional: Custom settings
+
+                      autoPlay: true,
+                      autoPlayInterval: const Duration(seconds: 4),
+                    );
+                  },
+                ),
+                SizedBox(height: AppResponsive.spacing(context, 5)),
+                const NavigationIconsWidget(),
+                SizedBox(height: AppResponsive.spacing(context, 10)),
+                LotteryResultsSection(
+                  onLoadLotteryResults: _loadLotteryResults,
+                  onShowDatePicker: _showDatePicker,
+                  blinkAnimation: _blinkAnimation,
+                  formatDateForDisplay: _formatDateForDisplay,
+                ),
+                SizedBox(height: AppResponsive.spacing(context, 100)),
+              ],
             ),
           ),
         ),
-        floatingActionButton: _buildScanButton(theme),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
+      floatingActionButton: _buildScanButton(theme),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -677,60 +652,60 @@ class _HomeScreenState extends State<HomeScreen>
               context.go('/lottoPoints');
             },
             child: Container(
-                height: AppResponsive.fontSize(context, 26),
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppResponsive.spacing(context, 6),
-                  vertical: AppResponsive.spacing(context, 4),
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 204, 61, 25), // Gold
-                      Color.fromARGB(255, 206, 71, 4), // Light Gold
-                      Color.fromARGB(255, 229, 92, 38), // Gold
-                    ],
-                    stops: [0.0, 0.5, 1.0],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    AppResponsive.spacing(context, 18),
-                  ),
-                  border: Border.all(
-                    color: Color(0xFFFFE55C).withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icons/lotto_points.png',
-                      width: AppResponsive.fontSize(context, 14),
-                      height: AppResponsive.fontSize(context, 14),
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(width: AppResponsive.spacing(context, 4)),
-                    Text(
-                      "Points",
-                      style: TextStyle(
-                        fontSize: AppResponsive.fontSize(context, 10),
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            offset: Offset(0, 1),
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
+              height: AppResponsive.fontSize(context, 26),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppResponsive.spacing(context, 6),
+                vertical: AppResponsive.spacing(context, 4),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 204, 61, 25), // Gold
+                    Color.fromARGB(255, 206, 71, 4), // Light Gold
+                    Color.fromARGB(255, 229, 92, 38), // Gold
                   ],
+                  stops: [0.0, 0.5, 1.0],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(
+                  AppResponsive.spacing(context, 18),
+                ),
+                border: Border.all(
+                  color: Color(0xFFFFE55C).withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/icons/lotto_points.png',
+                    width: AppResponsive.fontSize(context, 14),
+                    height: AppResponsive.fontSize(context, 14),
+                    fit: BoxFit.contain,
+                  ),
+                  SizedBox(width: AppResponsive.spacing(context, 4)),
+                  Text(
+                    "Points",
+                    style: TextStyle(
+                      fontSize: AppResponsive.fontSize(context, 10),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+        ),
 
         PopupMenuButton<String>(
           icon: Icon(
@@ -769,7 +744,7 @@ class _HomeScreenState extends State<HomeScreen>
           onSelected: (value) {
             // Add haptic feedback for menu selection
             HapticFeedback.selectionClick();
-            
+
             switch (value) {
               case 'settings_value': // Match the actual returned value
                 context.push('/settings');
@@ -821,7 +796,7 @@ class _HomeScreenState extends State<HomeScreen>
       onPressed: () {
         // Add haptic feedback for FAB press
         HapticFeedback.heavyImpact();
-        
+
         // Navigate to the scanner page
         context.pushNamed(RouteNames.probabilityBarcodeScanner);
       },
