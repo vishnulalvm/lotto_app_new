@@ -207,7 +207,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     _newlyUpdatedTickets.clear();
 
     // Only track during live hours
-    if (!_isLiveHours) return;
+    if (!_isLiveHours(result)) return;
 
     // If no previous result, consider all tickets as new (but don't shimmer on first load)
     if (_previousResult == null) return;
@@ -578,11 +578,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   bool get _isSearchActive =>
       _searchQuery.isNotEmpty && _searchQuery.length >= _minSearchLength;
 
-  // Helper method to check if it's live hours
-  bool get _isLiveHours {
-    final now = DateTime.now();
-    return (now.hour >= 15 && now.hour < 16) ||
-        (now.hour == 16 && now.minute <= 10);
+  // Helper method to check if it's live hours based on current result
+  bool _isLiveHours(LotteryResultModel result) {
+    return result.isPublished && !result.reOrder;
   }
 
   // Helper method to check if result is today's and live
@@ -593,7 +591,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     final resultDateOnly =
         DateTime(resultDate.year, resultDate.month, resultDate.day);
 
-    return resultDateOnly == today && _isLiveHours;
+    // Live if it's today's result, published is true, and reOrder is false
+    return resultDateOnly == today && result.isPublished && !result.reOrder;
   }
 
   // PDF sharing functionality
@@ -1088,7 +1087,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                     : _allLotteryNumbers,
                 highlightedTicketNotifier: _highlightedTicketNotifier,
                 ticketGlobalKeys: _ticketGlobalKeys,
-                isLiveHours: _isLiveHours,
+                isLiveHours: _isLiveHours(result),
                 newlyUpdatedTickets: _newlyUpdatedTickets,
               ),
               // In-app review widget - triggers after user views results
@@ -1320,7 +1319,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     return BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
       builder: (context, state) {
         if (state is LotteryResultDetailsLoaded && _allLotteryNumbers.isNotEmpty) {
-          if (widget.isNew && _isLiveHours) {
+          if (widget.isNew && _isLiveHours(state.data.result)) {
             // Show refresh button only for new lottery during live hours
             final theme = Theme.of(context);
             return FloatingActionButton.extended(

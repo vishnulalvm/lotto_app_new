@@ -240,10 +240,10 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       isFront: true,
     );
 
-    final Widget backSide = _buildNavItemContent(
+    final Widget backSide = _buildNavItemContentWithImage(
       context: context,
       theme: theme,
-      icon: Icons.redeem,
+      imagePath: 'assets/icons/money_bag.png',
       label: 'Cashbacks',
       isFront: false,
     );
@@ -334,6 +334,105 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                         icon,
                         color: Colors.white,
                         size: _iconSize * 0.8,
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+        SizedBox(height: _spacing),
+        SizedBox(
+          width: _textWidth,
+          child: isFront
+              ? Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 12),
+                    fontWeight: FontWeight.w500,
+                    color: theme.textTheme.bodyMedium?.color,
+                  ),
+                )
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(math.pi),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppResponsive.fontSize(context, 11),
+                      fontWeight: FontWeight.w600,
+                      color: _isDark ? _vibrantRed : _primaryRed,
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavItemContentWithImage({
+    required BuildContext context,
+    required ThemeData theme,
+    required String imagePath,
+    required String label,
+    required bool isFront,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: _containerSize,
+          height: _containerSize,
+          decoration: BoxDecoration(
+            gradient: isFront
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                      _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+            color: isFront
+                ? (_isDark ? _darkBackground : _lightBackground)
+                : null,
+            shape: BoxShape.circle,
+          ),
+          child: isFront
+              ? Image.asset(
+                  imagePath,
+                  width: _iconSize,
+                  height: _iconSize,
+                  fit: BoxFit.contain,
+                )
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(math.pi),
+                  child: Container(
+                    width: _smallIconSize,
+                    height: _smallIconSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: 0.8,
+                        colors: [
+                          _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                          _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
+                        ],
+                        stops: const [0.0, 1.0],
+                      ),
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        imagePath,
+                        width: _iconSize * 0.8,
+                        height: _iconSize * 0.8,
+                        fit: BoxFit.contain,
+                        color: Colors.white,
                       ),
                     ),
                   ),

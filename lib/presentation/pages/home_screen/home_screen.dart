@@ -584,6 +584,16 @@ class _HomeScreenState extends State<HomeScreen>
       centerTitle: true,
       backgroundColor: theme.appBarTheme.backgroundColor,
       elevation: theme.appBarTheme.elevation,
+      leading: GestureDetector(
+        onTap: _launchWhatsAppGroup,
+        child: Padding(
+          padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
+          child: Image.asset(
+            'assets/icons/whatsapp.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
       title: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
         buildWhen: (previous, current) {
           // Only rebuild when offline status changes
