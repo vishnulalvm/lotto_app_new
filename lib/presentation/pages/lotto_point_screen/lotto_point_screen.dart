@@ -7,6 +7,7 @@ import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_event.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_state.dart';
@@ -25,6 +26,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   late TabController _tabController;
   final UserService _userService = UserService();
   final AdMobService _adMobService = AdMobService.instance;
+  Timer? _rewardedAdTimer;
+  bool _hasShownRewardedAd = false;
 
   // Get cashback rewards from API data
   List<Map<String, dynamic>> _getCashbackRewards(UserPointsState state) {
@@ -128,6 +131,10 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
     // Preload rewarded ad for cashback claims
     _adMobService.loadCashbackClaimRewardedAd();
+    
+    // Load and schedule the lotto points rewarded ad to show after 3 seconds
+    _adMobService.loadLottoPointsRewardedAd();
+    _startRewardedAdTimer();
   }
 
   Future<void> _fetchUserPoints() async {
@@ -137,6 +144,46 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             FetchUserPointsEvent(phoneNumber: phoneNumber),
           );
     }
+  }
+
+  void _startRewardedAdTimer() {
+    if (_hasShownRewardedAd) return;
+    
+    _rewardedAdTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && !_hasShownRewardedAd && _adMobService.isLottoPointsRewardedAdLoaded) {
+        _showLottoPointsRewardedAd();
+      }
+    });
+  }
+
+  void _showLottoPointsRewardedAd() {
+    if (_hasShownRewardedAd) return;
+    
+    _hasShownRewardedAd = true;
+    
+    _adMobService.showRewardedAd(
+      'lotto_points_rewarded',
+      onRewardEarned: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Thanks for watching! Enjoy your lotto points experience.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      onDismissed: () {
+        // Ad dismissed, preload next ad for future use
+        _adMobService.loadLottoPointsRewardedAd();
+      },
+      onFailed: (error) {
+        // Silently fail - don't show error to user for this type of ad
+        // Try to reload for next time
+        _adMobService.loadLottoPointsRewardedAd();
+      },
+    );
   }
 
   void _startPointsAnimation(int totalPoints, int lastAddedPoints) {
@@ -197,6 +244,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    _rewardedAdTimer?.cancel();
     super.dispose();
   }
 

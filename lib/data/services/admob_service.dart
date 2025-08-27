@@ -62,6 +62,7 @@ class AdMobService {
   
   // REWARDED AD UNIT IDs
   static const String rewardedCashbackClaim = 'ca-app-pub-1386225714525775/9155813941';
+  static const String rewardedLottoPoints = 'ca-app-pub-1386225714525775/9572986036';
 
   // Consolidated ad state management
   final Map<String, AdWrapper<InterstitialAd>> _interstitialAds = {};
@@ -247,14 +248,18 @@ class AdMobService {
   
   Future<void> loadCashbackClaimRewardedAd() => loadAd('cashback_claim_rewarded');
   
+  Future<void> loadLottoPointsRewardedAd() => loadAd('lotto_points_rewarded');
+  
   NativeAd? getHomeResultsAd() => getAd<NativeAd>('home_results');
   NativeAd? getSharedHomeResultsAd() => getSharedAd<NativeAd>('home_results');
   InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
   RewardedAd? getCashbackClaimRewardedAd() => getAd<RewardedAd>('cashback_claim_rewarded');
+  RewardedAd? getLottoPointsRewardedAd() => getAd<RewardedAd>('lotto_points_rewarded');
   
   bool get isHomeResultsAdLoaded => isAdLoaded('home_results');
   bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
   bool get isCashbackClaimRewardedAdLoaded => isAdLoaded('cashback_claim_rewarded');
+  bool get isLottoPointsRewardedAdLoaded => isAdLoaded('lotto_points_rewarded');
 
   // Get shared ad for multiple widget usage (doesn't increment usage count)
   T? getSharedAd<T>(String adType) {
@@ -578,12 +583,13 @@ class AdMobService {
   }
 
   bool _isRewardedAdType(String adType) {
-    return ['cashback_claim_rewarded'].contains(adType);
+    return ['cashback_claim_rewarded', 'lotto_points_rewarded'].contains(adType);
   }
 
   String? _getRewardedAdUnitId(String adType) {
     switch (adType) {
       case 'cashback_claim_rewarded': return rewardedCashbackClaim;
+      case 'lotto_points_rewarded': return rewardedLottoPoints;
       default: return null;
     }
   }
