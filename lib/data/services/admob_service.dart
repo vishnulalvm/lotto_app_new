@@ -63,11 +63,15 @@ class AdMobService {
   // REWARDED AD UNIT IDs
   static const String rewardedCashbackClaim = 'ca-app-pub-1386225714525775/9155813941';
   static const String rewardedLottoPoints = 'ca-app-pub-1386225714525775/9572986036';
+  
+  // REWARDED INTERSTITIAL AD UNIT IDs
+  static const String rewardedInterstitialScratchCard = 'ca-app-pub-1386225714525775/6946822698';
 
   // Consolidated ad state management
   final Map<String, AdWrapper<InterstitialAd>> _interstitialAds = {};
   final Map<String, AdWrapper<NativeAd>> _nativeAds = {};
   final Map<String, AdWrapper<RewardedAd>> _rewardedAds = {};
+  final Map<String, AdWrapper<RewardedInterstitialAd>> _rewardedInterstitialAds = {};
   
   // Stream controllers for reactive state management
   final StreamController<Map<String, AdWrapper<NativeAd>>> _nativeAdsController = 
@@ -76,6 +80,8 @@ class AdMobService {
       StreamController<Map<String, AdWrapper<InterstitialAd>>>.broadcast();
   final StreamController<Map<String, AdWrapper<RewardedAd>>> _rewardedAdsController = 
       StreamController<Map<String, AdWrapper<RewardedAd>>>.broadcast();
+  final StreamController<Map<String, AdWrapper<RewardedInterstitialAd>>> _rewardedInterstitialAdsController = 
+      StreamController<Map<String, AdWrapper<RewardedInterstitialAd>>>.broadcast();
 
   // Rate limiting
   DateTime? _lastLoadTime;
@@ -89,10 +95,12 @@ class AdMobService {
   Stream<Map<String, AdWrapper<NativeAd>>> get nativeAdsStream => _nativeAdsController.stream;
   Stream<Map<String, AdWrapper<InterstitialAd>>> get interstitialAdsStream => _interstitialAdsController.stream;
   Stream<Map<String, AdWrapper<RewardedAd>>> get rewardedAdsStream => _rewardedAdsController.stream;
+  Stream<Map<String, AdWrapper<RewardedInterstitialAd>>> get rewardedInterstitialAdsStream => _rewardedInterstitialAdsController.stream;
   
   Map<String, AdWrapper<NativeAd>> get currentNativeAds => Map.unmodifiable(_nativeAds);
   Map<String, AdWrapper<InterstitialAd>> get currentInterstitialAds => Map.unmodifiable(_interstitialAds);
   Map<String, AdWrapper<RewardedAd>> get currentRewardedAds => Map.unmodifiable(_rewardedAds);
+  Map<String, AdWrapper<RewardedInterstitialAd>> get currentRewardedInterstitialAds => Map.unmodifiable(_rewardedInterstitialAds);
 
   // Initialization
   static Future<void> initialize() async {
@@ -113,6 +121,8 @@ class AdMobService {
         await _loadInterstitialAd(adType);
       } else if (_isRewardedAdType(adType)) {
         await _loadRewardedAd(adType);
+      } else if (_isRewardedInterstitialAdType(adType)) {
+        await _loadRewardedInterstitialAd(adType);
       }
     } finally {
       _activeLoads--;
@@ -161,6 +171,17 @@ class AdMobService {
         
         return ad as T;
       }
+    } else if (T == RewardedInterstitialAd) {
+      final wrapper = _rewardedInterstitialAds[adType];
+      if (wrapper?.isLoaded == true) {
+        final ad = wrapper!.ad!;
+        
+        // For rewarded interstitial ads, remove from cache after use (single use)
+        _updateRewardedInterstitialAdState(adType, const AdWrapper(state: AdState.idle));
+        _scheduleReload(adType);
+        
+        return ad as T;
+      }
     }
     return null;
   }
@@ -188,6 +209,13 @@ class AdMobService {
       }
       _updateRewardedAdState(adType, const AdWrapper(state: AdState.idle));
       await loadAd(adType);
+    } else if (_isRewardedInterstitialAdType(adType)) {
+      final wrapper = _rewardedInterstitialAds[adType];
+      if (wrapper?.ad != null) {
+        wrapper!.ad!.dispose();
+      }
+      _updateRewardedInterstitialAdState(adType, const AdWrapper(state: AdState.idle));
+      await loadAd(adType);
     }
   }
 
@@ -199,6 +227,8 @@ class AdMobService {
       return _interstitialAds[adType]?.isLoaded ?? false;
     } else if (_isRewardedAdType(adType)) {
       return _rewardedAds[adType]?.isLoaded ?? false;
+    } else if (_isRewardedInterstitialAdType(adType)) {
+      return _rewardedInterstitialAds[adType]?.isLoaded ?? false;
     }
     return false;
   }
@@ -250,16 +280,20 @@ class AdMobService {
   
   Future<void> loadLottoPointsRewardedAd() => loadAd('lotto_points_rewarded');
   
+  Future<void> loadScratchCardRewardedInterstitialAd() => loadAd('scratch_card_rewarded_interstitial');
+  
   NativeAd? getHomeResultsAd() => getAd<NativeAd>('home_results');
   NativeAd? getSharedHomeResultsAd() => getSharedAd<NativeAd>('home_results');
   InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
   RewardedAd? getCashbackClaimRewardedAd() => getAd<RewardedAd>('cashback_claim_rewarded');
   RewardedAd? getLottoPointsRewardedAd() => getAd<RewardedAd>('lotto_points_rewarded');
+  RewardedInterstitialAd? getScratchCardRewardedInterstitialAd() => getAd<RewardedInterstitialAd>('scratch_card_rewarded_interstitial');
   
   bool get isHomeResultsAdLoaded => isAdLoaded('home_results');
   bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
   bool get isCashbackClaimRewardedAdLoaded => isAdLoaded('cashback_claim_rewarded');
   bool get isLottoPointsRewardedAdLoaded => isAdLoaded('lotto_points_rewarded');
+  bool get isScratchCardRewardedInterstitialAdLoaded => isAdLoaded('scratch_card_rewarded_interstitial');
 
   // Get shared ad for multiple widget usage (doesn't increment usage count)
   T? getSharedAd<T>(String adType) {
@@ -356,6 +390,45 @@ class AdMobService {
     });
   }
 
+  // Show rewarded interstitial ad with callbacks
+  Future<void> showRewardedInterstitialAd(String adType, {
+    VoidCallback? onRewardEarned,
+    VoidCallback? onDismissed,
+    Function(String)? onFailed,
+  }) async {
+    final wrapper = _rewardedInterstitialAds[adType];
+    if (wrapper?.isLoaded != true) {
+      onFailed?.call('Ad not loaded');
+      return;
+    }
+
+    final ad = wrapper!.ad!;
+    
+    // Update state before showing
+    _updateRewardedInterstitialAdState(adType, wrapper.copyWith(state: AdState.disposed));
+    
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        onDismissed?.call();
+        _scheduleReload(adType);
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _updateRewardedInterstitialAdState(adType, AdWrapper(
+          state: AdState.failed, 
+          error: error.toString(),
+        ));
+        onFailed?.call(error.toString());
+        _scheduleReload(adType);
+      },
+    );
+
+    await ad.show(onUserEarnedReward: (ad, reward) {
+      onRewardEarned?.call();
+    });
+  }
+
   // Clean disposal
   void dispose() {
     // Dispose all ads
@@ -368,14 +441,19 @@ class AdMobService {
     for (final wrapper in _rewardedAds.values) {
       wrapper.ad?.dispose();
     }
+    for (final wrapper in _rewardedInterstitialAds.values) {
+      wrapper.ad?.dispose();
+    }
     
     _nativeAds.clear();
     _interstitialAds.clear();
     _rewardedAds.clear();
+    _rewardedInterstitialAds.clear();
     
     _nativeAdsController.close();
     _interstitialAdsController.close();
     _rewardedAdsController.close();
+    _rewardedInterstitialAdsController.close();
   }
 
   // Private helper methods
@@ -398,6 +476,9 @@ class AdMobService {
       return wrapper?.canLoad ?? true;
     } else if (_isRewardedAdType(adType)) {
       final wrapper = _rewardedAds[adType];
+      return wrapper?.canLoad ?? true;
+    } else if (_isRewardedInterstitialAdType(adType)) {
+      final wrapper = _rewardedInterstitialAds[adType];
       return wrapper?.canLoad ?? true;
     }
     return false;
@@ -586,10 +667,21 @@ class AdMobService {
     return ['cashback_claim_rewarded', 'lotto_points_rewarded'].contains(adType);
   }
 
+  bool _isRewardedInterstitialAdType(String adType) {
+    return ['scratch_card_rewarded_interstitial'].contains(adType);
+  }
+
   String? _getRewardedAdUnitId(String adType) {
     switch (adType) {
       case 'cashback_claim_rewarded': return rewardedCashbackClaim;
       case 'lotto_points_rewarded': return rewardedLottoPoints;
+      default: return null;
+    }
+  }
+
+  String? _getRewardedInterstitialAdUnitId(String adType) {
+    switch (adType) {
+      case 'scratch_card_rewarded_interstitial': return rewardedInterstitialScratchCard;
       default: return null;
     }
   }
@@ -633,9 +725,53 @@ class AdMobService {
     return completer.future;
   }
 
+  Future<void> _loadRewardedInterstitialAd(String adType) async {
+    _updateRewardedInterstitialAdState(adType, const AdWrapper(state: AdState.loading));
+
+    final adUnitId = _getRewardedInterstitialAdUnitId(adType);
+    if (adUnitId == null) {
+      _updateRewardedInterstitialAdState(adType, const AdWrapper(
+        state: AdState.failed,
+        error: 'Invalid ad type',
+      ));
+      return;
+    }
+
+    final completer = Completer<void>();
+
+    await RewardedInterstitialAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _updateRewardedInterstitialAdState(adType, AdWrapper(
+            ad: ad,
+            state: AdState.loaded,
+            lastLoadTime: DateTime.now(),
+          ));
+          completer.complete();
+        },
+        onAdFailedToLoad: (error) {
+          _updateRewardedInterstitialAdState(adType, AdWrapper(
+            state: AdState.failed,
+            error: error.toString(),
+          ));
+          completer.complete();
+        },
+      ),
+    );
+
+    return completer.future;
+  }
+
   void _updateRewardedAdState(String adType, AdWrapper<RewardedAd> wrapper) {
     _rewardedAds[adType] = wrapper;
     _rewardedAdsController.add(Map.unmodifiable(_rewardedAds));
+  }
+
+  void _updateRewardedInterstitialAdState(String adType, AdWrapper<RewardedInterstitialAd> wrapper) {
+    _rewardedInterstitialAds[adType] = wrapper;
+    _rewardedInterstitialAdsController.add(Map.unmodifiable(_rewardedInterstitialAds));
   }
 
   // Legacy method support for backward compatibility
