@@ -159,13 +159,13 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     // Add 1st prize numbers first
     final firstPrize = result.getFirstPrize();
     if (firstPrize != null) {
-      _addPrizeNumbers(firstPrize);
+      _addPrizeNumbers(firstPrize, result);
     }
 
     // Add consolation prize numbers second
     final consolationPrize = result.getConsolationPrize();
     if (consolationPrize != null) {
-      _addPrizeNumbers(consolationPrize);
+      _addPrizeNumbers(consolationPrize, result);
     }
 
     // Add remaining prizes (2nd to 10th)
@@ -193,7 +193,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     });
 
     for (final prize in remainingPrizes) {
-      _addPrizeNumbers(prize);
+      _addPrizeNumbers(prize, result);
     }
 
     // Initialize filtered list
@@ -218,7 +218,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       for (final ticket in prize.ticketsWithLocation) {
         currentTickets.add(ticket.ticketNumber);
       }
-      for (final ticketNumber in prize.allTicketNumbers) {
+      for (final ticketNumber in result.getPrizeTicketNumbers(prize)) {
         currentTickets.add(ticketNumber);
       }
     }
@@ -229,7 +229,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       for (final ticket in prize.ticketsWithLocation) {
         previousTickets.add(ticket.ticketNumber);
       }
-      for (final ticketNumber in prize.allTicketNumbers) {
+      for (final ticketNumber in _previousResult!.getPrizeTicketNumbers(prize)) {
         previousTickets.add(ticketNumber);
       }
     }
@@ -238,7 +238,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     _newlyUpdatedTickets = currentTickets.difference(previousTickets);
   }
 
-  void _addPrizeNumbers(PrizeModel prize) {
+  void _addPrizeNumbers(PrizeModel prize, LotteryResultModel result) {
     // For prizes with tickets array (individual tickets with locations)
     for (final ticket in prize.ticketsWithLocation) {
       _allLotteryNumbers.add({
@@ -249,8 +249,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       });
     }
 
-    // For prizes with ticket_numbers string (grid format)
-    for (final ticketNumber in prize.allTicketNumbers) {
+    // For prizes with ticket_numbers string (grid format) - use result.getPrizeTicketNumbers to respect reOrder flag
+    for (final ticketNumber in result.getPrizeTicketNumbers(prize)) {
       // Skip if already added from tickets array
       if (!prize.ticketsWithLocation
           .any((t) => t.ticketNumber == ticketNumber)) {
@@ -692,7 +692,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         '${result.lotteryName.toUpperCase()} DRAW NO: ${result.drawNumber}');
     buffer.writeln('DRAW HELD ON: ${result.formattedDate}');
     buffer.writeln();
-    buffer.writeln('Visit: https://www.lottokeralalotteries.com/');
+    buffer.writeln('Download App: https://play.google.com/store/apps/details?id=app.solidapps.lotto');
 
     buffer.writeln('=' * 36);
 
@@ -716,7 +716,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     if (consolationPrize != null) {
       buffer.writeln(
           '${consolationPrize.prizeTypeFormatted} Rs : ${consolationPrize.formattedPrizeAmount}/-');
-      final numbers = consolationPrize.allTicketNumbers.join(', ');
+      final numbers = result.getPrizeTicketNumbers(consolationPrize).join(', ');
       buffer.writeln('  $numbers');
       buffer.writeln();
     }
@@ -751,7 +751,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     for (final prize in remainingPrizes) {
       buffer.writeln(
           '${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
-      final numbers = prize.allTicketNumbers.join(', ');
+      final numbers = result.getPrizeTicketNumbers(prize).join(', ');
       buffer.writeln('  $numbers');
       buffer.writeln();
     }
@@ -766,7 +766,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     buffer.writeln();
     buffer.writeln('Contact: 0471-2305230');
     buffer.writeln('Email: cru.dir.lotteries@kerala.gov.in');
-    buffer.writeln('Visit: https://www.lottokeralalotteries.com/');
+    buffer.writeln();
+    buffer.writeln('Download App: https://play.google.com/store/apps/details?id=app.solidapps.lotto');
     return buffer.toString();
   }
 

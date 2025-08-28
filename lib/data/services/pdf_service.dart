@@ -366,7 +366,7 @@ class PdfService {
   // Clickable version of horizontal high tier prize
   static pw.Widget _buildClickableHorizontalHighTierPrize(PrizeModel prize) {
     return pw.UrlLink(
-      destination: 'https://www.lottokeralalotteries.com',
+      destination: 'https://play.google.com/store/apps/details?id=app.solidapps.lotto',
       child: _buildHorizontalHighTierPrize(prize),
     );
   }
@@ -444,7 +444,7 @@ class PdfService {
       PrizeModel prize) {
     return _buildLowerTierPrizeWidgets(prize)
         .map((widget) => pw.UrlLink(
-              destination: 'https://www.lottokeralalotteries.com',
+              destination: 'https://play.google.com/store/apps/details?id=app.solidapps.lotto',
               child: widget,
             ))
         .toList();
