@@ -745,15 +745,57 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       return aIndex.compareTo(bIndex);
     });
 
-    buffer.writeln('FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS:');
-    buffer.writeln();
-
-    for (final prize in remainingPrizes) {
+    // Handle 2nd and 3rd prizes with location (like 1st prize)
+    final secondPrize = remainingPrizes.where((p) => p.prizeType == '2nd').firstOrNull;
+    final thirdPrize = remainingPrizes.where((p) => p.prizeType == '3rd').firstOrNull;
+    
+    if (secondPrize != null) {
       buffer.writeln(
-          '${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
-      final numbers = result.getPrizeTicketNumbers(prize).join(', ');
-      buffer.writeln('  $numbers');
+          '${secondPrize.prizeTypeFormatted} Rs : ${secondPrize.formattedPrizeAmount}/-');
+      if (secondPrize.ticketsWithLocation.isNotEmpty) {
+        // Show with location like 1st prize
+        for (final ticket in secondPrize.ticketsWithLocation) {
+          buffer.writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+        }
+      } else {
+        // Fallback to regular numbers
+        final numbers = result.getPrizeTicketNumbers(secondPrize).join(', ');
+        buffer.writeln('  $numbers');
+      }
       buffer.writeln();
+    }
+
+    if (thirdPrize != null) {
+      buffer.writeln(
+          '${thirdPrize.prizeTypeFormatted} Rs : ${thirdPrize.formattedPrizeAmount}/-');
+      if (thirdPrize.ticketsWithLocation.isNotEmpty) {
+        // Show with location like 1st prize
+        for (final ticket in thirdPrize.ticketsWithLocation) {
+          buffer.writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+        }
+      } else {
+        // Fallback to regular numbers
+        final numbers = result.getPrizeTicketNumbers(thirdPrize).join(', ');
+        buffer.writeln('  $numbers');
+      }
+      buffer.writeln();
+    }
+
+    // Handle remaining prizes (4th to 10th) - these typically don't have locations
+    final lowerPrizes = remainingPrizes.where((p) => 
+        p.prizeType != '2nd' && p.prizeType != '3rd').toList();
+    
+    if (lowerPrizes.isNotEmpty) {
+      buffer.writeln('FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS:');
+      buffer.writeln();
+
+      for (final prize in lowerPrizes) {
+        buffer.writeln(
+            '${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
+        final numbers = result.getPrizeTicketNumbers(prize).join(', ');
+        buffer.writeln('  $numbers');
+        buffer.writeln();
+      }
     }
 
     // Footer

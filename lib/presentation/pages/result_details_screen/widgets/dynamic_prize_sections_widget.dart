@@ -131,7 +131,7 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
   }
 
   Widget _buildSinglePrizeSection(ThemeData theme, PrizeModel prize) {
-    final ticketNumbers = prize.allTicketNumbers;
+    final ticketNumbers = result.getPrizeTicketNumbers(prize);
     final hasMultipleNumbers = ticketNumbers.length > 1;
 
     return Card(
@@ -206,7 +206,7 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
   }
 
   Widget _buildGridPrizeSection(ThemeData theme, PrizeModel prize) {
-    final ticketNumbers = prize.allTicketNumbers;
+    final ticketNumbers = result.getPrizeTicketNumbers(prize);
     final isConsolationPrize = prize.prizeType.toLowerCase() == 'consolation';
 
     return Card(
