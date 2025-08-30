@@ -12,9 +12,6 @@ class LotteryResultDetailsApiService {
           'unique_id': uniqueId,
         }),
       );
-      print('Response status: ${response.statusCode}');
-      // print('Response body: ${response.body}');
-      print('Request body: ${jsonEncode({'unique_id': uniqueId})}');
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {

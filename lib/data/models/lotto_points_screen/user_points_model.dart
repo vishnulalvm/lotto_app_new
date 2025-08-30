@@ -163,7 +163,26 @@ class CashbackHistoryItem {
     }
   }
 
-  String get statusText => isClaimed ? 'Claimed' : 'Pending';
+  String get statusText {
+    if (isClaimed) return 'Claimed';
+    if (isExpired) return 'Expired';
+    return 'Available';
+  }
+
+  // Check if cashback has expired (7 days from received date)
+  bool get isExpired {
+    try {
+      final dateTime = DateTime.parse(date);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime).inDays;
+      return difference > 7;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Check if cashback is available (not claimed and not expired)
+  bool get isAvailable => !isClaimed && !isExpired;
 }
 
 class UserPointsRequestModel {

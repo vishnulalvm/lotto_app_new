@@ -35,20 +35,24 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       return state.userPoints.data.cashbackHistory
           .map((cashback) => {
                 'amount': cashback.amount.toInt(),
-                'status': cashback.isClaimed ? 'claimed' : 'available',
+                'status': cashback.isClaimed ? 'claimed' : (cashback.isExpired ? 'expired' : 'available'),
                 'date': cashback.formattedDate,
                 'cashbackId': cashback.cashbackId,
-                'type': 'cashback'
+                'type': 'cashback',
+                'isExpired': cashback.isExpired,
+                'isAvailable': cashback.isAvailable
               })
           .toList();
     } else if (state is UserPointsRefreshing) {
       return state.userPoints.data.cashbackHistory
           .map((cashback) => {
                 'amount': cashback.amount.toInt(),
-                'status': cashback.isClaimed ? 'claimed' : 'available',
+                'status': cashback.isClaimed ? 'claimed' : (cashback.isExpired ? 'expired' : 'available'),
                 'date': cashback.formattedDate,
                 'cashbackId': cashback.cashbackId,
-                'type': 'cashback'
+                'type': 'cashback',
+                'isExpired': cashback.isExpired,
+                'isAvailable': cashback.isAvailable
               })
           .toList();
     }
@@ -143,6 +147,32 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       context.read<UserPointsBloc>().add(
             FetchUserPointsEvent(phoneNumber: phoneNumber),
           );
+    }
+  }
+
+  int _getDaysUntilExpiration(String dateStr) {
+    try {
+      // Parse the formatted date (DD-MM-YYYY format)
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        final day = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+        final dateTime = DateTime(year, month, day);
+        final expirationDate = dateTime.add(const Duration(days: 7));
+        final now = DateTime.now();
+        final difference = expirationDate.difference(now).inDays;
+        return difference < 0 ? 0 : difference;
+      }
+      
+      // Fallback: try to parse as ISO format
+      final dateTime = DateTime.parse(dateStr);
+      final expirationDate = dateTime.add(const Duration(days: 7));
+      final now = DateTime.now();
+      final difference = expirationDate.difference(now).inDays;
+      return difference < 0 ? 0 : difference;
+    } catch (e) {
+      return 0;
     }
   }
 
@@ -671,7 +701,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           SliverToBoxAdapter(
             child: Padding(
               padding:
-                  AppResponsive.padding(context, horizontal: 6, vertical: 8),
+                  AppResponsive.padding(context, horizontal: 3, vertical: 4),
               child: Row(
                 children: [
                   Icon(
@@ -687,6 +717,21 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const Spacer(),
+                  // SizedBox(width: AppResponsive.spacing(context, 8)),
+                  IconButton(
+                    onPressed: () => _showCashbackDisclaimer(),
+                    icon: Icon(
+                      Icons.info_outline,
+                      color: theme.primaryColor,
+                      size: AppResponsive.fontSize(context, 20),
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: AppResponsive.width(context, 8),
+                      minHeight: AppResponsive.width(context, 8),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
                 ],
               ),
             ),
@@ -696,7 +741,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
           _getCashbackRewards(state).isEmpty
               ? SliverToBoxAdapter(
                   child: Container(
-                    height: AppResponsive.height(context, 15),
+                    height: AppResponsive.height(context, 14),
                     margin: AppResponsive.margin(context, horizontal: 6),
                     decoration: BoxDecoration(
                       color: theme.cardTheme.color ?? theme.colorScheme.surface,
@@ -740,7 +785,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               : SliverGrid(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.95,
+                    childAspectRatio: 0.82,
                     crossAxisSpacing: AppResponsive.spacing(context, 8),
                     mainAxisSpacing: AppResponsive.spacing(context, 8),
                   ),
@@ -1139,6 +1184,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       {Key? key}) {
     final bool isAvailable = reward['status'] == 'available';
     final bool isClaimed = reward['status'] == 'claimed';
+    final bool isExpired = reward['status'] == 'expired';
 
     return Container(
       key: key,
@@ -1156,10 +1202,15 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                       Colors.green[600]!,
                       Colors.green[700]!,
                     ]
-                  : [
-                      Colors.grey[600]!,
-                      Colors.grey[700]!,
-                    ],
+                  : isExpired
+                      ? [
+                          Colors.red[600]!,
+                          Colors.red[700]!,
+                        ]
+                      : [
+                          Colors.grey[600]!,
+                          Colors.grey[700]!,
+                        ],
         ),
         borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
         boxShadow: [
@@ -1234,7 +1285,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
 
                 // Description
                 Text(
-                  isClaimed ? 'Cashback claimed' : 'Cashback received',
+                  isClaimed ? 'Cashback claimed' : isExpired ? 'Cashback expired' : 'Cashback received',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: AppResponsive.fontSize(context, 12),
@@ -1250,6 +1301,30 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                     fontSize: AppResponsive.fontSize(context, 12),
                   ),
                 ),
+
+                // Expiration indicator for available cashback
+                if (isAvailable) ...[
+                  SizedBox(height: AppResponsive.spacing(context, 4)),
+                  Container(
+                    padding: AppResponsive.padding(context, horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 4)),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      'Expires in ${_getDaysUntilExpiration(reward['date'])} days',
+                      style: TextStyle(
+                        color: Colors.orange[200],
+                        fontSize: AppResponsive.fontSize(context, 10),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
 
                 SizedBox(height: AppResponsive.spacing(context, 12)),
 
@@ -1285,9 +1360,11 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                         Text(
                           isClaimed
                               ? 'Claimed'
-                              : isAvailable
-                                  ? 'Claim'
-                                  : 'Unavailable',
+                              : isExpired
+                                  ? 'Expired'
+                                  : isAvailable
+                                      ? 'Claim'
+                                      : 'Unavailable',
                           style: TextStyle(
                             fontSize: AppResponsive.fontSize(context, 14),
                             fontWeight: FontWeight.bold,
@@ -1567,6 +1644,82 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showCashbackDisclaimer() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: theme.dialogTheme.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 16)),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: theme.primaryColor,
+                size: AppResponsive.fontSize(context, 24),
+              ),
+              SizedBox(width: AppResponsive.spacing(context, 8)),
+              Text(
+                'Cashback Terms',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 18),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '• Cashback rewards expire 7 days after being received',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 8)),
+              Text(
+                '• Watch the ad completely to claim your cashback',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 8)),
+              Text(
+                '• Claims are processed via WhatsApp contact',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 8)),
+              Text(
+                '• Expired cashback cannot be claimed',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Got it',
+                style: TextStyle(
+                  fontSize: AppResponsive.fontSize(context, 14),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

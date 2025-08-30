@@ -429,7 +429,7 @@ final List<Map<String, String>> lotteryTypes = [
             );
           },
         ),
-        // const SizedBox(height: 20),
+        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -603,7 +603,7 @@ final List<Map<String, String>> lotteryTypes = [
             );
           },
         ),
-        // const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
