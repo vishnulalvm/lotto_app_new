@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/repeated_number.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/yesterday_accuracy_widget.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/lucky_number_dialog.dart';
 
 class PredictScreen extends StatefulWidget {
   const PredictScreen({super.key});
@@ -54,11 +56,13 @@ final List<Map<String, String>> lotteryTypes = [
     );
     selectedLotteryType = _getLotteryNameForToday();
 
-    // Auto-generate with default prize type
+    // Auto-generate with default prize type and check if lucky number dialog should be shown
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _generatePrediction(_getLotteryNameForToday());
+      _checkAndShowLuckyNumberDialog();
     });
   }
+
 
   @override
   void dispose() {
@@ -945,6 +949,77 @@ final List<Map<String, String>> lotteryTypes = [
             prizeType: selectedPrizeType!,
           ),
         );
+  }
+
+  Future<void> _checkAndShowLuckyNumberDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayString = '${today.year}-${today.month}-${today.day}';
+    final lastShownDate = prefs.getString('lucky_number_dialog_last_shown');
+
+    if (lastShownDate != todayString) {
+      // Show dialog after a small delay to ensure screen is loaded
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          _showLuckyNumberDialog();
+        }
+      });
+    }
+  }
+
+  void _showLuckyNumberDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return LuckyNumberDialog(
+          onNumberSelected: (String selectedNumber) {
+            HapticFeedback.mediumImpact();
+            
+            // Close dialog immediately
+            Navigator.of(context).pop();
+            
+            // Save today's date to prevent showing again today (async operation)
+            _saveLuckyNumberDialogDate();
+            
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Your lucky number is $selectedNumber! Good luck! 🍀',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Theme.of(context).primaryColor,
+                duration: const Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _saveLuckyNumberDialogDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayString = '${today.year}-${today.month}-${today.day}';
+    await prefs.setString('lucky_number_dialog_last_shown', todayString);
   }
 }
 
