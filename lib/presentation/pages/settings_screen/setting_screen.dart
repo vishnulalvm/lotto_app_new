@@ -144,6 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (currentVersion != latestVersion) {
         showDialog(
           context: context,
+          useRootNavigator: false,
           builder: (context) => AlertDialog(
             title: Text('update_available'.tr()),
             content: Text('newer_version_available'.tr(namedArgs: {'version': latestVersion})),
@@ -340,7 +341,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         trailing: Switch(
                           value: _notificationsEnabled,
                           onChanged: _toggleNotifications,
-                          activeColor: theme.primaryColor,
+                          activeThumbColor: theme.primaryColor,
                         ),
                         showArrow: false,
                         onTap: () => _toggleNotifications(!_notificationsEnabled),
@@ -428,6 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       BuildContext context, theme_service.ThemeMode currentTheme) {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext dialogContext) {
         return BlocBuilder<ThemeBloc, ThemeState>(
           builder: (context, themeState) {
@@ -499,6 +501,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text('confirm_logout'.tr()),
@@ -527,6 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text('delete_account'.tr()),
@@ -578,6 +582,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLanguageDialog(BuildContext context) {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text('app_language'.tr()),

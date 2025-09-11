@@ -556,6 +556,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
 
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: theme.dialogTheme.backgroundColor,

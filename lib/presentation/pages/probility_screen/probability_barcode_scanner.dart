@@ -503,6 +503,7 @@ class _ProbabilityBarcodeScannerScreenState
   void _showNoBarcodeFoundDialog() {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('no_barcode_found'.tr()),
@@ -633,6 +634,7 @@ class _ProbabilityBarcodeScannerScreenState
   void _showAPIErrorDialog() {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (context) => AlertDialog(
         title: Text('analysis_error'.tr()),
         content: Text('failed_to_analyze_ticket'.tr()),

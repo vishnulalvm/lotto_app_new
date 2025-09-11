@@ -55,20 +55,31 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 400 || screenSize.height < 600;
+    final isVerySmallScreen = screenSize.width < 350;
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isVerySmallScreen ? 16 : isSmallScreen ? 20 : 24,
+        vertical: isSmallScreen ? 16 : 24,
+      ),
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: screenSize.width * 0.85,
-            maxHeight: screenSize.height * 0.6,
+            maxWidth: isVerySmallScreen 
+                ? screenSize.width * 0.95 
+                : isSmallScreen 
+                    ? screenSize.width * 0.9
+                    : screenSize.width * 0.85,
+            maxHeight: isSmallScreen 
+                ? screenSize.height * 0.75 
+                : screenSize.height * 0.6,
           ),
           decoration: BoxDecoration(
-            color: theme.dialogTheme.backgroundColor ?? theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
+            color: theme.dialogTheme.backgroundColor,
+            borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 24),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.15),
@@ -80,8 +91,8 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildHeader(theme),
-              _buildNumberGrid(theme),
+              _buildHeader(theme, isSmallScreen, isVerySmallScreen),
+              _buildNumberGrid(theme, isSmallScreen, isVerySmallScreen),
             ],
           ),
         ),
@@ -89,9 +100,14 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, bool isSmallScreen, bool isVerySmallScreen) {
+    final borderRadius = isSmallScreen ? 16.0 : 24.0;
+    final padding = isVerySmallScreen ? 16.0 : isSmallScreen ? 20.0 : 24.0;
+    final iconSize = isVerySmallScreen ? 20.0 : isSmallScreen ? 22.0 : 24.0;
+    final iconPadding = isVerySmallScreen ? 8.0 : isSmallScreen ? 10.0 : 12.0;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -101,9 +117,9 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(borderRadius),
+          topRight: Radius.circular(borderRadius),
         ),
       ),
       child: Column(
@@ -113,7 +129,7 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(iconPadding),
                 decoration: BoxDecoration(
                   color: theme.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
@@ -121,27 +137,28 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
                 child: Icon(
                   Icons.auto_awesome,
                   color: theme.primaryColor,
-                  size: 24,
+                  size: iconSize,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: isVerySmallScreen ? 12 : 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Choose Your Lucky Number',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      'Guessing a Number',
+                      style: (isVerySmallScreen 
+                          ? theme.textTheme.titleMedium 
+                          : theme.textTheme.titleLarge)?.copyWith(
                         color: theme.primaryColor,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: isVerySmallScreen ? 2 : 4),
                     Text(
                       'Tap a number that feels lucky to you today',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: isVerySmallScreen 
+                          ? theme.textTheme.bodySmall 
+                          : theme.textTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -153,48 +170,55 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
     );
   }
 
-  Widget _buildNumberGrid(ThemeData theme) {
+  Widget _buildNumberGrid(ThemeData theme, bool isSmallScreen, bool isVerySmallScreen) {
+    final padding = isVerySmallScreen ? 16.0 : isSmallScreen ? 20.0 : 24.0;
+    final spacing = isVerySmallScreen ? 10.0 : isSmallScreen ? 12.0 : 16.0;
+    final zeroButtonHeight = isVerySmallScreen ? 50.0 : isSmallScreen ? 60.0 : 70.0;
+
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(padding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               childAspectRatio: 1,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
             ),
             itemCount: 9,
             itemBuilder: (context, index) {
               final number = numbers[index];
               
-              return _buildNumberButton(theme, number);
+              return _buildNumberButton(theme, number, isSmallScreen: isSmallScreen, isVerySmallScreen: isVerySmallScreen);
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing),
           SizedBox(
             width: double.infinity,
-            height: 70,
-            child: _buildNumberButton(theme, '0', isZero: true),
+            height: zeroButtonHeight,
+            child: _buildNumberButton(theme, '0', isZero: true, isSmallScreen: isSmallScreen, isVerySmallScreen: isVerySmallScreen),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNumberButton(ThemeData theme, String number, {bool isZero = false}) {
+  Widget _buildNumberButton(ThemeData theme, String number, {bool isZero = false, bool isSmallScreen = false, bool isVerySmallScreen = false}) {
+    final borderRadius = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
+    final fontSize = isVerySmallScreen ? 20.0 : isSmallScreen ? 24.0 : 28.0;
+    
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: Material(
         elevation: 2,
         shadowColor: theme.primaryColor.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(borderRadius),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(borderRadius),
           onTap: () async {
             HapticFeedback.mediumImpact();
             
@@ -215,25 +239,27 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.grey[100]!,
-                  Colors.grey[50]!,
+                  theme.cardTheme.color!,
+                  theme.cardTheme.color!.withValues(alpha: 0.9),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(borderRadius),
               border: Border.all(
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: theme.primaryColor.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
             child: Center(
               child: AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
-                style: theme.textTheme.headlineMedium!.copyWith(
+                style: (isVerySmallScreen 
+                    ? theme.textTheme.headlineSmall 
+                    : theme.textTheme.headlineMedium)!.copyWith(
                   color: theme.primaryColor,
                   fontWeight: FontWeight.bold,
-                  fontSize: 28,
+                  fontSize: fontSize,
                 ),
                 child: Text(number),
               ),

@@ -10,6 +10,7 @@ class HowItWorksDialog extends StatefulWidget {
   static void show(BuildContext context) {
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (context) => const HowItWorksDialog(),

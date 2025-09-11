@@ -1386,6 +1386,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         final theme = Theme.of(context);
 
@@ -1503,6 +1504,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void _showComingSoonDialog() {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         final theme = Theme.of(context);
         return PopScope(
@@ -1588,6 +1590,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     final theme = Theme.of(context);
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         return PopScope(
           canPop: true,
@@ -1652,6 +1655,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void _showCashbackDisclaimer() {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         final theme = Theme.of(context);
         return AlertDialog(

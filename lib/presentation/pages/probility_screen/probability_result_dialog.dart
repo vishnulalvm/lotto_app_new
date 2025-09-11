@@ -33,6 +33,7 @@ class ProbabilityResultDialog extends StatefulWidget {
   }) {
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.8),
       builder: (dialogContext) => ProbabilityResultDialog(

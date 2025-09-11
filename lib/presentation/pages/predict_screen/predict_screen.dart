@@ -722,6 +722,7 @@ class _PredictScreenState extends State<PredictScreen>
     showDialog(
       context: context,
       barrierDismissible: true,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         return const LuckyNumberDialog();
       },

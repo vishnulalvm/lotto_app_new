@@ -28,6 +28,7 @@ class FirstTimeLanguageDialog extends StatefulWidget {
     if (shouldShow && context.mounted) {
       showDialog(
         context: context,
+        useRootNavigator: false,
         barrierDismissible: false, // Prevent dismissing by tapping outside
         builder: (context) => const FirstTimeLanguageDialog(),
       );

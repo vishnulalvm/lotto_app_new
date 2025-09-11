@@ -430,6 +430,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
   void _showNoBarcodeFoundDialog() {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('no_barcode_found'.tr()),

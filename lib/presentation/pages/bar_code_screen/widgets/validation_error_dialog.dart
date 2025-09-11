@@ -169,6 +169,7 @@ class ValidationErrorDialog extends StatelessWidget {
   static Future<void> show(BuildContext context, String errorMessage) {
     return showDialog<void>(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
         return ValidationErrorDialog(errorMessage: errorMessage);
       },

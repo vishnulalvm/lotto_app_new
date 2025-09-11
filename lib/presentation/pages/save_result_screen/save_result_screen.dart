@@ -592,6 +592,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
   void _showClearAllDialog() {
     showDialog(
       context: context,
+      useRootNavigator: false,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Saved Results'),
         content: const Text(
