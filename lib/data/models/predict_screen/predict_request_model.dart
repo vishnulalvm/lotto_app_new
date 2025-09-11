@@ -1,39 +1,34 @@
 class PredictRequestModel {
-  final String lotteryName;
-  final String prizeType;
+  final String peoplesPrediction;
 
   const PredictRequestModel({
-    required this.lotteryName,
-    required this.prizeType,
+    required this.peoplesPrediction,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'lottery_name': lotteryName,
-      'prize_type': prizeType,
+      'peoples_prediction': peoplesPrediction,
     };
   }
 
   factory PredictRequestModel.fromJson(Map<String, dynamic> json) {
     return PredictRequestModel(
-      lotteryName: json['lottery_name'] as String,
-      prizeType: json['prize_type'] as String,
+      peoplesPrediction: json['peoples_prediction'] as String,
     );
   }
 
   @override
   String toString() {
-    return 'PredictRequestModel(lotteryName: $lotteryName, prizeType: $prizeType)';
+    return 'PredictRequestModel(peoplesPrediction: $peoplesPrediction)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is PredictRequestModel &&
-        other.lotteryName == lotteryName &&
-        other.prizeType == prizeType;
+        other.peoplesPrediction == peoplesPrediction;
   }
 
   @override
-  int get hashCode => lotteryName.hashCode ^ prizeType.hashCode;
+  int get hashCode => peoplesPrediction.hashCode;
 }

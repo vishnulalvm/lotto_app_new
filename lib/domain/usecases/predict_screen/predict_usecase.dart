@@ -11,4 +11,9 @@ class PredictUseCase {
   Future<PredictResponseModel> execute(PredictRequestModel request) async {
     return await _repository.getPrediction(request);
   }
+
+  /// Get prediction data for display
+  Future<PredictResponseModel> getPredictionData() async {
+    return await _repository.getPredictionData();
+  }
 }

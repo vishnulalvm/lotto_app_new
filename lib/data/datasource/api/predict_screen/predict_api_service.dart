@@ -22,4 +22,21 @@ class PredictApiService {
       throw Exception('Error getting prediction: $e');
     }
   }
+
+  Future<PredictResponseModel> getPredictionData() async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.baseUrl + ApiConstants.predict),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return PredictResponseModel.fromJson(jsonData);
+      } else {
+        throw Exception('Failed to get prediction data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error getting prediction data: $e');
+    }
+  }
 }

@@ -4,6 +4,7 @@ import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart
 
 abstract class PredictRepository {
   Future<PredictResponseModel> getPrediction(PredictRequestModel request);
+  Future<PredictResponseModel> getPredictionData();
 }
 
 class PredictRepositoryImpl implements PredictRepository {
@@ -17,6 +18,15 @@ class PredictRepositoryImpl implements PredictRepository {
       return await _apiService.getPrediction(request);
     } catch (e) {
       throw Exception('Failed to get prediction: $e');
+    }
+  }
+
+  @override
+  Future<PredictResponseModel> getPredictionData() async {
+    try {
+      return await _apiService.getPredictionData();
+    } catch (e) {
+      throw Exception('Failed to get prediction data: $e');
     }
   }
 }

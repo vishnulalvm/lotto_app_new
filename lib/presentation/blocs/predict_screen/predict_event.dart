@@ -8,18 +8,20 @@ abstract class PredictEvent extends Equatable {
 }
 
 class GetPredictionEvent extends PredictEvent {
-  final String lotteryName;
-  final String prizeType;
+  final String peoplesPrediction;
 
   const GetPredictionEvent({
-    required this.lotteryName,
-    required this.prizeType,
+    required this.peoplesPrediction,
   });
 
   @override
-  List<Object?> get props => [lotteryName, prizeType];
+  List<Object?> get props => [peoplesPrediction];
 }
 
 class ClearPredictionEvent extends PredictEvent {
   const ClearPredictionEvent();
+}
+
+class GetPredictionDataEvent extends PredictEvent {
+  const GetPredictionDataEvent();
 }

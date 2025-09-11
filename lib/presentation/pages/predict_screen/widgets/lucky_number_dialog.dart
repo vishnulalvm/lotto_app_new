@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
+import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 
 class LuckyNumberDialog extends StatefulWidget {
-  final Function(String) onNumberSelected;
-
   const LuckyNumberDialog({
     super.key,
-    required this.onNumberSelected,
   });
 
   @override
@@ -194,9 +195,20 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: () async {
             HapticFeedback.mediumImpact();
-            widget.onNumberSelected(number);
+            
+            final bloc = context.read<PredictBloc>();
+            final navigator = Navigator.of(context);
+            
+            bloc.add(
+              GetPredictionEvent(peoplesPrediction: number),
+            );
+            
+            // Save today's date to prevent showing again today
+            await _saveLuckyNumberDialogDate();
+            
+            navigator.pop();
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -230,5 +242,12 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
         ),
       ),
     );
+  }
+
+  Future<void> _saveLuckyNumberDialogDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayString = '${today.year}-${today.month}-${today.day}';
+    await prefs.setString('lucky_number_dialog_last_shown', todayString);
   }
 }
