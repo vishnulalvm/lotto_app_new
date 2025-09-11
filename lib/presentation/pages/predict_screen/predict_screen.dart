@@ -9,6 +9,8 @@ import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
 import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
+import 'dart:async';
 
 class PredictScreen extends StatefulWidget {
   const PredictScreen({super.key});
@@ -21,6 +23,7 @@ class _PredictScreenState extends State<PredictScreen>
     with TickerProviderStateMixin {
   late AnimationController _typewriterController;
   bool _isDisclaimerExpanded = false;
+  Timer? _adTimer;
 
   @override
   void initState() {
@@ -33,6 +36,7 @@ class _PredictScreenState extends State<PredictScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PredictBloc>().add(const GetPredictionDataEvent());
       _checkAndShowLuckyNumberDialog();
+      _preloadAndScheduleInterstitialAd();
     });
   }
 
@@ -40,6 +44,7 @@ class _PredictScreenState extends State<PredictScreen>
   @override
   void dispose() {
     _typewriterController.dispose();
+    _adTimer?.cancel();
     super.dispose();
   }
 
@@ -727,6 +732,22 @@ class _PredictScreenState extends State<PredictScreen>
         return const LuckyNumberDialog();
       },
     );
+  }
+
+  void _preloadAndScheduleInterstitialAd() {
+    AdMobService.instance.loadPredictInterstitialAd();
+    
+    _adTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        _showInterstitialAd();
+      }
+    });
+  }
+
+  void _showInterstitialAd() async {
+    if (AdMobService.instance.isPredictInterstitialAdLoaded) {
+      await AdMobService.instance.showInterstitialAd('predict_interstitial');
+    }
   }
 
 }

@@ -82,7 +82,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       {
         'icon': Icons.games_outlined,
         'label': 'predict'.tr(),
-        'route': '/Predict'
+        'route': '/predict'
       },
       {'icon': Icons.newspaper, 'label': 'news'.tr(), 'route': '/news_screen'},
       {
@@ -244,7 +244,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       context: context,
       theme: theme,
       imagePath: 'assets/icons/money_bag.png',
-      label: 'Cashbacks',
+      label: 'Cashback',
       isFront: false,
     );
 
