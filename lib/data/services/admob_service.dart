@@ -53,6 +53,13 @@ class AdMobService {
   // INTERSTITIAL AD UNIT IDs
   static const String interstitialResultsPredict = 'ca-app-pub-1386225714525775/8656073343';
   static const String interstitialResultsSeemore = 'ca-app-pub-1386225714525775/4716828336';
+  static const String interstitialLottoPoints = 'ca-app-pub-1386225714525775/1255199620';
+  
+  // Test ad unit IDs (use for debugging NO_FILL issues)
+  static const String testInterstitial = 'ca-app-pub-3940256099942544/1033173712';
+  
+  // Debug mode flag - set to true to use test ads
+  static const bool useTestAds = false; // Production mode - using real ad units
   
   // NATIVE AD UNIT IDs
   static const String nativeHomeResults = 'ca-app-pub-1386225714525775/1332117098';
@@ -280,17 +287,21 @@ class AdMobService {
   
   Future<void> loadLottoPointsRewardedAd() => loadAd('lotto_points_rewarded');
   
+  Future<void> loadLottoPointsInterstitialAd() => loadAd('lotto_points_interstitial');
+  
   Future<void> loadScratchCardRewardedInterstitialAd() => loadAd('scratch_card_rewarded_interstitial');
   
   NativeAd? getHomeResultsAd() => getAd<NativeAd>('home_results');
   NativeAd? getSharedHomeResultsAd() => getSharedAd<NativeAd>('home_results');
   InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
+  InterstitialAd? getLottoPointsInterstitialAd() => getAd<InterstitialAd>('lotto_points_interstitial');
   RewardedAd? getCashbackClaimRewardedAd() => getAd<RewardedAd>('cashback_claim_rewarded');
   RewardedAd? getLottoPointsRewardedAd() => getAd<RewardedAd>('lotto_points_rewarded');
   RewardedInterstitialAd? getScratchCardRewardedInterstitialAd() => getAd<RewardedInterstitialAd>('scratch_card_rewarded_interstitial');
   
   bool get isHomeResultsAdLoaded => isAdLoaded('home_results');
   bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
+  bool get isLottoPointsInterstitialAdLoaded => isAdLoaded('lotto_points_interstitial');
   bool get isCashbackClaimRewardedAdLoaded => isAdLoaded('cashback_claim_rewarded');
   bool get isLottoPointsRewardedAdLoaded => isAdLoaded('lotto_points_rewarded');
   bool get isScratchCardRewardedInterstitialAdLoaded => isAdLoaded('scratch_card_rewarded_interstitial');
@@ -642,7 +653,7 @@ class AdMobService {
   }
 
   bool _isInterstitialAdType(String adType) {
-    return ['predict_interstitial', 'seemore_interstitial'].contains(adType);
+    return ['predict_interstitial', 'seemore_interstitial', 'lotto_points_interstitial'].contains(adType);
   }
 
   String? _getNativeAdUnitId(String adType) {
@@ -657,8 +668,9 @@ class AdMobService {
 
   String? _getInterstitialAdUnitId(String adType) {
     switch (adType) {
-      case 'predict_interstitial': return interstitialResultsPredict;
-      case 'seemore_interstitial': return interstitialResultsSeemore;
+      case 'predict_interstitial': return useTestAds ? testInterstitial : interstitialResultsPredict;
+      case 'seemore_interstitial': return useTestAds ? testInterstitial : interstitialResultsSeemore;
+      case 'lotto_points_interstitial': return useTestAds ? testInterstitial : interstitialLottoPoints;
       default: return null;
     }
   }

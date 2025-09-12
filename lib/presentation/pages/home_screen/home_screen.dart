@@ -650,73 +650,6 @@ class _HomeScreenState extends State<HomeScreen>
         },
       ),
       actions: [
-        // Beautiful Coin Button
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppResponsive.spacing(context, 4),
-          ),
-          child: GestureDetector(
-            onTap: () {
-              // Add haptic feedback for Points button
-              HapticFeedback.lightImpact();
-              context.push('/lottoPoints');
-            },
-            child: Container(
-              height: AppResponsive.fontSize(context, 26),
-              padding: EdgeInsets.symmetric(
-                horizontal: AppResponsive.spacing(context, 6),
-                vertical: AppResponsive.spacing(context, 4),
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 204, 61, 25), // Gold
-                    Color.fromARGB(255, 206, 71, 4), // Light Gold
-                    Color.fromARGB(255, 229, 92, 38), // Gold
-                  ],
-                  stops: [0.0, 0.5, 1.0],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(
-                  AppResponsive.spacing(context, 18),
-                ),
-                border: Border.all(
-                  color: Color(0xFFFFE55C).withValues(alpha: 0.5),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/icons/lotto_points.png',
-                    width: AppResponsive.fontSize(context, 14),
-                    height: AppResponsive.fontSize(context, 14),
-                    fit: BoxFit.contain,
-                  ),
-                  SizedBox(width: AppResponsive.spacing(context, 4)),
-                  Text(
-                    "Points",
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 10),
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          offset: Offset(0, 1),
-                          blurRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
         PopupMenuButton<String>(
           icon: Icon(
             Icons.more_vert,
@@ -729,6 +662,13 @@ class _HomeScreenState extends State<HomeScreen>
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
           ),
           itemBuilder: (BuildContext context) => [
+            _buildPopupMenuItem(
+              'saved_value', // The actual value returned when selected
+              Icons.bookmark,
+              'saved', // This is the translation key
+              Theme.of(context),
+              context, // Pass context
+            ),
             _buildPopupMenuItem(
               'settings_value', // The actual value returned when selected
               Icons.settings,
@@ -756,6 +696,9 @@ class _HomeScreenState extends State<HomeScreen>
             HapticFeedback.selectionClick();
 
             switch (value) {
+              case 'saved_value': // Match the actual returned value
+                context.push('/saved-results');
+                break;
               case 'settings_value': // Match the actual returned value
                 context.push('/settings');
                 break;

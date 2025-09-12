@@ -32,6 +32,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   
   // Cached responsive values
   late double _iconSize;
+  late double _imageSize;
   late double _containerSize;
   late double _smallIconSize;
   late double _textWidth;
@@ -86,9 +87,9 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       },
       {'icon': Icons.newspaper, 'label': 'news'.tr(), 'route': '/news_screen'},
       {
-        'icon': Icons.bookmark,
-        'label': 'saved'.tr(),
-        'route': '/saved-results'
+        'image': 'assets/icons/lotto_points.png',
+        'label': 'Points',
+        'route': '/lottoPoints'
       },
     ];
   }
@@ -112,6 +113,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   
   void _cacheResponsiveValues(BuildContext context) {
     _iconSize = AppResponsive.fontSize(context, 24);
+    _imageSize = AppResponsive.fontSize(context, 20); // Smaller size for images
     _containerSize = AppResponsive.width(
       context,
       AppResponsive.isMobile(context) ? 12 : 8,
@@ -222,6 +224,10 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
           // Special handling for scanner button with flip animation
           if (item['route'] == '/barcode_scanner_screen') {
             return _buildOptimizedFlipNavItem(context, item, theme);
+          }
+          // Special handling for points button
+          if (item['label'] == 'Points') {
+            return _buildPointsButton(context, item, theme);
           }
           return _buildOptimizedNavItem(context, item, theme);
         }).toList(),
@@ -404,8 +410,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
           child: isFront
               ? Image.asset(
                   imagePath,
-                  width: _iconSize,
-                  height: _iconSize,
+                  width: _imageSize,
+                  height: _imageSize,
                   fit: BoxFit.contain,
                 )
               : Transform(
@@ -429,8 +435,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                     child: Center(
                       child: Image.asset(
                         imagePath,
-                        width: _iconSize * 0.8,
-                        height: _iconSize * 0.8,
+                        width: _imageSize,
+                        height: _imageSize,
                         fit: BoxFit.contain,
                         color: Colors.white,
                       ),
@@ -504,10 +510,72 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
               color: _isDark ? _darkBackground : _lightBackground,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              item['icon'],
-              color: theme.iconTheme.color,
-              size: _iconSize,
+            child: item['image'] != null
+                ? Image.asset(
+                    item['image'],
+                    width: _imageSize,
+                    height: _imageSize,
+                    fit: BoxFit.contain,
+                  )
+                : Icon(
+                    item['icon'],
+                    color: theme.iconTheme.color,
+                    size: _iconSize,
+                  ),
+          ),
+          SizedBox(height: _spacing),
+          SizedBox(
+            width: _textWidth,
+            child: Text(
+              item['label'],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppResponsive.fontSize(context, 12),
+                fontWeight: FontWeight.w500,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Dedicated method for the Points button
+  Widget _buildPointsButton(BuildContext context, Map<String, dynamic> item, ThemeData theme) {
+    return InkWell(
+      onTap: () => _handleRegularNavTap(item),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: _containerSize,
+            height: _containerSize,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _isDark 
+                  ? [
+                      const Color(0xFFCD5C5C), // Indian Red
+                      const Color(0xFFB04545), // Slightly darker Indian Red
+                    ]
+                  : [
+                      const Color(0xFFCD5C5C), // Indian Red
+                      const Color(0xFFB04545), // Slightly darker Indian Red
+                    ],
+                stops: const [0.0, 1.0],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Image.asset(
+                'assets/icons/lotto_points.png',
+                width: 25.0, // Very small hardcoded size
+                height: 25.0, // Very small hardcoded size
+                color: Colors.white,
+              ),
             ),
           ),
           SizedBox(height: _spacing),

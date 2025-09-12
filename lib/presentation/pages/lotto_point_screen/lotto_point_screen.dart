@@ -6,13 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_event.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_state.dart';
-import 'package:lotto_app/presentation/pages/lotto_point_screen/widget/backgrond.dart';
-import 'package:lotto_app/presentation/widgets/native_ad_point_widget.dart';
+import 'package:lotto_app/presentation/pages/lotto_point_screen/widgets/backgrond.dart';
+import 'package:lotto_app/presentation/pages/lotto_point_screen/widgets/cashback_claim_dialog.dart';
 
 class LottoPointsScreen extends StatefulWidget {
   const LottoPointsScreen({super.key});
@@ -26,8 +25,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   late TabController _tabController;
   final UserService _userService = UserService();
   final AdMobService _adMobService = AdMobService.instance;
-  Timer? _rewardedAdTimer;
-  bool _hasShownRewardedAd = false;
+  Timer? _interstitialAdTimer;
+  bool _hasShownInterstitialAd = false;
 
   // Get cashback rewards from API data
   List<Map<String, dynamic>> _getCashbackRewards(UserPointsState state) {
@@ -133,12 +132,8 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     // Fetch user points data
     _fetchUserPoints();
 
-    // Preload rewarded ad for cashback claims
-    _adMobService.loadCashbackClaimRewardedAd();
-    
-    // Load and schedule the lotto points rewarded ad to show after 3 seconds
-    _adMobService.loadLottoPointsRewardedAd();
-    _startRewardedAdTimer();
+    // Load interstitial ad first and schedule to show after 3 seconds
+    _loadInterstitialAdAndSchedule();
   }
 
   Future<void> _fetchUserPoints() async {
@@ -176,42 +171,128 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     }
   }
 
-  void _startRewardedAdTimer() {
-    if (_hasShownRewardedAd) return;
+  Future<void> _loadInterstitialAdAndSchedule() async {
+    try {
+      // Check if ad is already loaded
+      if (_adMobService.isLottoPointsInterstitialAdLoaded) {
+        // Ad already loaded, starting timer
+        _startInterstitialAdTimer();
+        return;
+      }
+      
+      // Load the interstitial ad with retry logic
+      await _loadInterstitialAdWithRetry();
+      
+      // Debug: Check ad status after loading attempts
+      // Ad loading completed
+      
+      // Start timer regardless - if ad loaded, it will show; if not, it will handle gracefully
+      _startInterstitialAdTimer();
+    } catch (e) {
+      // Unexpected error in ad loading process
+      // Still start the timer to attempt showing if ad becomes available
+      _startInterstitialAdTimer();
+    }
+  }
+
+  Future<void> _loadInterstitialAdWithRetry() async {
+    int retryCount = 0;
+    const maxRetries = 3; // Reduced retries since NO_FILL errors won't resolve quickly
     
-    _rewardedAdTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && !_hasShownRewardedAd && _adMobService.isLottoPointsRewardedAdLoaded) {
-        _showLottoPointsRewardedAd();
+    while (retryCount < maxRetries) {
+      try {
+        // Try to load the ad
+        await _adMobService.loadLottoPointsInterstitialAd();
+        
+        // Check if it actually loaded
+        if (_adMobService.isLottoPointsInterstitialAdLoaded) {
+          // Ad loaded successfully
+          return;
+        }
+        
+        retryCount++;
+        // Ad loading attempt failed (possibly NO_FILL or rate limited)
+        
+        // For NO_FILL errors, waiting longer won't help much, but we'll try a few times
+        if (retryCount < maxRetries) {
+          // Exponential backoff: 3s, 6s, 12s
+          final delaySeconds = 3 * (1 << retryCount);
+          // Waiting before retry with exponential backoff
+          await Future.delayed(Duration(seconds: delaySeconds));
+        }
+      } catch (e) {
+        retryCount++;
+        // Ad loading attempt failed with error
+        
+        if (retryCount < maxRetries) {
+          await Future.delayed(const Duration(seconds: 5));
+        }
+      }
+    }
+    
+    // Don't throw exception for NO_FILL - it's expected behavior
+    // Failed to load interstitial ad - this is normal if no ads are available
+  }
+
+  void _startInterstitialAdTimer() {
+    if (_hasShownInterstitialAd) return;
+    
+    // Start with a longer delay to ensure ad is fully loaded
+    _interstitialAdTimer = Timer(const Duration(seconds: 5), () {
+      _checkAndShowInterstitialAd();
+    });
+  }
+
+  void _checkAndShowInterstitialAd() {
+    if (_hasShownInterstitialAd || !mounted) return;
+    
+    // Checking interstitial ad availability
+    
+    if (_adMobService.isLottoPointsInterstitialAdLoaded) {
+      _showLottoPointsInterstitialAd();
+    } else {
+      // Ad not available - this is normal behavior for NO_FILL errors
+      // Try a few more times but don't be aggressive about it
+      _retryInterstitialAd();
+    }
+  }
+
+  int _interstitialRetryCount = 0;
+  static const int _maxRetries = 2; // Reduced from 3 - less aggressive
+
+  void _retryInterstitialAd() {
+    if (_hasShownInterstitialAd || !mounted || _interstitialRetryCount >= _maxRetries) {
+      if (_interstitialRetryCount >= _maxRetries) {
+        // No interstitial ad available - proceeding without ad (normal behavior)
+      }
+      return;
+    }
+    
+    _interstitialRetryCount++;
+    // Retrying interstitial ad check
+    
+    // Try to load a fresh ad on retry
+    _adMobService.loadLottoPointsInterstitialAd().then((_) {
+      if (mounted && !_hasShownInterstitialAd) {
+        _interstitialAdTimer = Timer(const Duration(seconds: 3), () {
+          _checkAndShowInterstitialAd();
+        });
       }
     });
   }
 
-  void _showLottoPointsRewardedAd() {
-    if (_hasShownRewardedAd) return;
+  void _showLottoPointsInterstitialAd() {
+    if (_hasShownInterstitialAd) return;
     
-    _hasShownRewardedAd = true;
+    // Attempting to show lotto points interstitial ad
+    _hasShownInterstitialAd = true;
     
-    _adMobService.showRewardedAd(
-      'lotto_points_rewarded',
-      onRewardEarned: () {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Thanks for watching! Enjoy your lotto points experience.'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      },
+    _adMobService.showInterstitialAd(
+      'lotto_points_interstitial',
       onDismissed: () {
+        // Ad dismissed, preloading next ad
         // Ad dismissed, preload next ad for future use
-        _adMobService.loadLottoPointsRewardedAd();
-      },
-      onFailed: (error) {
-        // Silently fail - don't show error to user for this type of ad
-        // Try to reload for next time
-        _adMobService.loadLottoPointsRewardedAd();
+        _adMobService.loadLottoPointsInterstitialAd();
       },
     );
   }
@@ -274,7 +355,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
-    _rewardedAdTimer?.cancel();
+    _interstitialAdTimer?.cancel();
     super.dispose();
   }
 
@@ -849,39 +930,20 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                // Calculate actual redeem item index considering single ad
-                int redeemIndex = index;
-                if (index > 3) {
-                  redeemIndex =
-                      index - 1; // Account for single ad at position 3
-                }
-
-                // Check if this position should show an ad
-                // CRITICAL FIX: AdMob Policy Compliance - Maximum 1 ad per screen
-                bool shouldShowAd = false;
-                if (index == 3 && redeemOptions.length > 5) {
-                  // Show only ONE ad at position 3 (middle of screen) if enough content
-                  shouldShowAd = true;
-                }
-
-                if (shouldShowAd) {
-                  return _buildNativeAdCard(theme, key: ValueKey('ad_$index'));
-                }
-
                 // Show redeem card if we have one
-                if (redeemIndex >= 0 && redeemIndex < redeemOptions.length) {
+                if (index < redeemOptions.length) {
                   return _buildRedeemCard(
-                    redeemOptions[redeemIndex],
+                    redeemOptions[index],
                     theme,
                     totalPoints,
-                    key: ValueKey('redeem_$redeemIndex'),
+                    key: ValueKey('redeem_$index'),
                   );
                 }
 
                 // Return empty container if no more items
                 return const SizedBox.shrink();
               },
-              childCount: redeemOptions.length + 1, // Redeem cards + max 1 ad
+              childCount: redeemOptions.length, // Redeem cards only
             ),
           ),
         ],
@@ -889,47 +951,6 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  Widget _buildNativeAdCard(ThemeData theme, {Key? key}) {
-    return Stack(
-      children: [
-        NativePointAdWidget(
-          key: key,
-          height: null, // Let grid control height via aspect ratio
-          borderRadius:
-              BorderRadius.circular(AppResponsive.spacing(context, 16)),
-          margin: EdgeInsets.zero, // No margin as grid handles spacing
-        ),
-        // CRITICAL: AdMob Policy Compliance - Clear Ad Label
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.orange,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Text(
-              'AD',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildRedeemCard(
       Map<String, dynamic> item, ThemeData theme, int totalPoints,
@@ -1333,7 +1354,7 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed:
-                        isAvailable ? () => _showClaimDialog(reward) : null,
+                        isAvailable ? () => _showCashbackClaimDialog(reward) : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor:
@@ -1382,120 +1403,18 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  void _showClaimDialog(Map<String, dynamic> reward) {
+  void _showCashbackClaimDialog(Map<String, dynamic> reward) {
     showDialog(
       context: context,
       barrierDismissible: false,
       useRootNavigator: false,
       builder: (BuildContext context) {
-        final theme = Theme.of(context);
-
-        return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (bool didPop, dynamic _) {
-            if (didPop) return;
-
-            // Manually handle the pop
-            Navigator.of(context).pop();
+        return CashbackClaimDialog(
+          reward: reward,
+          onClaimed: () {
+            // Refresh points data and preload next ad
+            _fetchUserPoints();
           },
-          child: AlertDialog(
-            backgroundColor: theme.dialogTheme.backgroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(AppResponsive.spacing(context, 16)),
-            ),
-            title: Row(
-              children: [
-                Icon(
-                  Icons.redeem,
-                  color: theme.primaryColor,
-                  size: AppResponsive.fontSize(context, 24),
-                ),
-                SizedBox(width: AppResponsive.spacing(context, 8)),
-                Text(
-                  'Claim Cashback',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: AppResponsive.fontSize(context, 18),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Claim your ₹${reward['amount']} cashback reward?',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: AppResponsive.fontSize(context, 14),
-                  ),
-                ),
-                if (reward['cashbackId'] != null) ...[
-                  SizedBox(height: AppResponsive.spacing(context, 8)),
-                  Container(
-                    padding: AppResponsive.padding(context,
-                        horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 8)),
-                      border: Border.all(
-                        color: theme.dividerColor.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: AppResponsive.fontSize(context, 16),
-                          color: theme.primaryColor,
-                        ),
-                        SizedBox(width: AppResponsive.spacing(context, 8)),
-                        Expanded(
-                          child: Text(
-                            'ID: ${reward['cashbackId']}',
-                            style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 12),
-                              color: theme.textTheme.bodySmall?.color,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontSize: AppResponsive.fontSize(context, 14),
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _showRewardedAdForClaim(reward);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  'Claim',
-                  style: TextStyle(
-                    fontSize: AppResponsive.fontSize(context, 14),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -1558,99 +1477,6 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  void _showRewardedAdForClaim(Map<String, dynamic> reward) {
-    // Load ad if not available
-    if (!_adMobService.isCashbackClaimRewardedAdLoaded) {
-      _adMobService.loadCashbackClaimRewardedAd();
-    }
-
-    // Show the rewarded ad
-    _adMobService.showRewardedAd(
-      'cashback_claim_rewarded',
-      onRewardEarned: () {
-        // User completed the ad - show confirmation dialog
-        _showCashbackClaimedDialog(reward);
-      },
-      onDismissed: () {
-        // User dismissed the ad without completing it
-        // Do nothing - they didn't earn the reward
-      },
-      onFailed: (error) {
-        // Ad failed to show - show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Could not load reward ad. Please try again later.')),
-        );
-      },
-    );
-  }
-
-  void _showCashbackClaimedDialog(Map<String, dynamic> reward) {
-    final theme = Theme.of(context);
-    showDialog(
-      context: context,
-      useRootNavigator: false,
-      builder: (BuildContext context) {
-        return PopScope(
-          canPop: true,
-          child: AlertDialog(
-            backgroundColor: theme.dialogTheme.backgroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(AppResponsive.spacing(context, 16)),
-            ),
-            title: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: AppResponsive.fontSize(context, 24),
-                ),
-                SizedBox(width: AppResponsive.spacing(context, 8)),
-                Text(
-                  'Cashback Claimed!',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: AppResponsive.fontSize(context, 18),
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              'Congratulations! You have successfully claimed ₹${reward['amount']} cashback.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: AppResponsive.fontSize(context, 14),
-              ),
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Launch WhatsApp with claim request
-                  _launchWhatsAppClaimRequest(reward);
-                  // Refresh the points to update the UI
-                  _fetchUserPoints();
-                  // Preload next ad
-                  _adMobService.loadCashbackClaimRewardedAd();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  'Great!',
-                  style: TextStyle(
-                    fontSize: AppResponsive.fontSize(context, 14),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showCashbackDisclaimer() {
     showDialog(
@@ -1729,57 +1555,4 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
     );
   }
 
-  Future<void> _launchWhatsAppClaimRequest(Map<String, dynamic> reward) async {
-    try {
-      // Get user ID from user service
-      final phoneNumber = await _userService.getPhoneNumber();
-      final userId = phoneNumber ?? 'Unknown';
-
-      // Format the claim message
-      final message = '''🎉 *Cashback Claim Request*
-
-👤 *User ID:* $userId
-💰 *Amount:* ₹${reward['amount']}
-📋 *Cashback ID:* ${reward['cashbackId'] ?? 'N/A'}
-📅 *Date:* ${reward['date']}
-
-Please process my cashback claim. I have completed the required ad and am eligible for this reward.
-
-Thank you! 🙏''';
-
-      // WhatsApp number (with country code, no + sign)
-      const whatsappNumber = '916238970003';
-
-      // Create WhatsApp URL
-      final encodedMessage = Uri.encodeComponent(message);
-      final whatsappUrl = 'https://wa.me/$whatsappNumber?text=$encodedMessage';
-
-      // Launch WhatsApp
-      final Uri url = Uri.parse(whatsappUrl);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback - show error
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Could not open WhatsApp. Please make sure WhatsApp is installed.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      // Handle any errors
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening WhatsApp: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 }
