@@ -553,20 +553,18 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
             width: _containerSize,
             height: _containerSize,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: _isDark 
-                  ? [
-                      const Color(0xFFCD5C5C), // Indian Red
-                      const Color(0xFFB04545), // Slightly darker Indian Red
-                    ]
-                  : [
+              gradient: _isDark 
+                ? null // No gradient in dark mode
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
                       const Color(0xFFCD5C5C), // Indian Red
                       const Color(0xFFB04545), // Slightly darker Indian Red
                     ],
-                stops: const [0.0, 1.0],
-              ),
+                    stops: const [0.0, 1.0],
+                  ),
+              color: _isDark ? _darkBackground : null, // Use same background as other buttons in dark mode
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -574,7 +572,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                 'assets/icons/lotto_points.png',
                 width: 25.0, // Very small hardcoded size
                 height: 25.0, // Very small hardcoded size
-                color: Colors.white,
+                color: _isDark ? theme.iconTheme.color : Colors.white, // Use theme icon color in dark mode
               ),
             ),
           ),

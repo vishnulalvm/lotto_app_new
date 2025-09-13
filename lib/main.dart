@@ -83,11 +83,18 @@ void main() async {
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Initialize Firebase messaging service (non-blocking)
-  FirebaseMessagingService.initialize().catchError((error) {});
+  // Move all other service initialization to background (non-blocking)
+  unawaited(Future.delayed(const Duration(milliseconds: 100), () {
+    FirebaseMessagingService.initialize().catchError((error) {
+      debugPrint('FirebaseMessaging init failed in main: $error');
+    });
+  }));
 
-  // Initialize app update service (non-blocking)
-  AppUpdateService().initialize().catchError((error) {});
+  unawaited(Future.delayed(const Duration(milliseconds: 200), () {
+    AppUpdateService().initialize().catchError((error) {
+      debugPrint('AppUpdateService init failed in main: $error');
+    });
+  }));
 
   runApp(
     EasyLocalization(

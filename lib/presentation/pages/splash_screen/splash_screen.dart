@@ -48,41 +48,64 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     try {
-      // Phase 1: Critical services only
+      // Phase 1: Only the most critical service for navigation
       await HiveService.init();
 
-      // Phase 2: Essential services in parallel
-      await Future.wait([
-        ConnectivityService().initialize(),
-        SavedResultsService.init(),
-      ]);
-
-      // Phase 3: Navigate immediately after essential services complete
+      // Phase 2: Navigate immediately - everything else is background
       await _checkLoginStatus();
 
-      // Phase 4: Initialize remaining services in background after navigation
+      // Phase 3: Initialize all other services in background after navigation
       unawaited(_initializeBackgroundServices());
     } catch (e) {
-      // Still proceed to navigate with minimal delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Still navigate even if critical services fail
       await _checkLoginStatus();
+      // Try background services anyway
+      unawaited(_initializeBackgroundServices());
     }
   }
 
-  /// Initialize heavy services in background after navigation
+  /// Initialize all non-critical services in background after navigation
   Future<void> _initializeBackgroundServices() async {
     try {
-      // Run heavy services after navigation
-      await Future.wait([
-        AnalyticsService.initialize(),
-        FirebaseMessagingService.initialize(),
-        _initializeAdMobServices(),
-      ]);
+      // Phase 1: Start connectivity service (needed for cache decisions)
+      unawaited(ConnectivityService().initialize().catchError((e) {
+        debugPrint('ConnectivityService init failed: $e');
+      }));
 
-      CacheManager.initialize();
+      // Phase 2: Initialize essential app services
+      unawaited(SavedResultsService.init().catchError((e) {
+        debugPrint('SavedResultsService init failed: $e');
+      }));
+
+      // Phase 3: Initialize heavy services with delays to spread CPU load
+      unawaited(Future.delayed(const Duration(milliseconds: 100), () {
+        AnalyticsService.initialize().catchError((e) {
+          debugPrint('AnalyticsService init failed: $e');
+        });
+      }));
+
+      unawaited(Future.delayed(const Duration(milliseconds: 200), () {
+        FirebaseMessagingService.initialize().catchError((e) {
+          debugPrint('FirebaseMessaging init failed: $e');
+        });
+      }));
+
+      unawaited(Future.delayed(const Duration(milliseconds: 300), () {
+        _initializeAdMobServices().catchError((e) {
+          debugPrint('AdMob services init failed: $e');
+        });
+      }));
+
+      // Phase 4: Initialize cache manager last (least critical)
+      unawaited(Future.delayed(const Duration(milliseconds: 400), () {
+        try {
+          CacheManager.initialize();
+        } catch (e) {
+          debugPrint('CacheManager init failed: $e');
+        }
+      }));
     } catch (e) {
-      // Cache initialization is not critical for app startup
-      debugPrint('Failed to initialize cache: $e');
+      debugPrint('Background services initialization failed: $e');
     }
   }
 
@@ -91,32 +114,36 @@ class _SplashScreenState extends State<SplashScreen> {
       // Initialize AdMob service
       await AdMobService.initialize();
 
-      // Create notification channel in parallel
-      unawaited(_createNotificationChannel());
+      // Create notification channel in parallel (non-blocking)
+      unawaited(_createNotificationChannel().catchError((e) {
+        debugPrint('Notification channel creation failed: $e');
+      }));
 
-      // Preload all ads in background to prevent home screen lag
-      unawaited(Future.delayed(const Duration(milliseconds: 500), () {
+      // Preload ads with even more delay to not impact initial UX
+      unawaited(Future.delayed(const Duration(seconds: 2), () {
         _preloadAdsInBackground();
       }));
     } catch (e) {
-      // AdMob initialization failure is not critical
-      debugPrint('Failed to initialize AdMob services: $e');
+      debugPrint('AdMob services initialization failed: $e');
     }
   }
   
   void _preloadAdsInBackground() async {
-    // Enhanced preloading with system load awareness
     try {
-      // Preload high-priority ads first (faster loading, critical for UX)
-      await AdMobService.instance.preloadAds();
+      // Preload high-priority ads with error handling
+      await AdMobService.instance.preloadAds().catchError((e) {
+        debugPrint('Primary ad preload failed: $e');
+      });
       
-      // Longer delay to let app settle after navigation
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Additional delay to ensure app is fully settled
+      await Future.delayed(const Duration(seconds: 2));
       
-      // Explicitly preload home screen specific ads instead of using deprecated smartPreload
+      // Preload specific ads for key screens
       await AdMobService.instance.preloadAds(
         adTypes: ['home_results', 'predict_interstitial'],
-      );
+      ).catchError((e) {
+        debugPrint('Specific ad preload failed: $e');
+      });
       
       debugPrint('✅ Background ad preload completed');
     } catch (e) {
@@ -140,9 +167,10 @@ class _SplashScreenState extends State<SplashScreen> {
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
+      
+      debugPrint('✅ Notification channel created');
     } catch (e) {
-      // Notification channel creation failure is not critical
-      debugPrint('Failed to create notification channel: $e');
+      debugPrint('❌ Notification channel creation failed: $e');
     }
   }
 
