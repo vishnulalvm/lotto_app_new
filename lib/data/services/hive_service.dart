@@ -2,6 +2,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lotto_app/data/models/home_screen/cached_home_screen_model.dart';
 import 'package:lotto_app/data/models/results_screen/cached_result_details_model.dart';
 import 'package:lotto_app/data/models/results_screen/save_result.dart';
+import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
 
 class HiveService {
   static const String _homeScreenBoxName = 'home_screen_cache';
@@ -39,6 +40,9 @@ class HiveService {
       }
       if (!Hive.isAdapterRegistered(6)) {
         Hive.registerAdapter(SavedLotteryResultAdapter());
+      }
+      if (!Hive.isAdapterRegistered(10)) {
+        Hive.registerAdapter(AiPredictionModelAdapter());
       }
       
       // Try to open boxes with error handling for schema changes

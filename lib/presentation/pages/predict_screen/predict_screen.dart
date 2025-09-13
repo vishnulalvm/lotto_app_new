@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/lucky_number_dialog.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_card.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
 import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 import 'dart:async';
 
 class PredictScreen extends StatefulWidget {
@@ -32,6 +34,20 @@ class _PredictScreenState extends State<PredictScreen>
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'predict_screen',
+          screenClass: 'PredictScreen',
+          parameters: {
+            'lottery_name': _getLotteryNameForToday(),
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
+
     // Load prediction data and check if lucky number dialog should be shown
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PredictBloc>().add(const GetPredictionDataEvent());
@@ -39,7 +55,6 @@ class _PredictScreenState extends State<PredictScreen>
       _preloadAndScheduleInterstitialAd();
     });
   }
-
 
   @override
   void dispose() {
@@ -122,7 +137,7 @@ class _PredictScreenState extends State<PredictScreen>
         child: CircularProgressIndicator(),
       );
     }
-    
+
     if (state is PredictError) {
       return Center(
         child: Column(
@@ -151,12 +166,12 @@ class _PredictScreenState extends State<PredictScreen>
         ),
       );
     }
-    
+
     if (state is PredictDataLoaded) {
       final data = state.displayData;
       return _buildDataContent(theme, data);
     }
-    
+
     if (state is PredictDataWithUserPrediction) {
       final data = state.displayData;
       return Column(
@@ -168,12 +183,12 @@ class _PredictScreenState extends State<PredictScreen>
         ],
       );
     }
-    
+
     if (state is PredictLoaded) {
       final data = state.prediction;
       return _buildDataContent(theme, data);
     }
-    
+
     return const Center(
       child: Text('No data available'),
     );
@@ -191,13 +206,16 @@ class _PredictScreenState extends State<PredictScreen>
             _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
             const SizedBox(height: 5),
             _buildMostRepeatedCard(theme, data.repeatedNumbers),
+            const SizedBox(height: 5),
+            const AiPredictionCard(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUserPredictionResult(ThemeData theme, PredictDataWithUserPrediction state) {
+  Widget _buildUserPredictionResult(
+      ThemeData theme, PredictDataWithUserPrediction state) {
     return Container(
       margin: const EdgeInsets.all(10),
       padding: const EdgeInsets.all(16),
@@ -248,7 +266,8 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   // Last 7 days most repeated numbers
-  Widget _buildMostRepeatedLast7DaysCard(ThemeData theme, List<RepeatedSingleDigit> data) {
+  Widget _buildMostRepeatedLast7DaysCard(
+      ThemeData theme, List<RepeatedSingleDigit> data) {
     return Card(
       color: theme.cardTheme.color,
       elevation: theme.cardTheme.elevation,
@@ -275,7 +294,12 @@ class _PredictScreenState extends State<PredictScreen>
               ],
             ),
             const SizedBox(height: 20),
-            _buildSingleDigitsRow(theme, data.map((e) => {'number': e.digit, 'count': e.count}).toList(), null, false, true),
+            _buildSingleDigitsRow(
+                theme,
+                data.map((e) => {'number': e.digit, 'count': e.count}).toList(),
+                null,
+                false,
+                true),
           ],
         ),
       ),
@@ -283,7 +307,8 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   // People predictions section
-  Widget _buildPeoplePredictionsCard(ThemeData theme, List<PeoplesPrediction> data) {
+  Widget _buildPeoplePredictionsCard(
+      ThemeData theme, List<PeoplesPrediction> data) {
     return Card(
       color: theme.cardTheme.color,
       elevation: theme.cardTheme.elevation,
@@ -310,7 +335,11 @@ class _PredictScreenState extends State<PredictScreen>
               ],
             ),
             const SizedBox(height: 20),
-            _buildSingleDigitsRow(theme, data.map((e) => {'number': e.digit, 'count': e.count}).toList(), null, true),
+            _buildSingleDigitsRow(
+                theme,
+                data.map((e) => {'number': e.digit, 'count': e.count}).toList(),
+                null,
+                true),
           ],
         ),
       ),
@@ -318,7 +347,9 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   // Helper method to build single digits in a row
-  Widget _buildSingleDigitsRow(ThemeData theme, List<Map<String, dynamic>> numberData, MaterialColor? color, [bool isDarkGreen = false, bool isDarkBlue = false]) {
+  Widget _buildSingleDigitsRow(ThemeData theme,
+      List<Map<String, dynamic>> numberData, MaterialColor? color,
+      [bool isDarkGreen = false, bool isDarkBlue = false]) {
     return Column(
       children: [
         Row(
@@ -329,9 +360,9 @@ class _PredictScreenState extends State<PredictScreen>
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isDarkGreen 
+                    colors: isDarkGreen
                         ? [Colors.green[800]!, Colors.green[900]!]
-                        : isDarkBlue 
+                        : isDarkBlue
                             ? [Colors.blue[800]!, Colors.blue[900]!]
                             : [
                                 color!.withValues(alpha: 0.8),
@@ -343,7 +374,7 @@ class _PredictScreenState extends State<PredictScreen>
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: isDarkGreen || isDarkBlue 
+                      color: isDarkGreen || isDarkBlue
                           ? Colors.black.withValues(alpha: 0.3)
                           : color!.withValues(alpha: 0.3),
                       blurRadius: 4,
@@ -366,7 +397,8 @@ class _PredictScreenState extends State<PredictScreen>
                     const SizedBox(height: 6),
                     Flexible(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10),
@@ -392,9 +424,9 @@ class _PredictScreenState extends State<PredictScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isDarkGreen 
+            color: isDarkGreen
                 ? Colors.green.withValues(alpha: 0.1)
-                : isDarkBlue 
+                : isDarkBlue
                     ? Colors.blue.withValues(alpha: 0.1)
                     : color!.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
@@ -402,9 +434,9 @@ class _PredictScreenState extends State<PredictScreen>
           child: Text(
             '${numberData.length} digits found 📊',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: isDarkGreen 
+              color: isDarkGreen
                   ? Colors.green[600]
-                  : isDarkBlue 
+                  : isDarkBlue
                       ? Colors.blue[600]
                       : color![600],
               fontWeight: FontWeight.w500,
@@ -416,7 +448,8 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   // Helper method to build numbers with count grid
-  Widget _buildNumbersWithCountGrid(ThemeData theme, List<Map<String, dynamic>> numberData, MaterialColor color) {
+  Widget _buildNumbersWithCountGrid(ThemeData theme,
+      List<Map<String, dynamic>> numberData, MaterialColor color) {
     return Column(
       children: [
         GridView.builder(
@@ -465,7 +498,8 @@ class _PredictScreenState extends State<PredictScreen>
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(12),
@@ -504,10 +538,6 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
-
-
-
-
   Widget _buildMostRepeatedCard(ThemeData theme, List<RepeatedNumber> data) {
     return Card(
       color: theme.cardTheme.color,
@@ -535,7 +565,12 @@ class _PredictScreenState extends State<PredictScreen>
               ],
             ),
             const SizedBox(height: 20),
-            _buildNumbersWithCountGrid(theme, data.map((e) => {'number': e.number, 'count': e.count}).toList(), Colors.orange),
+            _buildNumbersWithCountGrid(
+                theme,
+                data
+                    .map((e) => {'number': e.number, 'count': e.count})
+                    .toList(),
+                Colors.orange),
           ],
         ),
       ),
@@ -665,10 +700,6 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
-
-
-
-
   Widget _buildDisclaimerPoint(
       ThemeData theme, String emoji, String title, String description) {
     return Row(
@@ -706,14 +737,17 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
-
   Future<void> _checkAndShowLuckyNumberDialog() async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayString = '${today.year}-${today.month}-${today.day}';
+    final now = DateTime.now();
+    final todayString = '${now.year}-${now.month}-${now.day}';
     final lastShownDate = prefs.getString('lucky_number_dialog_last_shown');
-
-    if (lastShownDate != todayString) {
+    
+    // Check if it's after 3 PM (15:00)
+    final isAfter3PM = now.hour >= 15;
+    
+    // Only show if it's after 3 PM and we haven't shown it today after 3 PM
+    if (isAfter3PM && lastShownDate != todayString) {
       // Show dialog after a small delay to ensure screen is loaded
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {
@@ -736,7 +770,7 @@ class _PredictScreenState extends State<PredictScreen>
 
   void _preloadAndScheduleInterstitialAd() {
     AdMobService.instance.loadPredictInterstitialAd();
-    
+
     _adTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) {
         _showInterstitialAd();
@@ -749,7 +783,6 @@ class _PredictScreenState extends State<PredictScreen>
       await AdMobService.instance.showInterstitialAd('predict_interstitial');
     }
   }
-
 }
 
 // Custom Typewriter Number Card Widget

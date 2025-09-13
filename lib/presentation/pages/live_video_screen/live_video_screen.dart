@@ -13,6 +13,7 @@ import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_event.
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_state.dart';
 import 'package:lotto_app/presentation/pages/live_video_screen/widgets/video_player_widget.dart';
 import 'package:lotto_app/presentation/widgets/native_ad_video_widget.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 class LiveVideoScreen extends StatefulWidget {
   const LiveVideoScreen({super.key});
@@ -37,6 +38,19 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
 
     // Add observer for app lifecycle changes (following home screen pattern)
     WidgetsBinding.instance.addObserver(this);
+
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'live_video_screen',
+          screenClass: 'LiveVideoScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
 
     // Load live videos immediately
     context.read<LiveVideoBloc>().add(LoadLiveVideosEvent());

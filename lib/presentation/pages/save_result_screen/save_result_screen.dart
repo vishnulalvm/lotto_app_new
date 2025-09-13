@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/data/models/results_screen/save_result.dart';
 import 'package:lotto_app/data/services/save_results.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 class SavedResultsScreen extends StatefulWidget {
   const SavedResultsScreen({super.key});
@@ -22,6 +23,19 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
   void initState() {
     super.initState();
     _loadSavedResults();
+    
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'saved_results_screen',
+          screenClass: 'SavedResultsScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
   }
 
   Future<void> _loadSavedResults() async {

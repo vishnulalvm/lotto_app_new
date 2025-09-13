@@ -9,6 +9,7 @@ import 'package:lotto_app/presentation/blocs/news_screen/news_bloc.dart';
 import 'package:lotto_app/presentation/blocs/news_screen/news_event.dart';
 import 'package:lotto_app/presentation/blocs/news_screen/news_state.dart';
 import 'package:lotto_app/presentation/widgets/news_content_item.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 class ContentItem {
   final String id;
@@ -38,6 +39,20 @@ class _LotteryNewsScreenState extends State<LotteryNewsScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'news_screen',
+          screenClass: 'LotteryNewsScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
+    
     // Load news data
     context.read<NewsBloc>().add(LoadNewsEvent());
   }

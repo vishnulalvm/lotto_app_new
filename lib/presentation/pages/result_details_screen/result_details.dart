@@ -15,6 +15,7 @@ import 'package:lotto_app/presentation/pages/result_details_screen/widgets/searc
 import 'package:lotto_app/core/widgets/in_app_review_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 // import 'package:lotto_app/data/services/admob_service.dart';
 import 'dart:async';
 
@@ -98,6 +99,21 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
 
     // Start the blinking animation and repeat
     _blinkAnimationController.repeat(reverse: true);
+
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'result_details_screen',
+          screenClass: 'LotteryResultDetailsScreen',
+          parameters: {
+            'unique_id': widget.uniqueId ?? 'unknown',
+            'is_new': widget.isNew ? 1 : 0,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
 
     // Initialize saved results service
     _initializeSavedResultsService();

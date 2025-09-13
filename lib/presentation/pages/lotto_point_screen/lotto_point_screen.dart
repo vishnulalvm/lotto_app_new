@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 import 'dart:async';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_event.dart';
@@ -128,6 +129,19 @@ class _LottoPointsScreenState extends State<LottoPointsScreen>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'lotto_points_screen',
+          screenClass: 'LottoPointsScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
 
     // Fetch user points data
     _fetchUserPoints();

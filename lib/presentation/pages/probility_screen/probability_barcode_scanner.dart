@@ -9,6 +9,7 @@ import 'package:lotto_app/presentation/pages/probility_screen/widgets/how_it_wor
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_bloc.dart';
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_event.dart';
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_state.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -36,6 +37,19 @@ class _ProbabilityBarcodeScannerScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'probability_barcode_scanner_screen',
+          screenClass: 'ProbabilityBarcodeScannerScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
   }
 
   @override

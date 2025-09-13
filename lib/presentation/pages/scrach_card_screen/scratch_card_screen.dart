@@ -11,6 +11,7 @@ import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/result_t
 import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/result_card.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:scratcher/widgets.dart';
 import 'package:confetti/confetti.dart';
 
@@ -66,6 +67,21 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
+
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'scratch_card_screen',
+          screenClass: 'ScratchCardResultScreen',
+          parameters: {
+            'ticket_number': widget.ticketData['ticketNumber']?.toString() ?? 'unknown',
+            'date': widget.ticketData['date']?.toString() ?? 'unknown',
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
 
     // Start the entrance animation
     Future.delayed(const Duration(milliseconds: 500), () {

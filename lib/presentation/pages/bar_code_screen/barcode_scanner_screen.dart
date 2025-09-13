@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/barcode_validator.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/widgets/validation_error_dialog.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -28,6 +29,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkCameraPermission();
+    
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'barcode_scanner_screen',
+          screenClass: 'BarcodeScannerScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
   }
 
 

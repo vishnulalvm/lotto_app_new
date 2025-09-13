@@ -18,18 +18,12 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _scaleController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+class _SplashScreenState extends State<SplashScreen> {
   bool _hasPreloadedImages = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
     _initializeApp();
   }
 
@@ -51,26 +45,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  void _initializeAnimations() {
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
-    );
-
-    _fadeController.forward();
-    _scaleController.forward();
-  }
 
   Future<void> _initializeApp() async {
     try {
@@ -84,9 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
       ]);
 
       // Phase 3: Navigate immediately after essential services complete
-      // Only ensure minimum animation time for smooth UX
-      final animationCompleted = Future.delayed(const Duration(milliseconds: 800));
-      await animationCompleted;
       await _checkLoginStatus();
 
       // Phase 4: Initialize remaining services in background after navigation
@@ -177,8 +148,6 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _scaleController.dispose();
     super.dispose();
   }
 
@@ -209,39 +178,31 @@ class _SplashScreenState extends State<SplashScreen>
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
+      body: Column(
           children: [
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Animated app logo with scaling
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Image.asset(
-                        'assets/icons/logo_foreground.png',
-                        width: 200,
-                        height: 200,
-                        cacheWidth: 400, // 2x for better quality on high DPI
-                        cacheHeight: 400,
-                        filterQuality: FilterQuality.low, // Faster loading
-                        fit: BoxFit.contain,
-                        isAntiAlias: true,
-                      ),
+                    // App logo
+                    Image.asset(
+                      'assets/icons/logo_foreground.png',
+                      width: 200,
+                      height: 200,
+                      cacheWidth: 400, // 2x for better quality on high DPI
+                      cacheHeight: 400,
+                      filterQuality: FilterQuality.low, // Faster loading
+                      fit: BoxFit.contain,
+                      isAntiAlias: true,
                     ),
                     const SizedBox(height: 24),
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Text(
-                        'LOTTO',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                        ),
+                    Text(
+                      'LOTTO',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
                       ),
                     ),
                   ],
@@ -251,20 +212,16 @@ class _SplashScreenState extends State<SplashScreen>
             // Company name at bottom center
             Padding(
               padding: const EdgeInsets.only(bottom: 60),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Text(
-                  'SOLID APPS',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: theme.primaryColor,
-                  ),
+              child: Text(
+                'SOLID APPS',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: theme.primaryColor,
                 ),
               ),
             ),
           ],
-        ),
       ),
     );
   }
