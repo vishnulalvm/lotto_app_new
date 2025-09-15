@@ -14,49 +14,58 @@ class NativeAdHomeWidget extends StatefulWidget {
   }
 }
 
-class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
+class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> 
+    with WidgetsBindingObserver {
   NativeAd? _nativeAd;
   AdState _adState = AdState.idle;
   bool _isDarkTheme = false;
   static int _widgetCounter = 0;
   final int _widgetId = ++_widgetCounter;
+  bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && !_isDisposed) {
         _initializeAd();
       }
     });
   }
 
   void _initializeAd() {
-    if (!mounted) return;
+    if (!mounted || _isDisposed) return;
     
     _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     
     // Each widget creates its own ad instance with a slight delay to avoid rate limiting
     Future.delayed(Duration(milliseconds: 100 * _widgetId), () {
-      if (mounted) {
+      if (mounted && !_isDisposed) {
         _loadNewAd();
       }
     });
   }
 
   Future<void> _loadNewAd() async {
-    if (!mounted) return;
+    if (!mounted || _isDisposed) return;
     
-    setState(() {
-      _adState = AdState.loading;
-    });
+    // Dispose existing ad first
+    _nativeAd?.dispose();
+    _nativeAd = null;
+    
+    if (mounted && !_isDisposed) {
+      setState(() {
+        _adState = AdState.loading;
+      });
+    }
     
     try {
       // Create a unique ad instance for this widget
       _nativeAd = _createNativeAd();
       _nativeAd!.load();
     } catch (e) {
-      if (mounted) {
+      if (mounted && !_isDisposed) {
         setState(() {
           _adState = AdState.failed;
         });
@@ -74,7 +83,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
       adUnitId: AdMobService.nativeHomeResults,
       listener: NativeAdListener(
         onAdLoaded: (ad) {
-          if (mounted) {
+          if (mounted && !_isDisposed) {
             setState(() {
               _adState = AdState.loaded;
             });
@@ -83,7 +92,7 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
         onAdFailedToLoad: (ad, error) {
           debugPrint('Native ad failed to load (Widget #$_widgetId): $error');
           ad.dispose();
-          if (mounted) {
+          if (mounted && !_isDisposed) {
             setState(() {
               _nativeAd = null;
               _adState = AdState.failed;
@@ -131,9 +140,42 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App came back to foreground - refresh ad if it's been a while
+        if (mounted && !_isDisposed) {
+          _handleAppResumed();
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+  
+  void _handleAppResumed() {
+    // Refresh ad on app resume to ensure it's still valid
+    if (_adState == AdState.loaded || _adState == AdState.failed) {
+      Future.delayed(Duration(milliseconds: 200 * _widgetId), () {
+        if (mounted && !_isDisposed) {
+          _loadNewAd();
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    _isDisposed = true;
+    WidgetsBinding.instance.removeObserver(this);
     // Dispose our own ad instance
     _nativeAd?.dispose();
+    _nativeAd = null;
     super.dispose();
   }
   
@@ -166,22 +208,28 @@ class _NativeAdHomeWidgetState extends State<NativeAdHomeWidget> {
     }
     
     try {
-      // Verify ad is still valid by accessing a property
-      final _ = _nativeAd!.adUnitId;
+      // Verify ad is still valid and not disposed
+      if (_nativeAd == null || _isDisposed) {
+        throw Exception('Ad is null or disposed');
+      }
+      
       return AdWidget(ad: _nativeAd!);
     } catch (e) {
-      // Ad has been disposed, show fallback and try to reload
+      // Ad has been disposed or is invalid, show fallback and try to reload
       debugPrint('Ad widget error (Widget #$_widgetId): $e');
       
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _adState = AdState.loading;
-            _nativeAd = null;
-          });
-          _loadNewAd();
-        }
-      });
+      // Only try to reload if we're not already loading and not disposed
+      if (_adState != AdState.loading && !_isDisposed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isDisposed) {
+            setState(() {
+              _adState = AdState.loading;
+              _nativeAd = null;
+            });
+            _loadNewAd();
+          }
+        });
+      }
       
       return Container(
         height: 120,

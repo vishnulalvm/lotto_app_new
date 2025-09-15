@@ -351,11 +351,22 @@ class AdMobService {
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
-        _updateInterstitialAdState(adType, AdWrapper(
-          state: AdState.failed, 
-          error: error.toString(),
-        ));
-        _scheduleReload(adType);
+        // Handle VP9 codec errors specifically
+        final errorMessage = error.toString();
+        if (errorMessage.contains('MediaCodec') || errorMessage.contains('VP9')) {
+          debugPrint('Video codec error in interstitial ad: $errorMessage');
+          // Don't retry immediately for codec errors
+          _updateInterstitialAdState(adType, AdWrapper(
+            state: AdState.failed, 
+            error: 'Video codec not supported on this device',
+          ));
+        } else {
+          _updateInterstitialAdState(adType, AdWrapper(
+            state: AdState.failed, 
+            error: error.toString(),
+          ));
+          _scheduleReload(adType);
+        }
       },
     );
 
@@ -550,7 +561,9 @@ class AdMobService {
 
     await InterstitialAd.load(
       adUnitId: adUnitId,
-      request: const AdRequest(),
+      request: const AdRequest(
+        httpTimeoutMillis: 30000,
+      ),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
           _updateInterstitialAdState(adType, AdWrapper(

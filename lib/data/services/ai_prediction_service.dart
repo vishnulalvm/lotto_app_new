@@ -95,8 +95,12 @@ class AiPredictionService {
   }
 
   static String _getTodayDateString() {
-    final today = DateTime.now();
-    return '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    
+    // If it's after 3 PM, generate predictions for tomorrow's lottery
+    final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
+    
+    return '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
   }
 
   static Future<void> clearOldPredictions() async {

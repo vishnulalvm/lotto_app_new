@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'dart:math' as math;
@@ -17,7 +16,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
     with TickerProviderStateMixin {
   late AnimationController _flipAnimationController;
   late Animation<double> _flipAnimation;
-  
+
   // Cached values for performance
   ThemeData? _cachedTheme;
   late bool _isDark;
@@ -29,7 +28,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   late Color _darkRedGradientEnd;
   late Color _primaryRed;
   late Color _vibrantRed;
-  
+
   // Cached responsive values
   late double _iconSize;
   late double _imageSize;
@@ -40,10 +39,10 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   late EdgeInsets _padding;
   late double _blurRadius;
   late Offset _shadowOffset;
-  
+
   // Cached navigation items
   late List<Map<String, dynamic>> _navItems;
-  
+
   // Manual flip control
   bool _isManualFlipInProgress = false;
 
@@ -67,25 +66,25 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
 
     // Initialize navigation items once
     _initializeNavItems();
-    
+
     // Start periodic flip animation with Timer instead of recursive async
     _startOptimizedPeriodicFlipAnimation();
   }
-  
+
   void _initializeNavItems() {
     _navItems = [
       {
         'icon': Icons.qr_code_scanner,
-        'label': 'scanner'.tr(),
+        'label': 'Scanner',
         'route': '/barcode_scanner_screen'
       },
-      {'icon': Icons.live_tv, 'label': 'Live'.tr(), 'route': '/live_videos'},
+      {'icon': Icons.live_tv, 'label': 'Live', 'route': '/live_videos'},
       {
         'icon': Icons.games_outlined,
-        'label': 'predict'.tr(),
+        'label': 'Predict',
         'route': '/predict'
       },
-      {'icon': Icons.newspaper, 'label': 'news'.tr(), 'route': '/news_screen'},
+      {'icon': Icons.newspaper, 'label': 'News', 'route': '/news_screen'},
       {
         'image': 'assets/icons/lotto_points.png',
         'label': 'Points',
@@ -93,13 +92,13 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       },
     ];
   }
-  
+
   void _cacheThemeValues(ThemeData theme) {
     if (_cachedTheme == theme) return; // Skip if theme hasn't changed
-    
+
     _cachedTheme = theme;
     _isDark = theme.brightness == Brightness.dark;
-    
+
     // Cache theme colors
     _lightBackground = const Color(0xFFFFE4E6);
     _darkBackground = const Color(0xFF2D1518);
@@ -110,10 +109,10 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
     _primaryRed = theme.primaryColor;
     _vibrantRed = const Color(0xFFFF5252);
   }
-  
+
   void _cacheResponsiveValues(BuildContext context) {
     _iconSize = AppResponsive.fontSize(context, 24);
-    _imageSize = AppResponsive.fontSize(context, 20); // Smaller size for images
+    _imageSize = AppResponsive.fontSize(context, 24); // Smaller size for images
     _containerSize = AppResponsive.width(
       context,
       AppResponsive.isMobile(context) ? 12 : 8,
@@ -148,17 +147,17 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
 
     // Flip to "Get Points" side
     await _flipAnimationController.forward();
-    
+
     if (!mounted || _isManualFlipInProgress) return;
-    
+
     // Wait 2 seconds on "Get Points" side
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted || _isManualFlipInProgress) return;
 
     // Flip back to scanner side
     await _flipAnimationController.reverse();
-    
+
     if (!mounted) return;
 
     // Schedule next flip cycle (8 seconds later)
@@ -168,7 +167,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       }
     });
   }
-  
+
   /// Manual flip back to scanner side
   Future<void> _flipToScanner() async {
     if (_flipAnimationController.value > 0.5) {
@@ -176,7 +175,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       HapticFeedback.lightImpact();
       await _flipAnimationController.reverse();
       _isManualFlipInProgress = false;
-      
+
       // Restart automatic flip cycle after manual intervention
       Future.delayed(const Duration(seconds: 8), () {
         if (mounted && !_isManualFlipInProgress) {
@@ -185,11 +184,11 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       });
     }
   }
-  
+
   /// Handle swipe gestures on the flip navigation item
   void _handleSwipe(DragEndDetails details) {
     const double minVelocity = 300.0;
-    
+
     // Check if swipe is horizontal and has sufficient velocity
     if (details.velocity.pixelsPerSecond.dx.abs() > minVelocity) {
       // Any horizontal swipe flips back to scanner
@@ -200,7 +199,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Cache theme and responsive values
     _cacheThemeValues(theme);
     _cacheResponsiveValues(context);
@@ -306,9 +305,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                     ],
                     stops: const [0.0, 1.0],
                   ),
-            color: isFront
-                ? (_isDark ? _darkBackground : _lightBackground)
-                : null,
+            color:
+                isFront ? (_isDark ? _darkBackground : _lightBackground) : null,
             shape: BoxShape.circle,
           ),
           child: isFront
@@ -329,7 +327,9 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                         center: Alignment.center,
                         radius: 0.8,
                         colors: [
-                          _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                          _isDark
+                              ? _darkRedGradientStart
+                              : _lightRedGradientStart,
                           _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
                         ],
                         stops: const [0.0, 1.0],
@@ -402,9 +402,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                     ],
                     stops: const [0.0, 1.0],
                   ),
-            color: isFront
-                ? (_isDark ? _darkBackground : _lightBackground)
-                : null,
+            color:
+                isFront ? (_isDark ? _darkBackground : _lightBackground) : null,
             shape: BoxShape.circle,
           ),
           child: isFront
@@ -426,7 +425,9 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
                         center: Alignment.center,
                         radius: 0.8,
                         colors: [
-                          _isDark ? _darkRedGradientStart : _lightRedGradientStart,
+                          _isDark
+                              ? _darkRedGradientStart
+                              : _lightRedGradientStart,
                           _isDark ? _darkRedGradientEnd : _lightRedGradientEnd,
                         ],
                         stops: const [0.0, 1.0],
@@ -474,11 +475,11 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       ],
     );
   }
-  
+
   // Helper method to handle flip navigation taps
   void _handleFlipNavTap(bool isShowingFront, Map<String, dynamic> item) {
     HapticFeedback.lightImpact(); // Add haptic feedback
-    
+
     // Always navigate to barcode scanner screen regardless of flip side
     if (item['route'] != null) {
       AnalyticsService.trackUserEngagement(
@@ -542,7 +543,8 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
   }
 
   // Dedicated method for the Points button
-  Widget _buildPointsButton(BuildContext context, Map<String, dynamic> item, ThemeData theme) {
+  Widget _buildPointsButton(
+      BuildContext context, Map<String, dynamic> item, ThemeData theme) {
     return InkWell(
       onTap: () => _handleRegularNavTap(item),
       child: Column(
@@ -553,26 +555,18 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
             width: _containerSize,
             height: _containerSize,
             decoration: BoxDecoration(
-              gradient: _isDark 
-                ? null // No gradient in dark mode
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFCD5C5C), // Indian Red
-                      const Color(0xFFB04545), // Slightly darker Indian Red
-                    ],
-                    stops: const [0.0, 1.0],
-                  ),
-              color: _isDark ? _darkBackground : null, // Use same background as other buttons in dark mode
+              color: _isDark
+                  ? _darkBackground
+                  : _lightBackground, // Use same background as other buttons
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Image.asset(
                 'assets/icons/lotto_points.png',
-                width: 25.0, // Very small hardcoded size
-                height: 25.0, // Very small hardcoded size
-                color: _isDark ? theme.iconTheme.color : Colors.white, // Use theme icon color in dark mode
+                width: _imageSize,
+                height: _imageSize,
+                color: theme
+                    .iconTheme.color, // Use theme icon color for both modes
               ),
             ),
           ),
@@ -593,11 +587,11 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget>
       ),
     );
   }
-  
+
   // Helper method to handle regular navigation taps
   void _handleRegularNavTap(Map<String, dynamic> item) {
     HapticFeedback.lightImpact(); // Add haptic feedback
-    
+
     if (item['route'] != null) {
       AnalyticsService.trackUserEngagement(
         action: 'navigation_tap',

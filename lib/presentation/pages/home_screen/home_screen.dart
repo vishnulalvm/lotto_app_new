@@ -67,8 +67,8 @@ class _HomeScreenState extends State<HomeScreen>
         AnalyticsService.trackSessionStart();
       });
 
-      // Preload ads after UI is stable
-      Future.delayed(const Duration(milliseconds: 500), () {
+      // Preload ads after UI is stable (reduced delay to avoid conflicts)
+      Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) _preloadHomeScreenAds();
       });
     });
@@ -137,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen>
     _secondaryAnimationController.dispose();
 
     // Dispose any loaded ads to free memory
-    _disposeHomeScreenAds();
     super.dispose();
   }
 
@@ -154,37 +153,6 @@ class _HomeScreenState extends State<HomeScreen>
       debugPrint('Home screen ad preload failed: $e');
     }
   }
-
-  void _disposeHomeScreenAds() {
-    // Let AdMob service handle cleanup
-    // Service manages disposal automatically
-  }
-
-  // Method to show interstitial ad and navigate (commented out - AdMob account not ready)
-  // Future<void> _showInterstitialAdAndNavigate(String route) async {
-  //   try {
-  //     if (AdMobService.instance.isInterstitialAdLoaded) {
-  //       await AdMobService.instance.showInterstitialAd(
-  //         onAdDismissed: () {
-  //           // Navigate after ad is dismissed
-  //           if (mounted) {
-  //             context.go(route);
-  //           }
-  //         },
-  //       );
-  //     } else {
-  //       // If no ad is loaded, navigate directly
-  //       if (mounted) {
-  //         context.go(route);
-  //       }
-  //     }
-  //   } catch (e) {
-  //     // If ad fails, navigate directly
-  //     if (mounted) {
-  //       context.go(route);
-  //     }
-  //   }
-  // }
 
   /// Start attention-grabbing animations using Timer.periodic for better performance
   void _startAttentionAnimations() {
@@ -312,20 +280,15 @@ class _HomeScreenState extends State<HomeScreen>
         // App came back to foreground - refresh data if it's been a while
         if (mounted) {
           _handleAppResumed();
-          // Preload ads after app resumes
-          Future.delayed(const Duration(milliseconds: 1000), () {
-            if (mounted) _preloadHomeScreenAds();
-          });
+          // Don't preload ads here - let NativeAdHomeWidget handle its own lifecycle
         }
         break;
       case AppLifecycleState.paused:
         // App went to background - cancel periodic timer and dispose ads to save memory
         _periodicRefreshTimer?.cancel();
-        _disposeHomeScreenAds();
         break;
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
-        _disposeHomeScreenAds();
         break;
       case AppLifecycleState.hidden:
         break;

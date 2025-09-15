@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
 import 'package:lotto_app/data/services/ai_prediction_service.dart';
 
@@ -49,6 +50,34 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
     }
   }
 
+  String _getLotteryNameForToday() {
+    final now = DateTime.now();
+    
+    // If it's before 3 PM, show today's lottery
+    // If it's after 3 PM, show tomorrow's lottery
+    final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
+    final weekday = targetDate.weekday;
+
+    switch (weekday) {
+      case DateTime.sunday:
+        return 'SAMRUDHI';
+      case DateTime.monday:
+        return 'BHAGYATHARA';
+      case DateTime.tuesday:
+        return 'STHREE SAKTHI';
+      case DateTime.wednesday:
+        return 'DHANALEKSHMI';
+      case DateTime.thursday:
+        return 'KARUNYA PLUS';
+      case DateTime.friday:
+        return 'SUVARNA KERALAM';
+      case DateTime.saturday:
+        return 'KARUNYA';
+      default:
+        return 'KARUNYA';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -74,6 +103,8 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
   }
 
   Widget _buildHeader(ThemeData theme) {
+    final lotteryName = _getLotteryNameForToday();
+    
     return Row(
       children: [
         Container(
@@ -95,7 +126,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'AI Predicted Numbers',
+            'ai_predicted_numbers'.tr(namedArgs: {'lottery': lotteryName}),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -109,24 +140,6 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.emoji_events,
-              color: Colors.amber,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Select Prize Type',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.amber[700],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -152,7 +165,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '$prizeType${_getOrdinalSuffix(prizeType)} Prize',
+                        'prize_type'.tr(namedArgs: {'number': prizeType.toString(), 'suffix': _getOrdinalSuffix(prizeType)}),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -207,7 +220,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Failed to generate predictions',
+              'failed_to_generate_predictions'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Colors.grey[600],
               ),
@@ -285,7 +298,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            '12 predictions generated ',
+            'predictions_generated'.tr(namedArgs: {'count': '12'}),
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.red[700],
               fontWeight: FontWeight.w500,

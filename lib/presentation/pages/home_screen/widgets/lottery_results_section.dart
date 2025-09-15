@@ -662,7 +662,7 @@ class LotteryResultsSection extends StatelessWidget {
         // Only show ONE ad after the first date group is complete
         if (isFirstDateGroup && result == entry.value.last && !hasInsertedAd) {
           widgets.add(_buildAdDivider(theme, context));
-          widgets.add(const NativeAdHomeWidget(key: ValueKey('single_ad')));
+          widgets.add(NativeAdHomeWidget(key: ValueKey('native_ad_${DateTime.now().millisecondsSinceEpoch}')));
           hasInsertedAd = true;
         }
       }

@@ -65,7 +65,11 @@ class _PredictScreenState extends State<PredictScreen>
 
   String _getLotteryNameForToday() {
     final now = DateTime.now();
-    final weekday = now.weekday;
+    
+    // If it's before 3 PM, show today's lottery
+    // If it's after 3 PM, show tomorrow's lottery
+    final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
+    final weekday = targetDate.weekday;
 
     switch (weekday) {
       case DateTime.sunday:
@@ -127,6 +131,8 @@ class _PredictScreenState extends State<PredictScreen>
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -150,7 +156,7 @@ class _PredictScreenState extends State<PredictScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load prediction data',
+              'failed_to_load_prediction_data'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.grey[600],
               ),
@@ -160,7 +166,7 @@ class _PredictScreenState extends State<PredictScreen>
               onPressed: () {
                 context.read<PredictBloc>().add(const GetPredictionDataEvent());
               },
-              child: const Text('Retry'),
+              child: Text('retry'.tr()),
             ),
           ],
         ),
@@ -189,8 +195,8 @@ class _PredictScreenState extends State<PredictScreen>
       return _buildDataContent(theme, data);
     }
 
-    return const Center(
-      child: Text('No data available'),
+    return Center(
+      child: Text('no_data_available'.tr()),
     );
   }
 
@@ -244,21 +250,28 @@ class _PredictScreenState extends State<PredictScreen>
                 size: 24,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Your Lucky Number: ${state.selectedNumber}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  'your_lucky_number'.tr(namedArgs: {'number': state.selectedNumber}),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Prediction submitted successfully! Good luck! 🍀',
+            'prediction_submitted_successfully'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
             ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -285,10 +298,14 @@ class _PredictScreenState extends State<PredictScreen>
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Last 7 Days Most Repeated Last Digit',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'last_7_days_most_repeated_last_digit'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -326,10 +343,14 @@ class _PredictScreenState extends State<PredictScreen>
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'People Predictions',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'people_predictions'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -404,7 +425,7 @@ class _PredictScreenState extends State<PredictScreen>
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          '${data['count']} times',
+                          'count_times'.tr(namedArgs: {'count': data['count'].toString()}),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -432,7 +453,7 @@ class _PredictScreenState extends State<PredictScreen>
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            '${numberData.length} digits found 📊',
+            'digits_found'.tr(namedArgs: {'count': numberData.length.toString()}),
             style: theme.textTheme.bodySmall?.copyWith(
               color: isDarkGreen
                   ? Colors.green[600]
@@ -505,7 +526,7 @@ class _PredictScreenState extends State<PredictScreen>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${data['count']}x',
+                        'count_x'.tr(namedArgs: {'count': data['count'].toString()}),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
@@ -527,7 +548,7 @@ class _PredictScreenState extends State<PredictScreen>
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            '${numberData.length} patterns found 📊',
+            'patterns_found'.tr(namedArgs: {'count': numberData.length.toString()}),
             style: theme.textTheme.bodySmall?.copyWith(
               color: color[600],
               fontWeight: FontWeight.w500,
@@ -556,10 +577,14 @@ class _PredictScreenState extends State<PredictScreen>
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Most Repeated Last 4 Digits (Last 30 Days)',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'most_repeated_last_4_digits_30_days'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -618,12 +643,14 @@ class _PredictScreenState extends State<PredictScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'For entertainment only • Tap for details',
+                        'for_entertainment_only_tap_details'.tr(),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.amber[700],
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     AnimatedRotation(
@@ -662,7 +689,7 @@ class _PredictScreenState extends State<PredictScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Important Information',
+                        'important_information'.tr(),
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: Colors.amber[800],
                           fontWeight: FontWeight.bold,
@@ -672,22 +699,22 @@ class _PredictScreenState extends State<PredictScreen>
                       _buildDisclaimerPoint(
                         theme,
                         '🎲',
-                        'Entertainment Purpose',
-                        'Predictions are for fun and should not guide financial decisions.',
+                        'entertainment_purpose'.tr(),
+                        'predictions_for_fun_disclaimer'.tr(),
                       ),
                       const SizedBox(height: 8),
                       _buildDisclaimerPoint(
                         theme,
                         '📊',
-                        'Statistical Analysis',
-                        'Based on historical data, but lottery outcomes remain random.',
+                        'statistical_analysis'.tr(),
+                        'based_on_historical_data_disclaimer'.tr(),
                       ),
                       const SizedBox(height: 8),
                       _buildDisclaimerPoint(
                         theme,
                         '⚠️',
-                        'Play Responsibly',
-                        'Past patterns don\'t guarantee future results.',
+                        'play_responsibly'.tr(),
+                        'past_patterns_no_guarantee'.tr(),
                       ),
                     ],
                   ),
