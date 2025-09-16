@@ -177,7 +177,7 @@ class AnalyticsService {
     await _analytics?.logLogin(
       loginMethod: loginMethod,
       parameters: {
-        'success': success,
+        'success': success ? 'true' : 'false', // Convert boolean to string for Firebase Analytics
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
@@ -191,7 +191,7 @@ class AnalyticsService {
     await _analytics?.logSignUp(
       signUpMethod: signUpMethod,
       parameters: {
-        'success': success,
+        'success': success ? 'true' : 'false', // Convert boolean to string for Firebase Analytics
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );

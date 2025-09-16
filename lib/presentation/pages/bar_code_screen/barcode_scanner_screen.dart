@@ -16,14 +16,16 @@ class BarcodeScannerScreen extends StatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with WidgetsBindingObserver {
-  MobileScannerController cameraController = MobileScannerController();
+  MobileScannerController cameraController = MobileScannerController(
+    autoStart: false,
+  );
   bool isFlashOn = false;
   DateTime selectedDate = DateTime.now();
   String? lastScannedCode;
   bool isProcessing = false;
   PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
   bool _isRequestingPermission = false;
-
+  bool _isCameraStarting = false;
   @override
   void initState() {
     super.initState();
@@ -54,8 +56,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       setState(() {
         _cameraPermissionStatus = permission;
       });
+      
+      // Start camera automatically if permission is granted
+      if (permission == PermissionStatus.granted) {
+        _startCameraIfReady();
+      }
     }
   }
+
 
   Future<void> _requestCameraPermission() async {
     if (_isRequestingPermission) return;
@@ -72,6 +80,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
           _cameraPermissionStatus = permission;
           _isRequestingPermission = false;
         });
+        
+        // Start camera automatically if permission is granted
+        if (permission == PermissionStatus.granted) {
+          _startCameraIfReady();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -79,6 +92,32 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
           _isRequestingPermission = false;
         });
       }
+    }
+  }
+
+  Future<void> _startCameraIfReady() async {
+    if (_isCameraStarting) return;
+    
+    setState(() {
+      _isCameraStarting = true;
+    });
+    
+    try {
+      await cameraController.start();
+      if (mounted) {
+        setState(() {
+          lastScannedCode = null;
+          isProcessing = false;
+          _isCameraStarting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCameraStarting = false;
+        });
+      }
+      // Camera start failed - will be retried when user interacts
     }
   }
 
@@ -106,11 +145,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         lastScannedCode = null;
         isProcessing = false;
       });
-      
-      // Reset scanner state when date changes
-      setState(() {
-        isProcessing = false;
-      });
 
       // Show feedback to user
       if (mounted) {
@@ -132,9 +166,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return PopScope(
-      canPop: true,
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: theme.appBarTheme.backgroundColor,
@@ -279,7 +311,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
           ),
         ],
       ),
-    ),
     );
   }
 
@@ -483,8 +514,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       lastScannedCode = barcodeValue;
     });
 
-    // Simulate processing delay
-    await Future.delayed(const Duration(milliseconds: 800));
 
     // Validate barcode format
     if (!BarcodeValidator.isValidLotteryTicket(barcodeValue)) {
@@ -513,11 +542,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     });
 
     // Stop camera before navigation to prevent it running in background
-    try {
-      await cameraController.stop();
-    } catch (e) {
-      // Camera stop failed, but continue with navigation
-    }
+    await _stopCameraSafely();
 
     // Navigate to scratch card with ticket data
     if (mounted) {
@@ -525,20 +550,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       
       // Restart camera when returning from navigation
       if (mounted && _cameraPermissionStatus == PermissionStatus.granted) {
-        try {
-          await cameraController.start();
-          // Reset scanner state for new scans
-          setState(() {
-            lastScannedCode = null;
-            isProcessing = false;
-          });
-        } catch (e) {
-          // Camera restart failed - user can try manually
-          setState(() {
-            lastScannedCode = null;
-            isProcessing = false;
-          });
-        }
+        await _restartCamera();
       }
     }
   }
@@ -657,16 +669,52 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
         // App is going to background - stop camera to save battery
-        cameraController.stop();
+        _stopCameraSafely();
         break;
       case AppLifecycleState.resumed:
         // App is back to foreground - restart camera if permission granted
         if (_cameraPermissionStatus == PermissionStatus.granted) {
-          cameraController.start();
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _restartCamera();
+          });
         }
         break;
       case AppLifecycleState.detached:
         break;
+    }
+  }
+
+  Future<void> _restartCamera() async {
+    if (_isCameraStarting) return;
+    
+    setState(() {
+      _isCameraStarting = true;
+    });
+    
+    try {
+      await cameraController.start();
+      if (mounted) {
+        setState(() {
+          lastScannedCode = null;
+          isProcessing = false;
+          _isCameraStarting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCameraStarting = false;
+        });
+      }
+      // Camera restart failed - user can try manually
+    }
+  }
+
+  Future<void> _stopCameraSafely() async {
+    try {
+      await cameraController.stop();
+    } catch (e) {
+      // Camera stop failed, but continue
     }
   }
 

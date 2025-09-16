@@ -129,27 +129,32 @@ class _FirstTimeLanguageDialogState extends State<FirstTimeLanguageDialog>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: theme.cardColor,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Welcome header
-                    _buildHeader(theme),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Welcome header
+                      _buildHeader(theme),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Language options
-                    _buildLanguageOptions(theme),
+                      // Language options
+                      _buildLanguageOptions(theme),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Action buttons
-                    _buildActionButtons(theme),
-                  ],
+                      // Action buttons
+                      _buildActionButtons(theme),
+                    ],
+                  ),
                 ),
               ),
             ),

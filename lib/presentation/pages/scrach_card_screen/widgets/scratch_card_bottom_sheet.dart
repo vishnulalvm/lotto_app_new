@@ -8,12 +8,14 @@ class ScratchCardBottomSheet extends StatelessWidget {
   final TicketCheckResponseModel result;
   final Map<String, dynamic> ticketData;
   final Future<void> Function() onCheckAgain;
+  final Future<void> Function() onScanAgain;
 
   const ScratchCardBottomSheet({
     super.key,
     required this.result,
     required this.ticketData,
     required this.onCheckAgain,
+    required this.onScanAgain,
   });
 
   @override
@@ -343,7 +345,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
             SizedBox(height: buttonSpacing),
             // Secondary action - Scan Again
             OutlinedButton(
-              onPressed: onCheckAgain,
+              onPressed: onScanAgain,
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.primaryColor,
                 minimumSize: Size(double.infinity, buttonHeight),
@@ -429,7 +431,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
             SizedBox(height: buttonSpacing),
             // Secondary action - Scan Again
             OutlinedButton(
-              onPressed: onCheckAgain,
+              onPressed: onScanAgain,
               style: OutlinedButton.styleFrom(
                 foregroundColor: isDark ? Colors.amber[400] : Colors.amber[600],
                 minimumSize: Size(double.infinity, buttonHeight),
@@ -486,7 +488,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
 
             // Secondary action - Scan Again
             OutlinedButton(
-              onPressed: onCheckAgain,
+              onPressed: onScanAgain,
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.primaryColor,
                 minimumSize: Size(double.infinity, buttonHeight),
