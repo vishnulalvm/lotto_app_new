@@ -709,8 +709,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     buffer.writeln(result.formattedDate);
     buffer.writeln();
     buffer.writeln('Download App: https://play.google.com/store/apps/details?id=app.solidapps.lotto');
-
+    buffer.writeln();
     buffer.writeln('=' * 34);
+    buffer.writeln();
 
     // Prizes in order
     final prizes = result.prizes;
@@ -815,6 +816,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     buffer.writeln();
     // Footer
     buffer.writeln('=' * 34);
+    buffer.writeln();
     buffer
         .writeln('The prize winners are advised to verify the winning numbers');
     buffer
