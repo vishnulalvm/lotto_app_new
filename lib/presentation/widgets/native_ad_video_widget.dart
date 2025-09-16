@@ -29,6 +29,8 @@ class _NativeAdVideoWidgetState extends State<NativeAdVideoWidget> {
       // Get the loaded ad from the service
       _nativeAd = AdMobService.instance.getAd<NativeAd>('live_video');
       
+      if (!mounted) return;
+      
       if (_nativeAd != null) {
         setState(() {
           _isAdLoaded = true;
@@ -39,6 +41,7 @@ class _NativeAdVideoWidgetState extends State<NativeAdVideoWidget> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isAdLoaded = false;
       });
