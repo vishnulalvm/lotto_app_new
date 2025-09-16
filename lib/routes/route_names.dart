@@ -160,6 +160,37 @@ class AppRouter {
           ),
         ],
       ),
+      
+      // Deep link routes for App Links
+      GoRoute(
+        path: '/app/:path',
+        builder: (context, state) {
+          final path = state.pathParameters['path'];
+          
+          // Handle different deep link paths
+          switch (path) {
+            case 'results':
+              return const HomeScreen();
+            case 'lottery':
+              final uniqueId = state.uri.queryParameters['id'];
+              if (uniqueId != null) {
+                return LotteryResultDetailsScreen(uniqueId: uniqueId);
+              }
+              return const HomeScreen();
+            case 'download':
+              // Redirect to Play Store if app is not installed
+              return const HomeScreen();
+            default:
+              return const HomeScreen();
+          }
+        },
+      ),
+      
+      // Fallback route for any unmatched deep links
+      GoRoute(
+        path: '/deeplink/:path',
+        builder: (context, state) => const HomeScreen(),
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

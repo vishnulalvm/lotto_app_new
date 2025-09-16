@@ -703,14 +703,14 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     final buffer = StringBuffer();
 
     // Header
-    buffer.writeln('KERALA STATE LOTTERIES - RESULT (LOTTO APP)');
+    buffer.writeln('KERALA STATE LOTTERIES - RESULT');
     buffer.writeln(
         '${result.lotteryName.toUpperCase()} DRAW NO: ${result.drawNumber}');
-    buffer.writeln('DRAW HELD ON: ${result.formattedDate}');
+    buffer.writeln(result.formattedDate);
     buffer.writeln();
     buffer.writeln('Download App: https://play.google.com/store/apps/details?id=app.solidapps.lotto');
 
-    buffer.writeln('=' * 36);
+    buffer.writeln('=' * 34);
 
     // Prizes in order
     final prizes = result.prizes;
@@ -718,11 +718,11 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     // First prize
     final firstPrize = result.getFirstPrize();
     if (firstPrize != null) {
-      buffer.writeln(
-          '${firstPrize.prizeTypeFormatted} Rs : ${firstPrize.formattedPrizeAmount}/-');
+      buffer.writeln('*${firstPrize.prizeTypeFormatted}*');
+      buffer.writeln('Amount: ${firstPrize.formattedPrizeAmount}');
       for (final ticket in firstPrize.ticketsWithLocation) {
         buffer
-            .writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+            .writeln('${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
       }
       buffer.writeln();
     }
@@ -731,9 +731,10 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     final consolationPrize = result.getConsolationPrize();
     if (consolationPrize != null) {
       buffer.writeln(
-          '${consolationPrize.prizeTypeFormatted} Rs : ${consolationPrize.formattedPrizeAmount}/-');
-      final numbers = result.getPrizeTicketNumbers(consolationPrize).join(', ');
-      buffer.writeln('  $numbers');
+          '*${consolationPrize.prizeTypeFormatted}*');
+      buffer.writeln('Amount: ${consolationPrize.formattedPrizeAmount}');
+      final numbers = result.getPrizeTicketNumbers(consolationPrize).join('  ');
+      buffer.writeln(numbers);
       buffer.writeln();
     }
 
@@ -766,33 +767,33 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     final thirdPrize = remainingPrizes.where((p) => p.prizeType == '3rd').firstOrNull;
     
     if (secondPrize != null) {
-      buffer.writeln(
-          '${secondPrize.prizeTypeFormatted} Rs : ${secondPrize.formattedPrizeAmount}/-');
+      buffer.writeln('*${secondPrize.prizeTypeFormatted}*');
+      buffer.writeln('Amount: ${secondPrize.formattedPrizeAmount}');
       if (secondPrize.ticketsWithLocation.isNotEmpty) {
         // Show with location like 1st prize
         for (final ticket in secondPrize.ticketsWithLocation) {
-          buffer.writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+          buffer.writeln('${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
         }
       } else {
         // Fallback to regular numbers
-        final numbers = result.getPrizeTicketNumbers(secondPrize).join(', ');
-        buffer.writeln('  $numbers');
+        final numbers = result.getPrizeTicketNumbers(secondPrize).join('  ');
+        buffer.writeln(numbers);
       }
       buffer.writeln();
     }
 
     if (thirdPrize != null) {
-      buffer.writeln(
-          '${thirdPrize.prizeTypeFormatted} Rs : ${thirdPrize.formattedPrizeAmount}/-');
+      buffer.writeln('*${thirdPrize.prizeTypeFormatted}*');
+      buffer.writeln('Amount: ${thirdPrize.formattedPrizeAmount}');
       if (thirdPrize.ticketsWithLocation.isNotEmpty) {
         // Show with location like 1st prize
         for (final ticket in thirdPrize.ticketsWithLocation) {
-          buffer.writeln('  ${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
+          buffer.writeln('${ticket.ticketNumber} (${ticket.location ?? 'N/A'})');
         }
       } else {
         // Fallback to regular numbers
-        final numbers = result.getPrizeTicketNumbers(thirdPrize).join(', ');
-        buffer.writeln('  $numbers');
+        final numbers = result.getPrizeTicketNumbers(thirdPrize).join('  ');
+        buffer.writeln(numbers);
       }
       buffer.writeln();
     }
@@ -802,20 +803,18 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         p.prizeType != '2nd' && p.prizeType != '3rd').toList();
     
     if (lowerPrizes.isNotEmpty) {
-      buffer.writeln('FOR THE TICKETS ENDING WITH THE FOLLOWING NUMBERS:');
-      buffer.writeln();
 
       for (final prize in lowerPrizes) {
-        buffer.writeln(
-            '${prize.prizeTypeFormatted} – Rs: ${prize.formattedPrizeAmount}/-');
-        final numbers = result.getPrizeTicketNumbers(prize).join(', ');
-        buffer.writeln('  $numbers');
+        buffer.writeln('*${prize.prizeTypeFormatted}*');
+        buffer.writeln('Amount: ${prize.formattedPrizeAmount}');
+        final numbers = result.getPrizeTicketNumbers(prize).join('  ');
+        buffer.writeln(numbers);
         buffer.writeln();
       }
     }
-
+    buffer.writeln();
     // Footer
-    buffer.writeln('=' * 36);
+    buffer.writeln('=' * 34);
     buffer
         .writeln('The prize winners are advised to verify the winning numbers');
     buffer
@@ -825,7 +824,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     buffer.writeln('Contact: 0471-2305230');
     buffer.writeln('Email: cru.dir.lotteries@kerala.gov.in');
     buffer.writeln();
-    buffer.writeln('Download App: https://play.google.com/store/apps/details?id=app.solidapps.lotto');
+    buffer.writeln('View in App: https://lottokeralalotteries.com/app/lottery?id=${result.uniqueId}');
     return buffer.toString();
   }
 

@@ -34,7 +34,9 @@ class ResultDetailsCacheRepositoryImpl implements ResultDetailsCacheRepository {
       
       return cachedResult;
     } catch (e) {
-      throw CacheReadException('Failed to read cached result details: $e');
+      // Log the error but return null instead of throwing
+      // This allows the app to continue and fetch from API
+      return null;
     }
   }
 

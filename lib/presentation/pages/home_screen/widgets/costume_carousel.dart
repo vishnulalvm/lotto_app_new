@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 class SimpleCarouselWidget extends StatefulWidget {
   final List<String> images;
@@ -35,6 +36,23 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
   // Keep alive to prevent rebuilds when scrolling in a list/tab
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Track carousel view when widget is initialized
+    _trackCarouselView();
+  }
+
+  Future<void> _trackCarouselView() async {
+    await AnalyticsService.track(
+      eventName: 'carousel_view',
+      parameters: {
+        'widget_type': 'SimpleCarouselWidget',
+        'image_count': widget.images.length,
+      },
+    );
+  }
 
   // REMOVED: didUpdateWidget and _listEquals are not needed.
   // The build method is automatically called when widget.images changes.

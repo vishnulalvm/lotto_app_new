@@ -23,17 +23,22 @@ class LotteryResultDetailsRepository {
       
       // Try to get from cache first (if not forcing refresh)
       if (!forceRefresh) {
-        final cachedResult = await _cacheRepository.getCachedResultDetails(uniqueId);
-        if (cachedResult != null) {
-          // Return cached data immediately
-          final result = cachedResult.toResultDetails();
-          
-          // If connected and cache should be refreshed, refresh in background
-          if (isConnected && cachedResult.shouldRefreshInLiveHours) {
-            _refreshInBackground(uniqueId);
+        try {
+          final cachedResult = await _cacheRepository.getCachedResultDetails(uniqueId);
+          if (cachedResult != null) {
+            // Return cached data immediately
+            final result = cachedResult.toResultDetails();
+            
+            // If connected and cache should be refreshed, refresh in background
+            if (isConnected && cachedResult.shouldRefreshInLiveHours) {
+              _refreshInBackground(uniqueId);
+            }
+            
+            return result;
           }
-          
-          return result;
+        } catch (e) {
+          // Log cache error but continue to API fetch
+    
         }
       }
       
@@ -46,15 +51,23 @@ class LotteryResultDetailsRepository {
       final json = await _apiService.getLotteryResultDetails(uniqueId);
       final result = LotteryResultDetailsModel.fromJson(json);
       
-      // Cache the result
-      await _cacheRepository.cacheResultDetails(uniqueId, result);
+      // Cache the result (with error handling)
+      try {
+        await _cacheRepository.cacheResultDetails(uniqueId, result);
+      } catch (cacheError) {
+        // Continue without caching - don't fail the whole operation
+      }
       
       return result;
     } catch (e) {
       // If API fails, try to return cached data
-      final cachedResult = await _cacheRepository.getCachedResultDetails(uniqueId);
-      if (cachedResult != null) {
-        return cachedResult.toResultDetails();
+      try {
+        final cachedResult = await _cacheRepository.getCachedResultDetails(uniqueId);
+        if (cachedResult != null) {
+          return cachedResult.toResultDetails();
+        }
+      } catch (cacheError) {
+        // Log cache error but continue to throw original exception
       }
       
       throw Exception('Repository error: $e');
@@ -65,7 +78,11 @@ class LotteryResultDetailsRepository {
     try {
       final json = await _apiService.getLotteryResultDetails(uniqueId);
       final result = LotteryResultDetailsModel.fromJson(json);
-      await _cacheRepository.cacheResultDetails(uniqueId, result);
+      try {
+        await _cacheRepository.cacheResultDetails(uniqueId, result);
+      } catch (cacheError) {
+        // Silently fail caching in background
+      }
     } catch (e) {
       // Silently fail for background refresh
     }

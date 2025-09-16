@@ -292,4 +292,63 @@ class AnalyticsService {
       },
     );
   }
+
+  /// Track widget views with daily count
+  static Future<void> track({
+    required String eventName,
+    Map<String, Object>? parameters,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toLocal().toString().split(' ')[0]; // YYYY-MM-DD format
+    final countKey = '${eventName}_count_$today';
+    
+    // Get current daily count and increment
+    final currentCount = prefs.getInt(countKey) ?? 0;
+    final newCount = currentCount + 1;
+    await prefs.setInt(countKey, newCount);
+    
+    // Track the event with daily count
+    await _analytics?.logEvent(
+      name: eventName,
+      parameters: {
+        'daily_count': newCount,
+        'date': today,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        ...parameters ?? {},
+      },
+    );
+  }
+
+  /// Get daily view count for a specific event
+  static Future<int> getDailyCount(String eventName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toLocal().toString().split(' ')[0];
+    final countKey = '${eventName}_count_$today';
+    return prefs.getInt(countKey) ?? 0;
+  }
+
+  /// Clear old analytics data (older than 30 days)
+  static Future<void> cleanupOldAnalyticsData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys();
+    final cutoffDate = DateTime.now().subtract(const Duration(days: 30));
+    
+    for (final key in keys) {
+      if (key.contains('_count_')) {
+        final parts = key.split('_count_');
+        if (parts.length == 2) {
+          try {
+            final dateStr = parts[1];
+            final date = DateTime.parse(dateStr);
+            if (date.isBefore(cutoffDate)) {
+              await prefs.remove(key);
+            }
+          } catch (e) {
+            // Invalid date format, remove the key
+            await prefs.remove(key);
+          }
+        }
+      }
+    }
+  }
 }
