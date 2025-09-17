@@ -1,0 +1,200 @@
+import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
+import 'package:lotto_app/data/models/results_screen/results_screen.dart';
+import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
+import 'package:lotto_app/data/services/ai_prediction_service.dart';
+import 'package:lotto_app/data/repositories/cache/home_screen_cache_repository.dart';
+import 'package:lotto_app/data/repositories/cache/result_details_cache_repository.dart';
+
+/// Service responsible for matching AI predictions with lottery results
+class PredictionMatchService {
+  static final HomeScreenCacheRepositoryImpl _homeScreenCacheRepo = HomeScreenCacheRepositoryImpl();
+  static final ResultDetailsCacheRepositoryImpl _detailsCacheRepo = ResultDetailsCacheRepositoryImpl();
+
+  /// Fetches today's prediction for the given prize type
+  /// This ensures we get the prediction for today's lottery draw, not tomorrow's
+  static Future<AiPredictionModel?> getTodaysPrediction(int prizeType) async {
+    try {
+      // Use the new method that gets prediction for actual today's date
+      // This ensures we compare today's results with today's prediction numbers
+      return await AiPredictionService.getActualTodaysPrediction(prizeType);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Gets today's lottery results from home screen cache
+  static Future<HomeScreenResultModel?> getTodaysResults() async {
+    try {
+      final cachedResults = await _homeScreenCacheRepo.getCachedHomeScreenResults();
+      if (cachedResults == null || cachedResults.results.isEmpty) {
+        return null;
+      }
+
+      final todayString = _getTodayDateString();
+      return cachedResults.results.firstWhere(
+        (result) => result.date == todayString && result.isPublished,
+        orElse: () => cachedResults.results.first,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Gets detailed lottery results from result details cache
+  static Future<LotteryResultModel?> getDetailedResults(String uniqueId) async {
+    try {
+      final cachedDetails = await _detailsCacheRepo.getCachedResultDetails(uniqueId);
+      return cachedDetails?.toResultDetails().result;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Compares predictions with detailed lottery results for specific prize type
+  static List<String> compareWithDetailedResults(
+    List<String> predictions,
+    LotteryResultModel result,
+    int prizeType,
+  ) {
+    final matchedNumbers = <String>[];
+    final prizeTypeString = _getPrizeTypeString(prizeType);
+    final targetPrizes = result.getPrizesByType(prizeTypeString);
+
+    if (targetPrizes.isNotEmpty) {
+      final winningNumbers = <String>[];
+      
+      // Collect all winning numbers for this prize type
+      for (final prize in targetPrizes) {
+        winningNumbers.addAll(prize.getAllTicketNumbers());
+      }
+      
+      // Compare predictions with winning numbers
+      for (final prediction in predictions) {
+        if (winningNumbers.contains(prediction)) {
+          matchedNumbers.add(prediction);
+        }
+      }
+    }
+
+    return matchedNumbers;
+  }
+
+  /// Fallback comparison using basic home screen result data
+  static List<String> compareWithBasicResults(
+    List<String> predictions,
+    HomeScreenResultModel result,
+  ) {
+    final matchedNumbers = <String>[];
+    final winningNumbers = <String>[];
+
+    // Add first prize ticket number (check last 4 digits)
+    final firstPrizeNumber = result.firstPrize.ticketNumber;
+    if (firstPrizeNumber.length >= 4) {
+      winningNumbers.add(firstPrizeNumber.substring(firstPrizeNumber.length - 4));
+    }
+
+    // Add consolation prize numbers (check last 4 digits of each)
+    if (result.hasConsolationPrizes) {
+      final consolationNumbers = result.consolationTicketsList;
+      for (final number in consolationNumbers) {
+        if (number.length >= 4) {
+          winningNumbers.add(number.substring(number.length - 4));
+        }
+      }
+    }
+
+    // Compare predictions with winning numbers
+    for (final prediction in predictions) {
+      if (winningNumbers.contains(prediction)) {
+        matchedNumbers.add(prediction);
+      }
+    }
+
+    return matchedNumbers;
+  }
+
+  /// Checks if results should be available (after 4:30 PM for current day)
+  /// Results are available only after 4:30 PM on the same day
+  static bool shouldShowResults() {
+    final now = DateTime.now();
+    
+    // Results are available after 4:30 PM today
+    return now.hour >= 16 && now.minute >= 30;
+  }
+
+  /// Checks if we should reset and start fresh (new day cycle)
+  /// This helps determine when to clear previous day's data and start fresh
+  static bool shouldResetForNewDay() {
+    final now = DateTime.now();
+    
+    // Reset at the start of each day (before 4:30 PM)
+    // This ensures we don't show previous day's results
+    return now.hour < 16 || (now.hour == 16 && now.minute < 30);
+  }
+
+  /// Gets the lottery name for today based on weekday
+  static String getLotteryNameForToday() {
+    final now = DateTime.now();
+    final weekday = now.weekday;
+
+    switch (weekday) {
+      case DateTime.sunday:
+        return 'SAMRUDHI';
+      case DateTime.monday:
+        return 'BHAGYATHARA';
+      case DateTime.tuesday:
+        return 'STHREE SAKTHI';
+      case DateTime.wednesday:
+        return 'DHANALEKSHMI';
+      case DateTime.thursday:
+        return 'KARUNYA PLUS';
+      case DateTime.friday:
+        return 'SUVARNA KERALAM';
+      case DateTime.saturday:
+        return 'KARUNYA';
+      default:
+        return 'KARUNYA';
+    }
+  }
+
+  /// Calculates time remaining until 4:30 PM
+  static String getTimeUntilResults() {
+    final now = DateTime.now();
+    final targetTime = DateTime(now.year, now.month, now.day, 16, 30);
+    final timeRemaining = targetTime.difference(now);
+    
+    if (timeRemaining.inHours > 0) {
+      return '${timeRemaining.inHours}h ${timeRemaining.inMinutes % 60}m';
+    } else if (timeRemaining.inMinutes > 0) {
+      return '${timeRemaining.inMinutes}m';
+    } else {
+      return 'soon';
+    }
+  }
+
+  /// Converts prize type number to string
+  static String _getPrizeTypeString(int prizeType) {
+    switch (prizeType) {
+      case 5:
+        return '5th';
+      case 6:
+        return '6th';
+      case 7:
+        return '7th';
+      case 8:
+        return '8th';
+      case 9:
+        return '9th';
+      default:
+        return '5th';
+    }
+  }
+
+  /// Gets today's date as string in YYYY-MM-DD format
+  /// This matches the date format used in AiPredictionService
+  static String _getTodayDateString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+}

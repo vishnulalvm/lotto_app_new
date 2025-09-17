@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/lucky_number_dialog.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_card.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/prediction_match_card.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
@@ -26,6 +27,7 @@ class _PredictScreenState extends State<PredictScreen>
   late AnimationController _typewriterController;
   bool _isDisclaimerExpanded = false;
   Timer? _adTimer;
+  int _selectedPrizeType = 5; // Shared state for prize type
 
   @override
   void initState() {
@@ -213,7 +215,16 @@ class _PredictScreenState extends State<PredictScreen>
             const SizedBox(height: 5),
             _buildMostRepeatedCard(theme, data.repeatedNumbers),
             const SizedBox(height: 5),
-            const AiPredictionCard(),
+            AiPredictionCard(
+              selectedPrizeType: _selectedPrizeType,
+              onPrizeTypeChanged: (newPrizeType) {
+                setState(() {
+                  _selectedPrizeType = newPrizeType;
+                });
+              },
+            ),
+            const SizedBox(height: 5),
+            PredictionMatchCard(selectedPrizeType: _selectedPrizeType),
           ],
         ),
       ),

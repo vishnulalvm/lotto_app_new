@@ -492,5 +492,16 @@
   "count_times": "{count} times",
   "digits_found": "{count} digits found 📊",
   "count_x": "{count}x",
-  "patterns_found": "{count} patterns found 📊"
+  "patterns_found": "{count} patterns found 📊",
+  "prediction_match_results": "Prediction Match Results - {lottery}",
+  "prediction_match_numbers_title": "Prediction Match Numbers - {lottery} ({prizeType} Prize)",
+  "results_not_published_yet": "Results not published yet",
+  "no_matches_found_today": "No matches found today",
+  "congratulations": "Congratulations!",
+  "matches_found": "{count} matches found",
+  "matched_numbers": "Matched Numbers",
+  "your_predictions": "Your Predictions",
+  "results_available_after_430": "Results available after 4:30 PM",
+  "check_back_in_time": "Check back in {time}",
+  "prediction_match_info": "We'll compare your predictions with today's results"
 }

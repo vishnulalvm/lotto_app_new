@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
-import 'package:lotto_app/data/services/ai_prediction_service.dart';
+import 'package:lotto_app/data/services/lottery_info_service.dart';
+import 'package:lotto_app/data/services/ai_prediction_loader_service.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_state.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_ui_components.dart';
 
 class AiPredictionCard extends StatefulWidget {
-  const AiPredictionCard({super.key});
+  final int selectedPrizeType;
+  final ValueChanged<int> onPrizeTypeChanged;
+  
+  const AiPredictionCard({
+    super.key,
+    required this.selectedPrizeType,
+    required this.onPrizeTypeChanged,
+  });
 
   @override
   State<AiPredictionCard> createState() => _AiPredictionCardState();
 }
 
 class _AiPredictionCardState extends State<AiPredictionCard> {
-  int _selectedPrizeType = 5; // Default to 5th prize
-  AiPredictionModel? _currentPrediction;
-  bool _isLoading = false;
+  AIPredictionState _state = const AIPredictionInitial();
 
   @override
   void initState() {
@@ -22,59 +28,35 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
     _loadPrediction();
   }
 
+  @override
+  void didUpdateWidget(AiPredictionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (AIPredictionLoaderService.shouldReloadForPrizeType(_state, widget.selectedPrizeType)) {
+      _loadPrediction();
+    }
+  }
+
   Future<void> _loadPrediction() async {
     setState(() {
-      _isLoading = true;
+      _state = const AIPredictionLoading();
     });
 
-    try {
-      final prediction = await AiPredictionService.getTodaysPrediction(_selectedPrizeType);
-      setState(() {
-        _currentPrediction = prediction;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _onPrizeTypeChanged(int? newPrizeType) async {
-    if (newPrizeType != null && newPrizeType != _selectedPrizeType) {
-      HapticFeedback.lightImpact();
-      setState(() {
-        _selectedPrizeType = newPrizeType;
-      });
-      await _loadPrediction();
-    }
-  }
-
-  String _getLotteryNameForToday() {
-    final now = DateTime.now();
+    final newState = await AIPredictionLoaderService.loadPrediction(widget.selectedPrizeType);
     
-    // If it's before 3 PM, show today's lottery
-    // If it's after 3 PM, show tomorrow's lottery
-    final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
-    final weekday = targetDate.weekday;
+    if (mounted) {
+      setState(() {
+        _state = newState;
+      });
+    }
+  }
 
-    switch (weekday) {
-      case DateTime.sunday:
-        return 'SAMRUDHI';
-      case DateTime.monday:
-        return 'BHAGYATHARA';
-      case DateTime.tuesday:
-        return 'STHREE SAKTHI';
-      case DateTime.wednesday:
-        return 'DHANALEKSHMI';
-      case DateTime.thursday:
-        return 'KARUNYA PLUS';
-      case DateTime.friday:
-        return 'SUVARNA KERALAM';
-      case DateTime.saturday:
-        return 'KARUNYA';
-      default:
-        return 'KARUNYA';
+  void _onPrizeTypeChanged(int? newPrizeType) {
+    if (newPrizeType != null && 
+        newPrizeType != widget.selectedPrizeType &&
+        LotteryInfoService.isValidPrizeType(newPrizeType)) {
+      HapticFeedback.lightImpact();
+      widget.onPrizeTypeChanged(newPrizeType);
+      // Note: _loadPrediction will be called via didUpdateWidget
     }
   }
 
@@ -91,227 +73,17 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(theme),
+            AIPredictionUIComponents.buildHeader(theme),
             const SizedBox(height: 20),
-            _buildPrizeTypeSelector(theme),
+            AIPredictionUIComponents.buildPrizeTypeSelector(
+              theme,
+              widget.selectedPrizeType,
+              _onPrizeTypeChanged,
+            ),
             const SizedBox(height: 20),
-            _buildPredictionContent(theme),
+            AIPredictionUIComponents.buildStateContent(theme, _state),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    final lotteryName = _getLotteryNameForToday();
-    
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red[400]!, Colors.red[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.auto_awesome,
-            color: Colors.white,
-            size: 16,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            'ai_predicted_numbers'.tr(namedArgs: {'lottery': lotteryName}),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPrizeTypeSelector(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedPrizeType,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.amber),
-              items: [5, 6, 7, 8, 9].map((int prizeType) {
-                return DropdownMenuItem<int>(
-                  value: prizeType,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'prize_type'.tr(namedArgs: {'number': prizeType.toString(), 'suffix': _getOrdinalSuffix(prizeType)}),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: _onPrizeTypeChanged,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _getOrdinalSuffix(int number) {
-    switch (number) {
-      case 5:
-        return 'th';
-      case 6:
-        return 'th';
-      case 7:
-        return 'th';
-      case 8:
-        return 'th';
-      case 9:
-        return 'th';
-      default:
-        return 'th';
-    }
-  }
-
-  Widget _buildPredictionContent(ThemeData theme) {
-    if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_currentPrediction == null) {
-      return Center(
-        child: Column(
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'failed_to_generate_predictions'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        _buildNumbersGrid(theme, _currentPrediction!.predictedNumbers),
-        const SizedBox(height: 16),
-        _buildFooter(theme),
-      ],
-    );
-  }
-
-  Widget _buildNumbersGrid(ThemeData theme, List<String> numbers) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.8,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: numbers.length,
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red[400]!, Colors.red[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.red.withValues(alpha: 0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              numbers[index],
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFooter(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.red[50]!, Colors.red[100]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'predictions_generated'.tr(namedArgs: {'count': '12'}),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.red[700],
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-          Text(
-            '✨',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-            ),
-          ),
-        ],
       ),
     );
   }
