@@ -16,7 +16,7 @@ import 'package:lotto_app/core/widgets/in_app_review_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
-// import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
 import 'dart:async';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
@@ -59,9 +59,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   // Refresh state tracking
   bool _isRefreshing = false;
 
-  // Ad state tracking (commented out - AdMob account not ready)
-  // bool _hasShownRewardedAd = false;
-  // bool _isRewardedAdReady = false;
+  // Interstitial ad state tracking
+  bool _hasShownInterstitialAd = false;
+  Timer? _adTimer;
 
   // Auto-scroll functionality
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
@@ -128,15 +128,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       _checkIfSaved();
     }
 
-    // Check if rewarded ad is ready (commented out - AdMob account not ready)
-    // _checkRewardedAdStatus();
-
-    // Show rewarded ad after 5 seconds if not shown yet (commented out - AdMob account not ready)
-    // Timer(const Duration(seconds: 5), () {
-    //   if (mounted && !_hasShownRewardedAd) {
-    //     _showRewardedAdIfReady();
-    //   }
-    // });
+    // Load and show interstitial ad after 8 seconds
+    _scheduleInterstitialAd();
+    
   }
 
   Future<void> _initializeSavedResultsService() async {
@@ -160,6 +154,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     _scrollController.dispose();
     _blinkAnimationController.dispose();
     _highlightedTicketNotifier.dispose();
+    _adTimer?.cancel();
     super.dispose();
   }
 
@@ -923,67 +918,42 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     }
   }
 
-  // Ad Methods (commented out - AdMob account not ready)
-  // void _checkRewardedAdStatus() {
-  //   setState(() {
-  //     _isRewardedAdReady = AdMobService.instance.isRewardedAdLoaded;
-  //   });
-  // }
+  // Interstitial Ad Methods
+  void _scheduleInterstitialAd() {
+    // Load the interstitial ad
+    AdMobService.instance.loadAd('seemore_interstitial');
+    
+    // Show after 8 seconds
+    _adTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && !_hasShownInterstitialAd) {
+        _showInterstitialAd();
+      }
+    });
+  }
 
-  // void _showRewardedAdIfReady() {
-  //   if (_isRewardedAdReady && !_hasShownRewardedAd) {
-  //     _showRewardedAd();
-  //   }
-  // }
+  Future<void> _showInterstitialAd() async {
+    if (_hasShownInterstitialAd) return;
 
-  // Future<void> _showRewardedAd() async {
-  //   if (!_isRewardedAdReady || _hasShownRewardedAd) return;
-
-  //   try {
-  //     await AdMobService.instance.showRewardedAd(
-  //       onUserEarnedReward: (ad, reward) {
-  //         // User earned reward
-  //         if (mounted) {
-  //           ScaffoldMessenger.of(context).showSnackBar(
-  //             SnackBar(
-  //               content: Row(
-  //                 children: [
-  //                   Icon(Icons.star, color: Colors.white),
-  //                   SizedBox(width: 8),
-  //                   Text('Thanks for watching! You earned ${reward.amount} ${reward.type}'),
-  //                 ],
-  //               ),
-  //               backgroundColor: Colors.green,
-  //               duration: Duration(seconds: 3),
-  //             ),
-  //           );
-  //         }
-  //       },
-  //       onAdDismissed: () {
-  //         setState(() {
-  //           _hasShownRewardedAd = true;
-  //           _isRewardedAdReady = false;
-  //         });
-  //       },
-  //     );
-  //   } catch (e) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Row(
-  //             children: [
-  //               Icon(Icons.error, color: Colors.white),
-  //               SizedBox(width: 8),
-  //               Text('Ad failed to load'),
-  //             ],
-  //           ),
-  //           backgroundColor: Colors.red,
-  //           duration: Duration(seconds: 2),
-  //         ),
-  //       );
-  //     }
-  //   }
-  // }
+    try {
+      await AdMobService.instance.showInterstitialAd(
+        'seemore_interstitial',
+        onDismissed: () {
+          if (mounted) {
+            setState(() {
+              _hasShownInterstitialAd = true;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      // Handle ad show error silently
+      if (mounted) {
+        setState(() {
+          _hasShownInterstitialAd = true;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
