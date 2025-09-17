@@ -62,7 +62,6 @@ class AdMobService {
   static const bool useTestAds = false; // Production mode - using real ad units
   
   // NATIVE AD UNIT IDs
-  static const String nativeHomeResults = 'ca-app-pub-1386225714525775/1332117098';
   static const String nativeLiveVideo = 'ca-app-pub-1386225714525775/5079790413';
   static const String nativeLottoPoints = 'ca-app-pub-1386225714525775/5247311376';
   static const String nativeNewsFeed = 'ca-app-pub-1386225714525775/6560393048';
@@ -264,7 +263,7 @@ class AdMobService {
     bool isDarkTheme = false,
   }) async {
     final defaultTypes = adTypes.isEmpty 
-        ? ['home_results', 'predict_interstitial'] 
+        ? ['predict_interstitial'] 
         : adTypes;
 
     final futures = <Future<void>>[];
@@ -278,8 +277,6 @@ class AdMobService {
   }
 
   // Convenience methods for specific ad types
-  Future<void> loadHomeResultsAd({bool isDarkTheme = false}) => 
-      loadAd('home_results', isDarkTheme: isDarkTheme);
   
   Future<void> loadPredictInterstitialAd() => loadAd('predict_interstitial');
   
@@ -291,15 +288,12 @@ class AdMobService {
   
   Future<void> loadScratchCardRewardedInterstitialAd() => loadAd('scratch_card_rewarded_interstitial');
   
-  NativeAd? getHomeResultsAd() => getAd<NativeAd>('home_results');
-  NativeAd? getSharedHomeResultsAd() => getSharedAd<NativeAd>('home_results');
   InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
   InterstitialAd? getLottoPointsInterstitialAd() => getAd<InterstitialAd>('lotto_points_interstitial');
   RewardedAd? getCashbackClaimRewardedAd() => getAd<RewardedAd>('cashback_claim_rewarded');
   RewardedAd? getLottoPointsRewardedAd() => getAd<RewardedAd>('lotto_points_rewarded');
   RewardedInterstitialAd? getScratchCardRewardedInterstitialAd() => getAd<RewardedInterstitialAd>('scratch_card_rewarded_interstitial');
   
-  bool get isHomeResultsAdLoaded => isAdLoaded('home_results');
   bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
   bool get isLottoPointsInterstitialAdLoaded => isAdLoaded('lotto_points_interstitial');
   bool get isCashbackClaimRewardedAdLoaded => isAdLoaded('cashback_claim_rewarded');
@@ -662,7 +656,7 @@ class AdMobService {
 
   // Type checking helpers
   bool _isNativeAdType(String adType) {
-    return ['home_results', 'live_video', 'lotto_points', 'news_feed'].contains(adType);
+    return ['live_video', 'lotto_points', 'news_feed'].contains(adType);
   }
 
   bool _isInterstitialAdType(String adType) {
@@ -671,7 +665,6 @@ class AdMobService {
 
   String? _getNativeAdUnitId(String adType) {
     switch (adType) {
-      case 'home_results': return nativeHomeResults;
       case 'live_video': return nativeLiveVideo;
       case 'lotto_points': return nativeLottoPoints;
       case 'news_feed': return nativeNewsFeed;
@@ -800,21 +793,7 @@ class AdMobService {
   }
 
   // Legacy method support for backward compatibility
-  @Deprecated('Use getHomeResultsAd() instead')
-  NativeAd createNewsStyleNativeHomeResultsAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNativeAd(
-      adUnitId: nativeHomeResults,
-      isDarkTheme: isDarkTheme,
-      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
-      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
-    );
-  }
 
-  @Deprecated('Use getHomeResultsAd() instead')
-  NativeAd? getCachedHomeResultsAd() => getHomeResultsAd();
 
   @Deprecated('Use internal load management instead')
   bool get canLoadAds => _canLoad();
@@ -825,7 +804,7 @@ class AdMobService {
   @Deprecated('Use preloadAds() with specific ad types instead')
   Future<void> smartPreload({bool isDarkTheme = false, bool isHomeScreen = false}) {
     final adTypes = isHomeScreen 
-        ? ['home_results', 'predict_interstitial']
+        ? ['predict_interstitial']
         : ['live_video', 'lotto_points', 'news_feed'];
     return preloadAds(adTypes: adTypes, isDarkTheme: isDarkTheme);
   }
@@ -840,9 +819,6 @@ class AdMobService {
   }
 
   // Additional legacy methods for other ad types
-  @Deprecated('Use loadAd() instead')
-  Future<void> preloadHomeResultsAd({bool isDarkTheme = false}) => 
-      loadHomeResultsAd(isDarkTheme: isDarkTheme);
 
   @Deprecated('Use loadAd() instead')
   Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) => 

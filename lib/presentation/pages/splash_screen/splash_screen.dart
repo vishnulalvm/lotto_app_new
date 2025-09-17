@@ -119,35 +119,8 @@ class _SplashScreenState extends State<SplashScreen> {
         debugPrint('Notification channel creation failed: $e');
       }));
 
-      // Preload ads with even more delay to not impact initial UX
-      unawaited(Future.delayed(const Duration(seconds: 2), () {
-        _preloadAdsInBackground();
-      }));
     } catch (e) {
       debugPrint('AdMob services initialization failed: $e');
-    }
-  }
-  
-  void _preloadAdsInBackground() async {
-    try {
-      // Preload high-priority ads with error handling
-      await AdMobService.instance.preloadAds().catchError((e) {
-        debugPrint('Primary ad preload failed: $e');
-      });
-      
-      // Additional delay to ensure app is fully settled
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Preload specific ads for key screens
-      await AdMobService.instance.preloadAds(
-        adTypes: ['home_results', 'predict_interstitial'],
-      ).catchError((e) {
-        debugPrint('Specific ad preload failed: $e');
-      });
-      
-      debugPrint('✅ Background ad preload completed');
-    } catch (e) {
-      debugPrint('❌ Ad preload failed: $e');
     }
   }
 

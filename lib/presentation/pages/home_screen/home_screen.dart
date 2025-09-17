@@ -18,7 +18,6 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart'
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
-import 'package:lotto_app/data/services/admob_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,10 +66,6 @@ class _HomeScreenState extends State<HomeScreen>
         AnalyticsService.trackSessionStart();
       });
 
-      // Preload ads after UI is stable (reduced delay to avoid conflicts)
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) _preloadHomeScreenAds();
-      });
     });
 
     // Load data immediately (without UI delays)
@@ -140,19 +135,6 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  void _preloadHomeScreenAds() async {
-    if (!mounted) return;
-
-    try {
-      await AdMobService.instance.preloadAds(
-        adTypes: ['home_results', 'predict_interstitial'],
-        isDarkTheme: Theme.of(context).brightness == Brightness.dark,
-      );
-    } catch (e) {
-      // Silent fail - ads will load on demand
-      debugPrint('Home screen ad preload failed: $e');
-    }
-  }
 
   /// Start attention-grabbing animations using Timer.periodic for better performance
   void _startAttentionAnimations() {
@@ -280,7 +262,6 @@ class _HomeScreenState extends State<HomeScreen>
         // App came back to foreground - refresh data if it's been a while
         if (mounted) {
           _handleAppResumed();
-          // Don't preload ads here - let NativeAdHomeWidget handle its own lifecycle
         }
         break;
       case AppLifecycleState.paused:
