@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/core/utils/barcode_validator.dart';
+import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/widgets/validation_error_dialog.dart';
 import 'package:lotto_app/presentation/pages/probility_screen/probability_result_dialog.dart';
 import 'package:lotto_app/presentation/pages/probility_screen/widgets/how_it_works_dialog.dart';
@@ -208,7 +209,7 @@ class _ProbabilityBarcodeScannerScreenState
             title: Text(
               'barcode_scanner'.tr(),
               style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 20,
+                fontSize: AppResponsive.fontSize(context, 20),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -261,8 +262,8 @@ class _ProbabilityBarcodeScannerScreenState
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      height: 200,
+                      width: AppResponsive.width(context, 80),
+                      height: AppResponsive.height(context, 25),
                     ),
                     // Loading indicator
                     if (isProcessing)
@@ -274,12 +275,13 @@ class _ProbabilityBarcodeScannerScreenState
                             children: [
                               const CircularProgressIndicator(
                                   color: Colors.white),
-                              const SizedBox(height: 16),
+                              SizedBox(height: AppResponsive.spacing(context, 16)),
                               Text(
                                 'analyzing_probability'.tr(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w500,
+                                  fontSize: AppResponsive.fontSize(context, 14),
                                 ),
                               ),
                             ],
@@ -289,11 +291,11 @@ class _ProbabilityBarcodeScannerScreenState
                     // Instruction text
                     if (!isProcessing)
                       Positioned(
-                        bottom: 100,
+                        bottom: AppResponsive.spacing(context, 45),
                         child: Container(
-                          width: MediaQuery.of(context).size.width * 0.8,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
+                          width: AppResponsive.width(context, 80),
+                          padding: AppResponsive.padding(context,
+                              horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             color: Colors.black54,
                             borderRadius: BorderRadius.circular(8),
@@ -311,6 +313,7 @@ class _ProbabilityBarcodeScannerScreenState
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w500,
+                                    fontSize: AppResponsive.fontSize(context, 14),
                                   ),
                                 ),
                                 TextSpan(
@@ -318,6 +321,7 @@ class _ProbabilityBarcodeScannerScreenState
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.primaryColor,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: AppResponsive.fontSize(context, 14),
                                   ),
                                 ),
                                 TextSpan(
@@ -325,6 +329,7 @@ class _ProbabilityBarcodeScannerScreenState
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w500,
+                                    fontSize: AppResponsive.fontSize(context, 14),
                                   ),
                                 ),
                               ],
@@ -336,40 +341,65 @@ class _ProbabilityBarcodeScannerScreenState
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: AppResponsive.padding(context, horizontal: 20, vertical: 20),
                 color: theme.cardTheme.color,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Date chooser button
                     Container(
-                      margin: const EdgeInsets.only(bottom: 20),
+                      margin: EdgeInsets.only(bottom: AppResponsive.spacing(context, 20)),
                       child: _buildHowToWork(context, theme),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildActionButton(
-                          icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
-                          label: 'flash'.tr(),
-                          isActive: isFlashOn,
-                          onTap: () {
-                            setState(() {
-                              isFlashOn = !isFlashOn;
-                              cameraController.toggleTorch();
-                            });
-                          },
-                          theme: theme,
-                        ),
-                        _buildActionButton(
-                          icon: Icons.photo_library,
-                          label: 'gallery'.tr(),
-                          onTap: _pickImageFromGallery,
-                          theme: theme,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                    AppResponsive.isMobile(context) 
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Expanded(child: _buildActionButton(
+                                icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                                label: 'flash'.tr(),
+                                isActive: isFlashOn,
+                                onTap: () {
+                                  setState(() {
+                                    isFlashOn = !isFlashOn;
+                                    cameraController.toggleTorch();
+                                  });
+                                },
+                                theme: theme,
+                              )),
+                              SizedBox(width: AppResponsive.spacing(context, 16)),
+                              Expanded(child: _buildActionButton(
+                                icon: Icons.photo_library,
+                                label: 'gallery'.tr(),
+                                onTap: _pickImageFromGallery,
+                                theme: theme,
+                              )),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildActionButton(
+                                icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                                label: 'flash'.tr(),
+                                isActive: isFlashOn,
+                                onTap: () {
+                                  setState(() {
+                                    isFlashOn = !isFlashOn;
+                                    cameraController.toggleTorch();
+                                  });
+                                },
+                                theme: theme,
+                              ),
+                              _buildActionButton(
+                                icon: Icons.photo_library,
+                                label: 'gallery'.tr(),
+                                onTap: _pickImageFromGallery,
+                                theme: theme,
+                              ),
+                            ],
+                          ),
+                    SizedBox(height: AppResponsive.spacing(context, 20)),
                   ],
                 ),
               ),
@@ -384,7 +414,7 @@ class _ProbabilityBarcodeScannerScreenState
     return InkWell(
       onTap: () => HowItWorksDialog.show(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        padding: AppResponsive.padding(context, horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: theme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
@@ -398,7 +428,9 @@ class _ProbabilityBarcodeScannerScreenState
           style: theme.textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.w500,
             color: theme.primaryColor,
+            fontSize: AppResponsive.fontSize(context, 16),
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -415,12 +447,12 @@ class _ProbabilityBarcodeScannerScreenState
       onTap: isProcessing ? null : onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
               decoration: BoxDecoration(
                 color: isActive
                     ? theme.primaryColor.withValues(alpha: 0.2)
@@ -433,15 +465,17 @@ class _ProbabilityBarcodeScannerScreenState
               child: Icon(
                 icon,
                 color: isActive ? theme.primaryColor : theme.iconTheme.color,
-                size: 24,
+                size: AppResponsive.spacing(context, 24),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppResponsive.spacing(context, 8)),
             Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                fontSize: AppResponsive.fontSize(context, 14),
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

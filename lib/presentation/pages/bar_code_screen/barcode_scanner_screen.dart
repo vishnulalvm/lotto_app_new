@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/core/utils/barcode_validator.dart';
+import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/widgets/validation_error_dialog.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -174,7 +175,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         title: Text(
           'barcode_scanner'.tr(),
           style: theme.textTheme.titleLarge?.copyWith(
-            fontSize: 20,
+            fontSize: AppResponsive.fontSize(context, 20),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -224,8 +225,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    height: 200,
+                    width: AppResponsive.width(context, 80),
+                    height: AppResponsive.height(context, 25),
                   ),
                 // Loading indicator
                 if (isProcessing)
@@ -251,11 +252,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                 // Instruction text - only show when camera permission is granted and not processing
                 if (!isProcessing && _cameraPermissionStatus == PermissionStatus.granted)
                   Positioned(
-                    bottom: 100,
+                    bottom: AppResponsive.spacing(context, 45),
                     child: Container(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
+                      width: AppResponsive.width(context, 80),
+                      padding: AppResponsive.padding(context, 
+                          horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(8),
@@ -266,6 +267,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
+                          fontSize: AppResponsive.fontSize(context, 14),
                         ),
                       ),
                     ),
@@ -274,38 +276,61 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: AppResponsive.padding(context, horizontal: 20, vertical: 20),
             color: theme.cardTheme.color,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Date chooser button
                 Container(
-                  margin: const EdgeInsets.only(bottom: 20),
+                  margin: EdgeInsets.only(bottom: AppResponsive.spacing(context, 20)),
                   child: _buildDateChooserButton(),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildActionButton(
-                      icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
-                      label: 'flash'.tr(),
-                      isActive: isFlashOn,
-                      onTap: () {
-                        setState(() {
-                          isFlashOn = !isFlashOn;
-                          cameraController.toggleTorch();
-                        });
-                      },
-                    ),
-                    _buildActionButton(
-                      icon: Icons.photo_library,
-                      label: 'gallery'.tr(),
-                      onTap: _pickImageFromGallery,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                AppResponsive.isMobile(context) 
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Expanded(child: _buildActionButton(
+                            icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                            label: 'flash'.tr(),
+                            isActive: isFlashOn,
+                            onTap: () {
+                              setState(() {
+                                isFlashOn = !isFlashOn;
+                                cameraController.toggleTorch();
+                              });
+                            },
+                          )),
+                          SizedBox(width: AppResponsive.spacing(context, 16)),
+                          Expanded(child: _buildActionButton(
+                            icon: Icons.photo_library,
+                            label: 'gallery'.tr(),
+                            onTap: _pickImageFromGallery,
+                          )),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildActionButton(
+                            icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                            label: 'flash'.tr(),
+                            isActive: isFlashOn,
+                            onTap: () {
+                              setState(() {
+                                isFlashOn = !isFlashOn;
+                                cameraController.toggleTorch();
+                              });
+                            },
+                          ),
+                          _buildActionButton(
+                            icon: Icons.photo_library,
+                            label: 'gallery'.tr(),
+                            onTap: _pickImageFromGallery,
+                          ),
+                        ],
+                      ),
+                SizedBox(height: AppResponsive.spacing(context, 20)),
               ],
             ),
           ),
@@ -319,7 +344,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     return InkWell(
       onTap: () => _selectDate(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        padding: AppResponsive.padding(context, horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: theme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
@@ -334,21 +359,22 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
             Icon(
               Icons.calendar_today,
               color: theme.primaryColor,
-              size: 24,
+              size: AppResponsive.spacing(context, 24),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: AppResponsive.spacing(context, 12)),
             Text(
               DateFormat('dd-MM-yyyy').format(selectedDate),
               style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: theme.primaryColor,
+                fontSize: AppResponsive.fontSize(context, 16),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: AppResponsive.spacing(context, 8)),
             Icon(
               Icons.arrow_drop_down,
               color: theme.primaryColor,
-              size: 20,
+              size: AppResponsive.spacing(context, 20),
             ),
           ],
         ),
@@ -367,12 +393,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       onTap: isProcessing ? null : onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
               decoration: BoxDecoration(
                 color: isActive
                     ? theme.primaryColor.withValues(alpha: 0.2)
@@ -385,15 +411,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
               child: Icon(
                 icon,
                 color: isActive ? theme.primaryColor : theme.iconTheme.color,
-                size: 24,
+                size: AppResponsive.spacing(context, 24),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppResponsive.spacing(context, 8)),
             Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                fontSize: AppResponsive.fontSize(context, 14),
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -568,35 +596,37 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       color: Colors.black,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: AppResponsive.padding(context, horizontal: 24, vertical: 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.camera_alt_outlined,
-                size: 80,
+                size: AppResponsive.spacing(context, 80),
                 color: theme.primaryColor,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: AppResponsive.spacing(context, 24)),
               Text(
                 'camera_permission_required'.tr(),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
+                  fontSize: AppResponsive.fontSize(context, 20),
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppResponsive.spacing(context, 16)),
               Text(
                 _cameraPermissionStatus == PermissionStatus.permanentlyDenied
                     ? 'camera_permission_denied_message'.tr()
                     : 'camera_permission_message'.tr(),
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: Colors.white70,
+                  fontSize: AppResponsive.fontSize(context, 16),
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppResponsive.spacing(context, 32)),
               if (_cameraPermissionStatus == PermissionStatus.permanentlyDenied)
                 Column(
                   children: [
@@ -607,14 +637,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        padding: AppResponsive.padding(context, horizontal: 32, vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text('open_settings'.tr()),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: AppResponsive.spacing(context, 16)),
                     TextButton(
                       onPressed: _isRequestingPermission ? null : () async {
                         await _checkCameraPermission();
@@ -638,7 +668,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: AppResponsive.padding(context, horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
