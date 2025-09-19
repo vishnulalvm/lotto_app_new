@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:lotto_app/data/datasource/api/lotto_points_screen/user_points_api_service.dart';
 import 'package:lotto_app/data/models/lotto_points_screen/user_points_model.dart';
 
@@ -17,7 +16,6 @@ class UserPointsRepositoryImpl implements UserPointsRepository {
     try {
       return await _apiService.getUserPoints(phoneNumber);
     } catch (e) {
-      debugPrint('Error in UserPointsRepository: $e');
       throw Exception('Repository error: $e');
     }
   }

@@ -13,17 +13,27 @@ class PredictionMatchCard extends StatefulWidget {
   });
 
   @override
-  State<PredictionMatchCard> createState() => _PredictionMatchCardState();
+  State<PredictionMatchCard> createState() => PredictionMatchCardState();
 }
 
-class _PredictionMatchCardState extends State<PredictionMatchCard> {
+class PredictionMatchCardState extends State<PredictionMatchCard> {
   bool _isLoading = false;
   PredictionMatchModel? _matchResult;
   bool _hasData = false;
+  late int _currentPrizeType;
+
+  /// Public method to update prize type from external components
+  void updatePrizeType(int newPrizeType) {
+    if (_currentPrizeType != newPrizeType) {
+      _currentPrizeType = newPrizeType;
+      _loadPredictionMatches();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _currentPrizeType = widget.selectedPrizeType;
     _loadPredictionMatches();
   }
 
@@ -31,13 +41,13 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
   void didUpdateWidget(PredictionMatchCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedPrizeType != widget.selectedPrizeType) {
+      _currentPrizeType = widget.selectedPrizeType;
       _loadPredictionMatches();
     }
   }
 
   /// Loads prediction matches using the service layer
   Future<void> _loadPredictionMatches() async {
-    debugPrint('🚀 [PredictionMatchCard] Starting to load prediction matches for prize type: ${widget.selectedPrizeType}');
     
     setState(() {
       _isLoading = true;
@@ -45,14 +55,6 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
 
     try {
       final matchResult = await _fetchPredictionMatches();
-      debugPrint('📊 [PredictionMatchCard] Match result: ${matchResult != null ? "Found" : "None"}, hasMatches: ${matchResult?.hasMatches}');
-      if (matchResult != null) {
-        int totalPredictions = 0;
-        for (final prediction in matchResult.allPredictions) {
-          totalPredictions += prediction.predictedNumbers.length;
-        }
-        debugPrint('🎯 [PredictionMatchCard] Matched numbers: ${matchResult.matchedNumbers}, Total predictions checked: $totalPredictions');
-      }
       
       setState(() {
         _matchResult = matchResult;
@@ -60,7 +62,6 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ [PredictionMatchCard] Error loading matches: $e');
       setState(() {
         _matchResult = null;
         _hasData = false;
@@ -71,13 +72,7 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
 
   /// Fetches and compares ALL predictions (5 prize types) with results
   Future<PredictionMatchModel?> _fetchPredictionMatches() async {
-    final now = DateTime.now();
-    final isAfter430PM = now.hour > 16 || (now.hour == 16 && now.minute >= 30);
     
-    debugPrint('📝 [PredictionMatchCard] === COMPREHENSIVE PREDICTION MATCH PROCESS START ===');
-    debugPrint('🕐 [PredictionMatchCard] Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}');
-    debugPrint('⏰ [PredictionMatchCard] After 4:30 PM: $isAfter430PM');
-    debugPrint('🎲 [PredictionMatchCard] Getting ALL predictions for prize types 5-9');
     
     // Get ALL predictions for prize types 5-9
     final allPredictions = <AiPredictionModel>[];
@@ -85,35 +80,27 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
       final prediction = await PredictionMatchService.getTodaysPrediction(prizeType);
       if (prediction != null) {
         allPredictions.add(prediction);
-        debugPrint('✅ [PredictionMatchCard] Got prediction for prize type $prizeType: ${prediction.predictedNumbers.length} numbers');
       } else {
-        debugPrint('❌ [PredictionMatchCard] No prediction found for prize type $prizeType');
       }
     }
     
     if (allPredictions.isEmpty) {
-      debugPrint('❌ [PredictionMatchCard] No predictions found for any prize type');
       return null;
     }
 
     // Get results
     final homeResult = await PredictionMatchService.getTodaysResults();
     if (homeResult == null) {
-      debugPrint('❌ [PredictionMatchCard] No home results found');
       return null;
     }
     if (!homeResult.isPublished) {
-      debugPrint('⚠️ [PredictionMatchCard] Results not published yet for date: ${homeResult.date}');
       return null;
     }
-    debugPrint('✅ [PredictionMatchCard] RESULT: date=${homeResult.date}, lottery=${homeResult.lotteryName}');
     
     // Verify date matching
     final firstPrediction = allPredictions.first;
     if (firstPrediction.date == homeResult.date) {
-      debugPrint('🎯 [PredictionMatchCard] ✅ DATES MATCH: Comparing ${firstPrediction.date} predictions vs ${homeResult.date} result');
     } else {
-      debugPrint('⚠️ [PredictionMatchCard] ❌ DATE MISMATCH: Comparing ${firstPrediction.date} predictions vs ${homeResult.date} result');
     }
 
     // Try to get detailed results first
@@ -123,7 +110,6 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
     bool hasDetailedData = false;
 
     if (detailedResult != null) {
-      debugPrint('🔍 [PredictionMatchCard] Using detailed comparison for ALL prize types');
       // Use comprehensive detailed comparison
       matchedNumbersWithPrizeType = PredictionMatchService.compareAllPredictionsWithDetailedResults(
         allPredictions,
@@ -131,7 +117,6 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
       );
       hasDetailedData = true;
     } else {
-      debugPrint('🔍 [PredictionMatchCard] Using basic comparison (fallback)');
       // Use fallback comparison
       matchedNumbersWithPrizeType = PredictionMatchService.compareAllPredictionsWithBasicResults(
         allPredictions,
@@ -139,12 +124,6 @@ class _PredictionMatchCardState extends State<PredictionMatchCard> {
       );
     }
 
-    debugPrint('🎯 [PredictionMatchCard] FINAL COMPREHENSIVE RESULT: ${matchedNumbersWithPrizeType.length} matches found');
-    for (final entry in matchedNumbersWithPrizeType.entries) {
-      debugPrint('🏆 [PredictionMatchCard] Match: ${entry.key} from ${entry.value} prize');
-    }
-    debugPrint('🏆 [PredictionMatchCard] Using lottery name for UI: ${homeResult.lotteryName}');
-    debugPrint('📝 [PredictionMatchCard] === COMPREHENSIVE PREDICTION MATCH PROCESS END ===');
 
     return matchedNumbersWithPrizeType.isNotEmpty
         ? PredictionMatchModel.withMatches(allPredictions, matchedNumbersWithPrizeType, homeResult.lotteryName, hasDetailedData: hasDetailedData)

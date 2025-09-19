@@ -27,7 +27,8 @@ class _PredictScreenState extends State<PredictScreen>
   late AnimationController _typewriterController;
   bool _isDisclaimerExpanded = false;
   Timer? _adTimer;
-  int _selectedPrizeType = 5; // Shared state for prize type
+  int _selectedPrizeType = 5; // Shared state for synchronizing components
+  final _predictionMatchCardKey = GlobalKey<PredictionMatchCardState>();
 
   @override
   void initState() {
@@ -216,15 +217,19 @@ class _PredictScreenState extends State<PredictScreen>
             _buildMostRepeatedCard(theme, data.repeatedNumbers),
             const SizedBox(height: 5),
             AiPredictionCard(
-              selectedPrizeType: _selectedPrizeType,
+              initialPrizeType: _selectedPrizeType,
               onPrizeTypeChanged: (newPrizeType) {
-                setState(() {
-                  _selectedPrizeType = newPrizeType;
-                });
+                // Update shared state but don't rebuild entire widget tree
+                _selectedPrizeType = newPrizeType;
+                // Notify PredictionMatchCard of the change
+                _predictionMatchCardKey.currentState?.updatePrizeType(newPrizeType);
               },
             ),
             const SizedBox(height: 5),
-            PredictionMatchCard(selectedPrizeType: _selectedPrizeType),
+            PredictionMatchCard(
+              key: _predictionMatchCardKey,
+              selectedPrizeType: _selectedPrizeType,
+            ),
           ],
         ),
       ),
@@ -820,133 +825,5 @@ class _PredictScreenState extends State<PredictScreen>
     if (AdMobService.instance.isPredictInterstitialAdLoaded) {
       await AdMobService.instance.showInterstitialAd('predict_interstitial');
     }
-  }
-}
-
-// Custom Typewriter Number Card Widget
-class TypewriterNumberCard extends StatefulWidget {
-  final String number;
-  final ThemeData theme;
-  final Duration delay;
-  final double fontSize;
-
-  const TypewriterNumberCard({
-    super.key,
-    required this.number,
-    required this.theme,
-    required this.delay,
-    required this.fontSize,
-  });
-
-  @override
-  State<TypewriterNumberCard> createState() => _TypewriterNumberCardState();
-}
-
-class _TypewriterNumberCardState extends State<TypewriterNumberCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<int> _characterCount;
-  bool _isVisible = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: Duration(milliseconds: widget.number.length * 100),
-      vsync: this,
-    );
-
-    _characterCount = StepTween(
-      begin: 0,
-      end: widget.number.length,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
-
-    // Start animation after delay
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        // Provide subtle haptic feedback when each number starts appearing
-        HapticFeedback.selectionClick();
-        setState(() {
-          _isVisible = true;
-        });
-        _controller.forward();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _isVisible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              widget.theme.primaryColor.withValues(alpha: 0.8),
-              widget.theme.primaryColor,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: widget.theme.primaryColor.withValues(alpha: 0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _characterCount,
-            builder: (context, child) {
-              String displayText =
-                  widget.number.substring(0, _characterCount.value);
-              bool showCursor = _controller.isAnimating &&
-                  _characterCount.value < widget.number.length;
-
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    displayText,
-                    style: widget.theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: widget.fontSize,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (showCursor)
-                    AnimatedOpacity(
-                      opacity: (_controller.value * 2) % 1 > 0.5 ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 100),
-                      child: Text(
-                        '|',
-                        style: widget.theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: widget.fontSize,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
   }
 }

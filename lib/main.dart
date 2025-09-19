@@ -88,13 +88,11 @@ void main() async {
   // Move all other service initialization to background (non-blocking)
   unawaited(Future.delayed(const Duration(milliseconds: 100), () {
     FirebaseMessagingService.initialize().catchError((error) {
-      debugPrint('FirebaseMessaging init failed in main: $error');
     });
   }));
 
   unawaited(Future.delayed(const Duration(milliseconds: 200), () {
     AppUpdateService().initialize().catchError((error) {
-      debugPrint('AppUpdateService init failed in main: $error');
     });
   }));
 

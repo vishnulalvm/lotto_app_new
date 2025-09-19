@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
@@ -17,12 +16,10 @@ class PredictionMatchService {
   static Future<AiPredictionModel?> getTodaysPrediction(int prizeType) async {
     try {
       final targetDate = getTargetDateForPrediction();
-      debugPrint('🔍 [PredictionMatch] Getting prediction for date: $targetDate, prizeType: $prizeType');
       
       // Get prediction for the appropriate date
       return await AiPredictionService.getPredictionForDate(targetDate, prizeType);
     } catch (e) {
-      debugPrint('❌ [PredictionMatch] Error getting prediction: $e');
       return null;
     }
   }
@@ -33,18 +30,15 @@ class PredictionMatchService {
     try {
       final cachedResults = await _homeScreenCacheRepo.getCachedHomeScreenResults();
       if (cachedResults == null || cachedResults.results.isEmpty) {
-        debugPrint('❌ [PredictionMatch] No cached results available');
         return null;
       }
 
       // Use the same target date as predictions for consistency
       final targetDate = getTargetDateForPrediction();
-      debugPrint('🔍 [PredictionMatch] Looking for results on same date as prediction: $targetDate');
       
       // Try to find results for the target date
       HomeScreenResultModel? targetResult;
       for (final result in cachedResults.results) {
-        debugPrint('📅 [PredictionMatch] Found result for date: ${result.date}, published: ${result.isPublished}');
         if (result.date == targetDate && result.isPublished) {
           targetResult = result;
           break;
@@ -53,20 +47,16 @@ class PredictionMatchService {
       
       // If no results for target date, get the latest published result
       if (targetResult == null) {
-        debugPrint('⚠️ [PredictionMatch] No results for exact target date, getting latest published result');
         for (final result in cachedResults.results) {
           if (result.isPublished) {
             targetResult = result;
-            debugPrint('📊 [PredictionMatch] Using fallback result: ${result.date}');
             break;
           }
         }
       }
       
-      debugPrint('✅ [PredictionMatch] Final result selected: ${targetResult?.date}, lottery: ${targetResult?.lotteryName}');
       return targetResult;
     } catch (e) {
-      debugPrint('❌ [PredictionMatch] Error getting results: $e');
       return null;
     }
   }
@@ -93,8 +83,6 @@ class PredictionMatchService {
     final prizeTypeString = _getPrizeTypeString(prizeType);
     final targetPrizes = result.getPrizesByType(prizeTypeString);
 
-    debugPrint('🔍 [PredictionMatch] Comparing with prize type: $prizeTypeString');
-    debugPrint('🔍 [PredictionMatch] Found ${targetPrizes.length} prizes for this type');
 
     if (targetPrizes.isNotEmpty) {
       final winningNumbers = <String>[];
@@ -103,24 +91,18 @@ class PredictionMatchService {
       for (final prize in targetPrizes) {
         final prizeNumbers = prize.getAllTicketNumbers();
         winningNumbers.addAll(prizeNumbers);
-        debugPrint('🎟️ [PredictionMatch] Prize numbers: $prizeNumbers');
       }
       
-      debugPrint('🎯 [PredictionMatch] Total winning numbers for $prizeTypeString: ${winningNumbers.length} - $winningNumbers');
-      debugPrint('🎲 [PredictionMatch] Prediction numbers: ${predictions.length} - $predictions');
       
       // Compare predictions with winning numbers
       for (final prediction in predictions) {
         if (winningNumbers.contains(prediction)) {
           matchedNumbers.add(prediction);
-          debugPrint('✅ [PredictionMatch] MATCH FOUND: $prediction');
         }
       }
     } else {
-      debugPrint('⚠️ [PredictionMatch] No prizes found for type: $prizeTypeString');
     }
 
-    debugPrint('🏆 [PredictionMatch] Final matches for $prizeTypeString: ${matchedNumbers.length} - $matchedNumbers');
     return matchedNumbers;
   }
 
@@ -132,8 +114,6 @@ class PredictionMatchService {
   ) {
     final matchedNumbersWithPrizeType = <String, String>{};
     
-    debugPrint('🔍 [PredictionMatch] === COMPREHENSIVE DETAILED COMPARISON START ===');
-    debugPrint('🔍 [PredictionMatch] Predictions to check: ${allPredictions.length} prize types');
     
     // Get all winning numbers from ALL prize types (5th to 9th)
     final allWinningNumbers = <String, String>{}; // number -> prize type
@@ -142,25 +122,16 @@ class PredictionMatchService {
       final prizeTypeString = _getPrizeTypeString(prizeType);
       final targetPrizes = result.getPrizesByType(prizeTypeString);
       
-      debugPrint('🎯 [PredictionMatch] Checking $prizeTypeString: found ${targetPrizes.length} prizes');
       
       for (final prize in targetPrizes) {
         final prizeNumbers = prize.getAllTicketNumbers();
         for (final number in prizeNumbers) {
           allWinningNumbers[number] = prizeTypeString;
         }
-        debugPrint('🎟️ [PredictionMatch] $prizeTypeString prize numbers: $prizeNumbers');
       }
     }
     
-    debugPrint('🎯 [PredictionMatch] Total winning numbers across all prize types: ${allWinningNumbers.length}');
     
-    // Count total prediction numbers
-    int totalPredictionNumbers = 0;
-    for (final prediction in allPredictions) {
-      totalPredictionNumbers += prediction.predictedNumbers.length;
-    }
-    debugPrint('🎲 [PredictionMatch] Total prediction numbers to check: $totalPredictionNumbers');
     
     // Compare ALL prediction numbers against ALL winning numbers
     for (final prediction in allPredictions) {
@@ -168,13 +139,10 @@ class PredictionMatchService {
         if (allWinningNumbers.containsKey(predictionNumber)) {
           final winningPrizeType = allWinningNumbers[predictionNumber]!;
           matchedNumbersWithPrizeType[predictionNumber] = winningPrizeType;
-          debugPrint('✅ [PredictionMatch] MATCH FOUND: $predictionNumber wins in $winningPrizeType');
         }
       }
     }
     
-    debugPrint('🏆 [PredictionMatch] Final comprehensive matches: ${matchedNumbersWithPrizeType.length}');
-    debugPrint('🔍 [PredictionMatch] === COMPREHENSIVE DETAILED COMPARISON END ===');
     
     return matchedNumbersWithPrizeType;
   }
@@ -187,7 +155,6 @@ class PredictionMatchService {
   ) {
     final matchedNumbersWithPrizeType = <String, String>{};
     
-    debugPrint('🔍 [PredictionMatch] === COMPREHENSIVE BASIC COMPARISON START ===');
     
     final winningNumbers = <String>[];
 
@@ -207,7 +174,6 @@ class PredictionMatchService {
       }
     }
 
-    debugPrint('🎯 [PredictionMatch] Basic winning numbers: $winningNumbers');
     
     // Compare ALL prediction numbers against winning numbers
     for (final prediction in allPredictions) {
@@ -215,13 +181,10 @@ class PredictionMatchService {
         if (winningNumbers.contains(predictionNumber)) {
           // Assign to estimated prize type (since we don't have detailed data)
           matchedNumbersWithPrizeType[predictionNumber] = 'estimated';
-          debugPrint('✅ [PredictionMatch] BASIC MATCH: $predictionNumber');
         }
       }
     }
     
-    debugPrint('🏆 [PredictionMatch] Final basic matches: ${matchedNumbersWithPrizeType.length}');
-    debugPrint('🔍 [PredictionMatch] === COMPREHENSIVE BASIC COMPARISON END ===');
     
     return matchedNumbersWithPrizeType;
   }
@@ -281,7 +244,6 @@ class PredictionMatchService {
     final targetDate = isAfter430PM ? now : now.subtract(const Duration(days: 1));
     final dateString = '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
     
-    debugPrint('🕐 [PredictionMatch] Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}, After 4:30 PM: $isAfter430PM, Target date for both prediction & result: $dateString');
     return dateString;
   }
 

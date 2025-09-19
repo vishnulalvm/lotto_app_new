@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
 import 'package:lotto_app/data/models/lotto_points_screen/user_points_model.dart';
@@ -28,7 +27,6 @@ class UserPointsApiService {
         throw Exception('Failed to fetch user points: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error in UserPointsApiService: $e');
       if (e.toString().contains('TimeoutException')) {
         throw Exception('Request timeout: Please check your internet connection');
       }

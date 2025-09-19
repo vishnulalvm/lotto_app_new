@@ -69,30 +69,30 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       // Phase 1: Start connectivity service (needed for cache decisions)
       unawaited(ConnectivityService().initialize().catchError((e) {
-        debugPrint('ConnectivityService init failed: $e');
+        // Ignore connectivity service init errors
       }));
 
       // Phase 2: Initialize essential app services
       unawaited(SavedResultsService.init().catchError((e) {
-        debugPrint('SavedResultsService init failed: $e');
+        // Ignore saved results service init errors
       }));
 
       // Phase 3: Initialize heavy services with delays to spread CPU load
       unawaited(Future.delayed(const Duration(milliseconds: 100), () {
         AnalyticsService.initialize().catchError((e) {
-          debugPrint('AnalyticsService init failed: $e');
+          // Ignore analytics service init errors
         });
       }));
 
       unawaited(Future.delayed(const Duration(milliseconds: 200), () {
         FirebaseMessagingService.initialize().catchError((e) {
-          debugPrint('FirebaseMessaging init failed: $e');
+          // Ignore firebase messaging init errors
         });
       }));
 
       unawaited(Future.delayed(const Duration(milliseconds: 300), () {
         _initializeAdMobServices().catchError((e) {
-          debugPrint('AdMob services init failed: $e');
+          // Ignore AdMob services init errors
         });
       }));
 
@@ -101,11 +101,11 @@ class _SplashScreenState extends State<SplashScreen> {
         try {
           CacheManager.initialize();
         } catch (e) {
-          debugPrint('CacheManager init failed: $e');
+          // Ignore cache manager init errors
         }
       }));
     } catch (e) {
-      debugPrint('Background services initialization failed: $e');
+      // Ignore background services initialization errors
     }
   }
 
@@ -116,11 +116,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // Create notification channel in parallel (non-blocking)
       unawaited(_createNotificationChannel().catchError((e) {
-        debugPrint('Notification channel creation failed: $e');
+        // Ignore notification channel creation errors
       }));
 
     } catch (e) {
-      debugPrint('AdMob services initialization failed: $e');
+      // Ignore AdMob services initialization errors
     }
   }
 
@@ -141,9 +141,8 @@ class _SplashScreenState extends State<SplashScreen> {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
       
-      debugPrint('✅ Notification channel created');
     } catch (e) {
-      debugPrint('❌ Notification channel creation failed: $e');
+      // Ignore notification channel creation errors
     }
   }
 

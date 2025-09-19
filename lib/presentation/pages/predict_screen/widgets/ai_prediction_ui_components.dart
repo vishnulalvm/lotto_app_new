@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:typewritertext/typewritertext.dart';
 import 'package:lotto_app/data/services/lottery_info_service.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_state.dart';
 
@@ -90,22 +91,12 @@ class AIPredictionUIComponents {
     );
   }
 
-  /// Builds the numbers grid
-  static Widget buildNumbersGrid(ThemeData theme, List<String> numbers) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.8,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: numbers.length,
-      itemBuilder: (context, index) => PredictionNumberTile(
-        number: numbers[index],
-        theme: theme,
-      ),
+  /// Builds the numbers grid with typewriter animation
+  static Widget buildNumbersGrid(ThemeData theme, List<String> numbers, {bool triggerAnimation = true}) {
+    return TypewriterNumbersGrid(
+      numbers: numbers,
+      theme: theme,
+      triggerAnimation: triggerAnimation,
     );
   }
 
@@ -151,7 +142,7 @@ class AIPredictionUIComponents {
       AIPredictionError(:final message) => buildErrorState(theme, message),
       AIPredictionLoaded(:final prediction, :final predictionCount) => Column(
           children: [
-            buildNumbersGrid(theme, prediction.predictedNumbers),
+            buildNumbersGrid(theme, prediction.predictedNumbers, triggerAnimation: true),
             const SizedBox(height: 16),
             buildFooter(theme, predictionCount),
           ],
@@ -219,15 +210,110 @@ class PrizeTypeDropdownItem extends StatelessWidget {
   }
 }
 
-/// Stateless widget for individual prediction number tiles
+/// Grid widget that generates all numbers with typewriter effect simultaneously
+class TypewriterNumbersGrid extends StatefulWidget {
+  final List<String> numbers;
+  final ThemeData theme;
+  final bool triggerAnimation;
+
+  const TypewriterNumbersGrid({
+    super.key,
+    required this.numbers,
+    required this.theme,
+    this.triggerAnimation = true,
+  });
+
+  @override
+  State<TypewriterNumbersGrid> createState() => _TypewriterNumbersGridState();
+}
+
+class _TypewriterNumbersGridState extends State<TypewriterNumbersGrid> {
+  bool _showAnimation = false;
+  late String _gridKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _gridKey = widget.numbers.join(',');
+    _startAnimation();
+  }
+
+  @override
+  void didUpdateWidget(TypewriterNumbersGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    String newKey = widget.numbers.join(',');
+    if (_gridKey != newKey) {
+      _gridKey = newKey;
+      _restartAnimation();
+    }
+  }
+
+  void _startAnimation() {
+    if (widget.triggerAnimation) {
+      setState(() {
+        _showAnimation = false;
+      });
+      // Small delay then start all animations simultaneously
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          setState(() {
+            _showAnimation = true;
+          });
+        }
+      });
+    } else {
+      setState(() {
+        _showAnimation = true;
+      });
+    }
+  }
+
+  void _restartAnimation() {
+    setState(() {
+      _showAnimation = false;
+    });
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          _showAnimation = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.8,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: widget.numbers.length,
+      itemBuilder: (context, index) => PredictionNumberTile(
+        key: ValueKey('${_gridKey}_$index'), // Force rebuild on change
+        number: widget.numbers[index],
+        theme: widget.theme,
+        showAnimation: _showAnimation,
+      ),
+    );
+  }
+}
+
+/// Individual prediction number tile with typewriter effect
 class PredictionNumberTile extends StatelessWidget {
   final String number;
   final ThemeData theme;
+  final bool showAnimation;
 
   const PredictionNumberTile({
     super.key,
     required this.number,
     required this.theme,
+    required this.showAnimation,
   });
 
   @override
@@ -249,14 +335,17 @@ class PredictionNumberTile extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Text(
-          number,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
+        child: showAnimation
+            ? TypeWriter.text(
+                number,
+                duration: const Duration(milliseconds: 50),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              )
+            : const SizedBox(width: 20, height: 20),
       ),
     );
   }

@@ -6,13 +6,13 @@ import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_predictio
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_ui_components.dart';
 
 class AiPredictionCard extends StatefulWidget {
-  final int selectedPrizeType;
-  final ValueChanged<int> onPrizeTypeChanged;
+  final int? initialPrizeType;
+  final ValueChanged<int>? onPrizeTypeChanged;
   
   const AiPredictionCard({
     super.key,
-    required this.selectedPrizeType,
-    required this.onPrizeTypeChanged,
+    this.initialPrizeType,
+    this.onPrizeTypeChanged,
   });
 
   @override
@@ -21,18 +21,26 @@ class AiPredictionCard extends StatefulWidget {
 
 class _AiPredictionCardState extends State<AiPredictionCard> {
   AIPredictionState _state = const AIPredictionInitial();
+  late int _selectedPrizeType;
 
   @override
   void initState() {
     super.initState();
+    _selectedPrizeType = widget.initialPrizeType ?? 5;
     _loadPrediction();
   }
 
   @override
   void didUpdateWidget(AiPredictionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (AIPredictionLoaderService.shouldReloadForPrizeType(_state, widget.selectedPrizeType)) {
-      _loadPrediction();
+    // Only update if external prize type changes
+    if (widget.initialPrizeType != null && 
+        widget.initialPrizeType != oldWidget.initialPrizeType &&
+        widget.initialPrizeType != _selectedPrizeType) {
+      _selectedPrizeType = widget.initialPrizeType!;
+      if (AIPredictionLoaderService.shouldReloadForPrizeType(_state, _selectedPrizeType)) {
+        _loadPrediction();
+      }
     }
   }
 
@@ -41,7 +49,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
       _state = const AIPredictionLoading();
     });
 
-    final newState = await AIPredictionLoaderService.loadPrediction(widget.selectedPrizeType);
+    final newState = await AIPredictionLoaderService.loadPrediction(_selectedPrizeType);
     
     if (mounted) {
       setState(() {
@@ -52,11 +60,19 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
 
   void _onPrizeTypeChanged(int? newPrizeType) {
     if (newPrizeType != null && 
-        newPrizeType != widget.selectedPrizeType &&
+        newPrizeType != _selectedPrizeType &&
         LotteryInfoService.isValidPrizeType(newPrizeType)) {
       HapticFeedback.lightImpact();
-      widget.onPrizeTypeChanged(newPrizeType);
-      // Note: _loadPrediction will be called via didUpdateWidget
+      
+      setState(() {
+        _selectedPrizeType = newPrizeType;
+      });
+      
+      // Notify parent if callback is provided
+      widget.onPrizeTypeChanged?.call(newPrizeType);
+      
+      // Reload prediction for new prize type
+      _loadPrediction();
     }
   }
 
@@ -77,7 +93,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
             const SizedBox(height: 20),
             AIPredictionUIComponents.buildPrizeTypeSelector(
               theme,
-              widget.selectedPrizeType,
+              _selectedPrizeType,
               _onPrizeTypeChanged,
             ),
             const SizedBox(height: 20),

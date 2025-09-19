@@ -348,7 +348,6 @@ class AdMobService {
         // Handle VP9 codec errors specifically
         final errorMessage = error.toString();
         if (errorMessage.contains('MediaCodec') || errorMessage.contains('VP9')) {
-          debugPrint('Video codec error in interstitial ad: $errorMessage');
           // Don't retry immediately for codec errors
           _updateInterstitialAdState(adType, AdWrapper(
             state: AdState.failed, 
