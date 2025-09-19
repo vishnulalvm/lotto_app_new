@@ -63,6 +63,32 @@ class AiPredictionService {
     return newPrediction;
   }
 
+  /// Gets prediction for a specific date and prize type
+  static Future<AiPredictionModel?> getPredictionForDate(String date, int prizeType) async {
+    await init();
+    
+    final key = '${date}_$prizeType';
+    
+    // Check if we have prediction for this date and prize type
+    final prediction = _box?.get(key);
+    if (prediction != null) {
+      return prediction;
+    }
+
+    // Generate new prediction for this specific date
+    final numbers = _generateRandomNumbers(prizeType);
+    
+    final newPrediction = AiPredictionModel(
+      date: date,
+      prizeType: prizeType,
+      predictedNumbers: numbers,
+      generatedAt: DateTime.now(),
+    );
+
+    await _box?.put(key, newPrediction);
+    return newPrediction;
+  }
+
   static Future<AiPredictionModel> _generateAndStorePrediction(int prizeType) async {
     final today = _getTodayDateString();
     final numbers = _generateRandomNumbers(prizeType);
