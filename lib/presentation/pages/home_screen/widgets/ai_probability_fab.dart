@@ -4,13 +4,13 @@ import 'package:lotto_app/core/utils/responsive_helper.dart';
 
 class AIProbabilityFAB extends StatefulWidget {
   final VoidCallback onPressed;
-  final Animation<double> sizeAnimation;
+  final Animation<double> slideAnimation;
   final ThemeData theme;
 
   const AIProbabilityFAB({
     super.key,
     required this.onPressed,
-    required this.sizeAnimation,
+    required this.slideAnimation,
     required this.theme,
   });
 
@@ -62,38 +62,42 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: _cachedGradientColors,
-          stops: const [0.0, 0.3, 0.7, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _primaryRed.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 2), // Start 2x height below
+        end: const Offset(0, 0),   // End at normal position
+      ).animate(CurvedAnimation(
+        parent: widget.slideAnimation,
+        curve: Curves.easeInOutCubic,
+      )),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: _cachedGradientColors,
+            stops: const [0.0, 0.3, 0.7, 1.0],
           ),
-        ],
-      ),
-      child: FloatingActionButton.extended(
-        onPressed: widget.onPressed,
-        backgroundColor: Colors.transparent,
-        foregroundColor:
-            widget.theme.floatingActionButtonTheme.foregroundColor,
-        elevation: 0,
-        icon: Icon(
-          Icons.auto_awesome,
-          size: AppResponsive.fontSize(context, 24),
+          boxShadow: [
+            BoxShadow(
+              color: _primaryRed.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        label: SizeTransition(
-          sizeFactor: widget.sizeAnimation,
-          axis: Axis.horizontal,
-          axisAlignment: -1.0,
-          child: Padding(
+        child: FloatingActionButton.extended(
+          onPressed: widget.onPressed,
+          backgroundColor: Colors.transparent,
+          foregroundColor:
+              widget.theme.floatingActionButtonTheme.foregroundColor,
+          elevation: 0,
+          icon: Icon(
+            Icons.auto_awesome,
+            size: AppResponsive.fontSize(context, 24),
+          ),
+          label: Padding(
             padding: const EdgeInsets.only(left: 3.0),
             child: Text(
               'ai_probability'.tr(),

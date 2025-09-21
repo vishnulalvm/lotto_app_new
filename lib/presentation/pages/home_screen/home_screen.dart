@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _fabAnimation;
   late Animation<double> _blinkAnimation;
 
-  bool _isExpanded = true;
+  bool _isFabVisible = true;
   bool _isScrollingDown = false;
   DateTime? _lastRefreshTime;
   Timer? _periodicRefreshTimer;
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
     );
 
-    // FAB animation
+    // FAB slide animation for show/hide
     _fabAnimation = CurvedAnimation(
       parent: _primaryAnimationController,
       curve: Curves.easeInOutCubic,
@@ -171,20 +171,20 @@ class _HomeScreenState extends State<HomeScreen>
         _scrollController.position.userScrollDirection;
 
     if (direction == ScrollDirection.reverse) {
-      // Scrolling down - collapse FAB
+      // Scrolling down - hide FAB with slide down animation
       if (!_isScrollingDown) {
         _isScrollingDown = true;
-        if (_isExpanded) {
-          _isExpanded = false;
+        if (_isFabVisible) {
+          _isFabVisible = false;
           _primaryAnimationController.reverse();
         }
       }
     } else if (direction == ScrollDirection.forward) {
-      // Scrolling up - expand FAB
+      // Scrolling up - show FAB with slide up animation
       if (_isScrollingDown) {
         _isScrollingDown = false;
-        if (!_isExpanded) {
-          _isExpanded = true;
+        if (!_isFabVisible) {
+          _isFabVisible = true;
           _primaryAnimationController.forward();
         }
       }
@@ -697,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen>
         // Navigate to the scanner page
         context.pushNamed(RouteNames.probabilityBarcodeScanner);
       },
-      sizeAnimation: _fabAnimation,
+      slideAnimation: _fabAnimation,
       theme: theme,
     );
   }
