@@ -68,7 +68,8 @@ class _AIProbabilityFABState extends State<AIProbabilityFAB> {
         end: const Offset(0, 0),   // End at normal position
       ).animate(CurvedAnimation(
         parent: widget.slideAnimation,
-        curve: Curves.easeInOutCubic,
+        curve: Curves.easeOutCubic,       // Smooth slide up when showing (safer than easeOutBack)
+        reverseCurve: Curves.easeInQuart, // Slower drop when hiding
       )),
       child: Container(
         decoration: BoxDecoration(

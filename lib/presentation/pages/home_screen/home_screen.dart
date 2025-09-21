@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _initializeAnimations() {
     // Primary controller for FAB and main UI animations
     _primaryAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 600), // Slower for drop effect
       vsync: this,
     );
 
