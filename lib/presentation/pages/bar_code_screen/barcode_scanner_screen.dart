@@ -60,7 +60,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       
       // Start camera automatically if permission is granted
       if (permission == PermissionStatus.granted) {
-        _startCameraIfReady();
+        _startOrRestartCamera();
       }
     }
   }
@@ -84,7 +84,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         
         // Start camera automatically if permission is granted
         if (permission == PermissionStatus.granted) {
-          _startCameraIfReady();
+          _startOrRestartCamera();
         }
       }
     } catch (e) {
@@ -96,29 +96,36 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     }
   }
 
-  Future<void> _startCameraIfReady() async {
-    if (_isCameraStarting) return;
+  Future<void> _startOrRestartCamera() async {
+    // Prevent multiple start attempts at once
+    if (_isCameraStarting || !mounted) return;
     
     setState(() {
       _isCameraStarting = true;
     });
     
     try {
+      // The start() method handles both initial start and restarting.
       await cameraController.start();
       if (mounted) {
         setState(() {
           lastScannedCode = null;
           isProcessing = false;
-          _isCameraStarting = false;
         });
       }
     } catch (e) {
+      // Optional: Show feedback if camera fails to start.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('camera_start_error'.tr()), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
       if (mounted) {
         setState(() {
           _isCameraStarting = false;
         });
       }
-      // Camera start failed - will be retried when user interacts
     }
   }
 
@@ -192,148 +199,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       body: Column(
         children: [
           Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Show permission request UI or scanner based on permission status
-                if (_cameraPermissionStatus == PermissionStatus.granted)
-                  MobileScanner(
-                    controller: cameraController,
-                    onDetect: (capture) {
-                      if (isProcessing) return;
-
-                      final List<Barcode> barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        final scannedValue = barcode.rawValue ?? '';
-                        if (scannedValue.isNotEmpty &&
-                            scannedValue != lastScannedCode) {
-                          _handleScannedBarcode(scannedValue);
-                          break;
-                        }
-                      }
-                    },
-                  )
-                else
-                  _buildPermissionRequestUI(),
-                // Overlay - only show when camera permission is granted
-                if (_cameraPermissionStatus == PermissionStatus.granted)
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: theme.primaryColor,
-                        width: 2.0,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    width: AppResponsive.width(context, 80),
-                    height: AppResponsive.height(context, 25),
-                  ),
-                // Loading indicator
-                if (isProcessing)
-                  Container(
-                    color: Colors.black54,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(color: Colors.white),
-                          const SizedBox(height: 16),
-                          Text(
-                            'processing'.tr(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                // Instruction text - only show when camera permission is granted and not processing
-                if (!isProcessing && _cameraPermissionStatus == PermissionStatus.granted)
-                  Positioned(
-                    bottom: AppResponsive.spacing(context, 45),
-                    child: Container(
-                      width: AppResponsive.width(context, 80),
-                      padding: AppResponsive.padding(context, 
-                          horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'scan_instruction'.tr(),
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: AppResponsive.fontSize(context, 14),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            child: _cameraPermissionStatus == PermissionStatus.granted 
+                   ? _buildScannerView() 
+                   : _buildPermissionRequestUI(),
           ),
-          Container(
-            padding: AppResponsive.padding(context, horizontal: 20, vertical: 20),
-            color: theme.cardTheme.color,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Date chooser button
-                Container(
-                  margin: EdgeInsets.only(bottom: AppResponsive.spacing(context, 20)),
-                  child: _buildDateChooserButton(),
-                ),
-                AppResponsive.isMobile(context) 
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(child: _buildActionButton(
-                            icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
-                            label: 'flash'.tr(),
-                            isActive: isFlashOn,
-                            onTap: () {
-                              setState(() {
-                                isFlashOn = !isFlashOn;
-                                cameraController.toggleTorch();
-                              });
-                            },
-                          )),
-                          SizedBox(width: AppResponsive.spacing(context, 16)),
-                          Expanded(child: _buildActionButton(
-                            icon: Icons.photo_library,
-                            label: 'gallery'.tr(),
-                            onTap: _pickImageFromGallery,
-                          )),
-                        ],
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildActionButton(
-                            icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
-                            label: 'flash'.tr(),
-                            isActive: isFlashOn,
-                            onTap: () {
-                              setState(() {
-                                isFlashOn = !isFlashOn;
-                                cameraController.toggleTorch();
-                              });
-                            },
-                          ),
-                          _buildActionButton(
-                            icon: Icons.photo_library,
-                            label: 'gallery'.tr(),
-                            onTap: _pickImageFromGallery,
-                          ),
-                        ],
-                      ),
-                SizedBox(height: AppResponsive.spacing(context, 20)),
-              ],
-            ),
-          ),
+          _buildBottomControls(),
         ],
       ),
     );
@@ -378,6 +248,150 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildScannerView() {
+    final theme = Theme.of(context);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        MobileScanner(
+          controller: cameraController,
+          onDetect: (capture) {
+            if (isProcessing) return;
+
+            final List<Barcode> barcodes = capture.barcodes;
+            for (final barcode in barcodes) {
+              final scannedValue = barcode.rawValue ?? '';
+              if (scannedValue.isNotEmpty &&
+                  scannedValue != lastScannedCode) {
+                _handleScannedBarcode(scannedValue);
+                break;
+              }
+            }
+          },
+        ),
+        // Overlay
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.primaryColor,
+              width: 2.0,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          width: AppResponsive.width(context, 80),
+          height: AppResponsive.height(context, 25),
+        ),
+        // Loading indicator
+        if (isProcessing)
+          Container(
+            color: Colors.black54,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 16),
+                  Text(
+                    'processing'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Instruction text
+        if (!isProcessing)
+          Positioned(
+            bottom: AppResponsive.spacing(context, 45),
+            child: Container(
+              width: AppResponsive.width(context, 80),
+              padding: AppResponsive.padding(context, 
+                  horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'scan_instruction'.tr(),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBottomControls() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: AppResponsive.padding(context, horizontal: 20, vertical: 20),
+      color: theme.cardTheme.color,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Date chooser button
+          Container(
+            margin: EdgeInsets.only(bottom: AppResponsive.spacing(context, 20)),
+            child: _buildDateChooserButton(),
+          ),
+          AppResponsive.isMobile(context) 
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(child: _buildActionButton(
+                      icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                      label: 'flash'.tr(),
+                      isActive: isFlashOn,
+                      onTap: () {
+                        setState(() {
+                          isFlashOn = !isFlashOn;
+                          cameraController.toggleTorch();
+                        });
+                      },
+                    )),
+                    SizedBox(width: AppResponsive.spacing(context, 16)),
+                    Expanded(child: _buildActionButton(
+                      icon: Icons.photo_library,
+                      label: 'gallery'.tr(),
+                      onTap: _pickImageFromGallery,
+                    )),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildActionButton(
+                      icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                      label: 'flash'.tr(),
+                      isActive: isFlashOn,
+                      onTap: () {
+                        setState(() {
+                          isFlashOn = !isFlashOn;
+                          cameraController.toggleTorch();
+                        });
+                      },
+                    ),
+                    _buildActionButton(
+                      icon: Icons.photo_library,
+                      label: 'gallery'.tr(),
+                      onTap: _pickImageFromGallery,
+                    ),
+                  ],
+                ),
+          SizedBox(height: AppResponsive.spacing(context, 20)),
+        ],
       ),
     );
   }
@@ -530,11 +544,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 // Remove the old _showGalleryInfoDialog method as it's no longer needed
 
   void _handleScannedBarcode(String barcodeValue) async {
-    if (isProcessing) return;
-
-    // Check if this is the same code that was just scanned
-    if (barcodeValue == lastScannedCode) {
-      return; // Ignore duplicate scans
+    if (isProcessing || barcodeValue == lastScannedCode) {
+      return; // Ignore duplicate/processing scans
     }
 
     setState(() {
@@ -542,45 +553,27 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       lastScannedCode = barcodeValue;
     });
 
-
     // Validate barcode format
     if (!BarcodeValidator.isValidLotteryTicket(barcodeValue)) {
-      setState(() {
-        isProcessing = false;
-        // Don't reset lastScannedCode here so user can change date and try again
-      });
-
-      _showValidationErrorDialog(
-          BarcodeValidator.getValidationError(barcodeValue));
+      _showValidationErrorDialog(BarcodeValidator.getValidationError(barcodeValue));
+      setState(() => isProcessing = false);
       return;
     }
 
-    // Format date for API
-    final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
-
-    // Navigate to scratch card with ticket data
+    // Format data
     final ticketData = {
       'ticketNumber': BarcodeValidator.cleanTicketNumber(barcodeValue),
-      'date': formattedDate,
-      'phoneNumber': '',
+      'date': DateFormat('yyyy-MM-dd').format(selectedDate),
+      'phoneNumber': '', // This seems unused, consider removing
     };
 
-    setState(() {
-      isProcessing = false;
-    });
-
-    // Stop camera before navigation to prevent it running in background
-    await _stopCameraSafely();
-
-    // Navigate to scratch card with ticket data
+    // The lifecycle observer will automatically stop the camera on navigation.
     if (mounted) {
       await context.push('/result/scratch', extra: ticketData);
-      
-      // Restart camera when returning from navigation
-      if (mounted && _cameraPermissionStatus == PermissionStatus.granted) {
-        await _restartCamera();
-      }
     }
+    
+    // The lifecycle observer will automatically restart the camera when you return.
+    // The 'isProcessing = false' state is now set inside the _restartCamera method.
   }
 
   void _showValidationErrorDialog(String errorMessage) {
@@ -705,7 +698,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         // App is back to foreground - restart camera if permission granted
         if (_cameraPermissionStatus == PermissionStatus.granted) {
           Future.delayed(const Duration(milliseconds: 500), () {
-            _restartCamera();
+            _startOrRestartCamera();
           });
         }
         break;
@@ -714,31 +707,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     }
   }
 
-  Future<void> _restartCamera() async {
-    if (_isCameraStarting) return;
-    
-    setState(() {
-      _isCameraStarting = true;
-    });
-    
-    try {
-      await cameraController.start();
-      if (mounted) {
-        setState(() {
-          lastScannedCode = null;
-          isProcessing = false;
-          _isCameraStarting = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isCameraStarting = false;
-        });
-      }
-      // Camera restart failed - user can try manually
-    }
-  }
 
   Future<void> _stopCameraSafely() async {
     try {
