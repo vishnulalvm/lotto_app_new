@@ -45,9 +45,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   // Scratcher key for auto-reveal
   final GlobalKey<ScratcherState> _scratcherKey = GlobalKey<ScratcherState>();
   
-  // AdMob service for rewarded interstitial ads
+  // AdMob service for interstitial ads
   final AdMobService _adMobService = AdMobService.instance;
-  bool _hasShownRewardedInterstitial = false;
+  
 
   @override
   void initState() {
@@ -91,8 +91,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     // Check ticket using API
     _checkTicketWithAPI();
     
-    // Preload rewarded interstitial ad
-    _adMobService.loadScratchCardRewardedInterstitialAd();
+    // Preload and show interstitial ad immediately
+    _showInterstitialAdOnEntry();
   }
 
   Future<void> _checkTicketWithAPI() async {
@@ -152,56 +152,29 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           _confettiController.play();
           _showConfetti = true;
         }
-        
-        // Check if user got rewards and show ad
-        _checkAndShowRewardedInterstitialAd();
       });
     });
   }
 
-  void _checkAndShowRewardedInterstitialAd() {
-    if (_hasShownRewardedInterstitial || _ticketResult == null) return;
-    
-    // Check if user got any rewards (points or cashback)
-    final hasRewards = (_ticketResult!.points != null && _ticketResult!.points! > 0) ||
-                      (_ticketResult!.cashBack != null && _ticketResult!.cashBack! > 0);
-    
-    if (hasRewards && _adMobService.isScratchCardRewardedInterstitialAdLoaded) {
-      _hasShownRewardedInterstitial = true;
-      
-      // Small delay to ensure scratch animation is complete
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        if (mounted) {
-          _showScratchCardRewardedInterstitialAd();
-        }
-      });
-    }
-  }
 
-  void _showScratchCardRewardedInterstitialAd() {
-    _adMobService.showRewardedInterstitialAd(
-      'scratch_card_rewarded_interstitial',
-      onRewardEarned: () {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Congratulations! You\'ve earned bonus points for watching the ad!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
+  // Show interstitial ad immediately when entering screen
+  void _showInterstitialAdOnEntry() {
+    // Small delay to allow screen to load properly
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        // First try to show if ad is already loaded, otherwise load and show
+        if (_adMobService.canShowScratchCardInterstitialAd()) {
+          _adMobService.showScratchCardInterstitialAd();
+        } else {
+          // Load ad first, then show it
+          _adMobService.loadScratchCardInterstitialAd().then((_) {
+            if (mounted && _adMobService.canShowScratchCardInterstitialAd()) {
+              _adMobService.showScratchCardInterstitialAd();
+            }
+          });
         }
-      },
-      onDismissed: () {
-        // Ad dismissed, preload next ad for future use
-        _adMobService.loadScratchCardRewardedInterstitialAd();
-      },
-      onFailed: (error) {
-        // Silently fail - don't show error to user for this type of ad
-        // Try to reload for next time
-        _adMobService.loadScratchCardRewardedInterstitialAd();
-      },
-    );
+      }
+    });
   }
 
   // Enhanced method to determine if we should show scratch card based on response type

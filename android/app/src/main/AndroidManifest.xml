@@ -12,9 +12,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
     
-    <!-- Scoped storage permissions for Android 13+ -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Removed READ_MEDIA_IMAGES/READ_MEDIA_VIDEO permissions to comply with Google Play policy.
+         The image_picker plugin will use the Android photo picker APIs instead. -->
     
     <!-- Firebase messaging notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
