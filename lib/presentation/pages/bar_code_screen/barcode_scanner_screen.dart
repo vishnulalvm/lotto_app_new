@@ -27,9 +27,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
   PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
   bool _isRequestingPermission = false;
   bool _isCameraStarting = false;
+  bool _isNavigatingAway = false; // Track if we navigated to another screen
   @override
   void initState() {
     super.initState();
+    print('📱 BarcodeScannerScreen: initState()');
     WidgetsBinding.instance.addObserver(this);
     _checkCameraPermission();
     
@@ -97,6 +99,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
   }
 
   Future<void> _startOrRestartCamera() async {
+    print('📱 BarcodeScannerScreen: _startOrRestartCamera() called - isCameraStarting: $_isCameraStarting, mounted: $mounted');
     // Prevent multiple start attempts at once
     if (_isCameraStarting || !mounted) return;
     
@@ -105,15 +108,18 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     });
     
     try {
+      print('📱 BarcodeScannerScreen: Starting camera controller');
       // The start() method handles both initial start and restarting.
       await cameraController.start();
       if (mounted) {
+        print('📱 BarcodeScannerScreen: Camera started successfully');
         setState(() {
           lastScannedCode = null;
           isProcessing = false;
         });
       }
     } catch (e) {
+      print('📱 BarcodeScannerScreen: Camera start error: $e');
       // Optional: Show feedback if camera fails to start.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -567,9 +573,32 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       'phoneNumber': '', // This seems unused, consider removing
     };
 
-    // The lifecycle observer will automatically stop the camera on navigation.
+    // Set navigation flag and stop camera before navigating
     if (mounted) {
-      await context.push('/result/scratch', extra: ticketData);
+      print('📱 BarcodeScannerScreen: Setting navigation flag and stopping camera');
+      setState(() {
+        _isNavigatingAway = true;
+      });
+      await _stopCameraSafely();
+      
+      print('📱 BarcodeScannerScreen: Navigating to scratch card result screen');
+      if (mounted) {
+        await context.push('/result/scratch', extra: ticketData);
+      }
+      print('📱 BarcodeScannerScreen: Returned from scratch card result screen');
+      
+      // Reset navigation flag and restart camera when returning
+      if (mounted) {
+        print('📱 BarcodeScannerScreen: Resetting navigation flag and restarting camera');
+        setState(() {
+          _isNavigatingAway = false;
+          isProcessing = false;
+        });
+        
+        if (_cameraPermissionStatus == PermissionStatus.granted) {
+          _startOrRestartCamera();
+        }
+      }
     }
     
     // The lifecycle observer will automatically restart the camera when you return.
@@ -686,20 +715,29 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    print('📱 BarcodeScannerScreen: App lifecycle state changed to: $state');
     // Handle app going to background/foreground
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
+        print('📱 BarcodeScannerScreen: App going to background - stopping camera');
         // App is going to background - stop camera to save battery
         _stopCameraSafely();
         break;
       case AppLifecycleState.resumed:
-        // App is back to foreground - restart camera if permission granted
-        if (_cameraPermissionStatus == PermissionStatus.granted) {
+        print('📱 BarcodeScannerScreen: App resumed - checking if should restart camera');
+        print('📱 BarcodeScannerScreen: _isNavigatingAway: $_isNavigatingAway, _cameraPermissionStatus: $_cameraPermissionStatus');
+        // Only restart camera if we haven't navigated away and permission is granted
+        if (!_isNavigatingAway && _cameraPermissionStatus == PermissionStatus.granted) {
+          print('📱 BarcodeScannerScreen: Restarting camera after resume');
           Future.delayed(const Duration(milliseconds: 500), () {
-            _startOrRestartCamera();
+            if (!_isNavigatingAway && mounted) {
+              _startOrRestartCamera();
+            }
           });
+        } else {
+          print('📱 BarcodeScannerScreen: Skipping camera restart - navigated away or no permission');
         }
         break;
       case AppLifecycleState.detached:
@@ -709,15 +747,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 
 
   Future<void> _stopCameraSafely() async {
+    print('📱 BarcodeScannerScreen: _stopCameraSafely() called');
     try {
       await cameraController.stop();
+      print('📱 BarcodeScannerScreen: Camera stopped successfully');
     } catch (e) {
+      print('📱 BarcodeScannerScreen: Camera stop error: $e');
       // Camera stop failed, but continue
     }
   }
 
   @override
   void dispose() {
+    print('📱 BarcodeScannerScreen: dispose()');
     WidgetsBinding.instance.removeObserver(this);
     // Dispose the camera controller
     cameraController.dispose();

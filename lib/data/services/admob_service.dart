@@ -94,7 +94,7 @@ class AdMobService {
   
   // Interstitial ad cooldown tracking
   DateTime? _lastScratchCardInterstitialShowTime;
-  static const Duration _scratchCardInterstitialCooldown = Duration(seconds: 30);
+  static const Duration _scratchCardInterstitialCooldown = Duration(seconds: 60);
   
   // Concurrent load tracking
   int _activeLoads = 0;
