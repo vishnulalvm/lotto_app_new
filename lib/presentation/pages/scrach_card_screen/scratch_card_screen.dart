@@ -52,7 +52,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   @override
   void initState() {
     super.initState();
-    print('🎯 ScratchCardResultScreen: initState()');
 
     // Setup animation
     _animationController = AnimationController(
@@ -125,7 +124,6 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   @override
   void dispose() {
-    print('🎯 ScratchCardResultScreen: dispose()');
     _animationController.dispose();
     _confettiController.dispose();
     super.dispose();
@@ -161,27 +159,21 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   // Show interstitial ad immediately when entering screen
   void _showInterstitialAdOnEntry() {
-    print('🎯 ScratchCardResultScreen: _showInterstitialAdOnEntry() called');
     // Small delay to allow screen to load properly
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
-        print('🎯 ScratchCardResultScreen: About to show interstitial ad');
         // First try to show if ad is already loaded, otherwise load and show
         if (_adMobService.canShowScratchCardInterstitialAd()) {
-          print('🎯 ScratchCardResultScreen: Showing pre-loaded interstitial ad');
           _adMobService.showScratchCardInterstitialAd();
         } else {
-          print('🎯 ScratchCardResultScreen: Loading then showing interstitial ad');
           // Load ad first, then show it
           _adMobService.loadScratchCardInterstitialAd().then((_) {
             if (mounted && _adMobService.canShowScratchCardInterstitialAd()) {
-              print('🎯 ScratchCardResultScreen: Showing newly loaded interstitial ad');
               _adMobService.showScratchCardInterstitialAd();
             }
           });
         }
       } else {
-        print('🎯 ScratchCardResultScreen: Widget not mounted when trying to show ad');
       }
     });
   }
