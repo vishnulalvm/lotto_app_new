@@ -18,6 +18,8 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart'
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/core/widgets/rate_us_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +46,11 @@ class _HomeScreenState extends State<HomeScreen>
   Timer? _periodicRefreshTimer;
   Timer? _attentionAnimationTimer;
 
+  // Rate Us Dialog tracking constants
+  static const String _prefKeyHomeVisitCount = 'home_visit_count';
+  static const String _prefKeyRateUsShown = 'rate_us_permanently_dismissed';
+  static const int _rateUsShowThreshold = 3;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +73,8 @@ class _HomeScreenState extends State<HomeScreen>
         AnalyticsService.trackSessionStart();
       });
 
+      // Check and show rate us dialog if needed
+      _checkAndShowRateUsDialog();
     });
 
     // Load data immediately (without UI delays)
@@ -359,6 +368,77 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  /// Check and show rate us dialog based on visit count
+  Future<void> _checkAndShowRateUsDialog() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Check if rate us has been permanently dismissed
+      final isPermanentlyDismissed = prefs.getBool(_prefKeyRateUsShown) ?? false;
+      if (isPermanentlyDismissed) return;
+      
+      // Increment visit count
+      final visitCount = (prefs.getInt(_prefKeyHomeVisitCount) ?? 0) + 1;
+      await prefs.setInt(_prefKeyHomeVisitCount, visitCount);
+      
+      // Show dialog on threshold visit
+      if (visitCount == _rateUsShowThreshold) {
+        if (mounted) {
+          // Small delay to ensure UI is ready
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _showRateUsDialogAuto();
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Silently handle errors
+    }
+  }
+
+  /// Show rate us dialog automatically with tracking
+  void _showRateUsDialogAuto() {
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => RateUsDialog(
+        onNotNow: _handleRateUsNotNow,
+        onContinue: _handleRateUsContinue,
+      ),
+    );
+  }
+
+  /// Show rate us dialog manually from menu
+  void _showRateUsDialog(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (context) => const RateUsDialog(),
+    );
+  }
+
+  /// Handle "Not Now" button - reset counter
+  Future<void> _handleRateUsNotNow() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_prefKeyHomeVisitCount, 0); // Reset counter
+    } catch (e) {
+      // Silently handle errors
+    }
+  }
+
+  /// Handle "Continue" button - permanently dismiss
+  Future<void> _handleRateUsContinue() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefKeyRateUsShown, true); // Permanently dismiss
+    } catch (e) {
+      // Silently handle errors
+    }
+  }
+
   /// Show error snackbar for website launch failures
   void _showErrorSnackBar(String message) {
     if (mounted) {
@@ -634,6 +714,13 @@ class _HomeScreenState extends State<HomeScreen>
               Theme.of(context),
               context, // Pass context
             ),
+            _buildPopupMenuItem(
+              'rate_us_value', // The actual value returned when selected
+              Icons.star,
+              'rate_us_title', // This is the translation key
+              Theme.of(context),
+              context, // Pass context
+            ),
           ],
           onSelected: (value) {
             // Add haptic feedback for menu selection
@@ -651,6 +738,9 @@ class _HomeScreenState extends State<HomeScreen>
                 break;
               case 'contact_value': // Match the actual returned value
                 showContactSheet(context);
+                break;
+              case 'rate_us_value': // Match the actual returned value
+                _showRateUsDialog(context);
                 break;
             }
           },
