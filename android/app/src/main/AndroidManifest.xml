@@ -70,14 +70,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             
-            <!-- App Links intent filter -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https"
-                      android:host="lottokeralalotteries.com" />
-            </intent-filter>
             
             <!-- Fallback deep link intent filter -->
             <intent-filter>

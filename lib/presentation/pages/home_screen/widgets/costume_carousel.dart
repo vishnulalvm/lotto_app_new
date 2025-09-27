@@ -76,7 +76,20 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
         itemBuilder: (context, index, realIndex) {
           final imageUrl = widget.images[index];
           return GestureDetector(
-            onTap: widget.onImageTap,
+            onTap: () {
+              // Add analytics tracking for image tap
+              AnalyticsService.track(
+                eventName: 'carousel_image_tap',
+                parameters: {
+                  'image_index': index,
+                  'image_url': imageUrl,
+                  'total_images': widget.images.length,
+                },
+              );
+              
+              // Call the provided onTap callback
+              widget.onImageTap?.call();
+            },
             child: Container(
               width: AppResponsive.width(context, 100),
               margin: AppResponsive.margin(context, horizontal: 0),

@@ -268,9 +268,9 @@ class LotteryResultsSection extends StatelessWidget {
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
             side: BorderSide(
               color: theme.brightness == Brightness.dark
-                  ? Colors.grey.withValues(alpha: 0.3)
-                  : Colors.grey.withValues(alpha: 0.1),
-              width: theme.brightness == Brightness.dark ? 1.0 : 0.5,
+                  ? Colors.grey.withValues(alpha: 0.5)
+                  : Colors.grey.withValues(alpha: 0.3),
+              width: 2.0,
             ),
           ),
           child: InkWell(
@@ -303,8 +303,8 @@ class LotteryResultsSection extends StatelessWidget {
                       horizontal: 10, vertical: 10),
                   decoration: BoxDecoration(
                     color: theme.brightness == Brightness.light
-                        ? Colors.grey[100]
-                        : Colors.grey[800],
+                        ? Colors.white
+                        : Colors.grey[900],
                     borderRadius: BorderRadius.only(
                       topLeft:
                           Radius.circular(AppResponsive.spacing(context, 12)),
@@ -319,7 +319,7 @@ class LotteryResultsSection extends StatelessWidget {
                       Text(
                         result.getFormattedTitle(context),
                         style: TextStyle(
-                          fontSize: AppResponsive.fontSize(context, 22),
+                          fontSize: AppResponsive.fontSize(context, 20),
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                           color: theme.textTheme.titleLarge?.color,
@@ -327,7 +327,6 @@ class LotteryResultsSection extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
 
-                      // SizedBox(height: AppResponsive.spacing(context, 2)),
 
                       // Prize Amount and Date Column
                       Column(
@@ -338,13 +337,11 @@ class LotteryResultsSection extends StatelessWidget {
                                 ? '₹${result.firstPrize.amount.toInt()}/-  [${(result.firstPrize.amount / 10000000)} Crore]'
                                 : '₹${result.firstPrize.amount.toInt()}/-  [${(result.firstPrize.amount / 100000).toInt()} Lakh]',
                             style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 16),
+                              fontSize: AppResponsive.fontSize(context, 18),
                               fontWeight: FontWeight.w700,
                               color: theme.textTheme.titleMedium?.color,
                             ),
                           ),
-
-                          SizedBox(height: AppResponsive.spacing(context, 6)),
 
                           // Date with calendar icon
                           Row(
@@ -353,15 +350,15 @@ class LotteryResultsSection extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.calendar_today,
-                                size: AppResponsive.fontSize(context, 14),
+                                size: AppResponsive.fontSize(context, 13),
                                 color: theme.textTheme.bodyMedium?.color,
                               ),
                               SizedBox(
                                   width: AppResponsive.spacing(context, 4)),
                               Text(
-                                result.date,
+                                _formatDateToDDMMYYYY(result.date),
                                 style: TextStyle(
-                                  fontSize: AppResponsive.fontSize(context, 16),
+                                  fontSize: AppResponsive.fontSize(context, 13),
                                   fontWeight: FontWeight.w500,
                                   color: theme.textTheme.bodyMedium?.color,
                                 ),
@@ -373,12 +370,10 @@ class LotteryResultsSection extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // First Prize Section - Red Background with Gradient
                 Container(
                   width: double.infinity,
                   padding: AppResponsive.padding(context,
-                      horizontal: 10, vertical: 10),
+                      horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: firstPrizeGradient,
                   ),
@@ -413,14 +408,14 @@ class LotteryResultsSection extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.location_on,
-                            size: AppResponsive.fontSize(context, 16),
+                            size: AppResponsive.fontSize(context, 18),
                             color: Colors.white,
                           ),
                           SizedBox(width: AppResponsive.spacing(context, 4)),
                           Text(
                             result.firstPrize.place, // You might need to add location to your model
                             style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 16),
+                              fontSize: AppResponsive.fontSize(context, 18),
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
@@ -436,6 +431,15 @@ class LotteryResultsSection extends StatelessWidget {
                   width: double.infinity,
                   padding: AppResponsive.padding(context,
                       horizontal: 22, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.brightness == Brightness.light
+                        ? Colors.white
+                        : Colors.grey[900],
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(AppResponsive.spacing(context, 12)),
+                      bottomRight: Radius.circular(AppResponsive.spacing(context, 12)),
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -524,12 +528,23 @@ class LotteryResultsSection extends StatelessWidget {
                                     AppResponsive.spacing(context, 6)),
                               ),
                             ),
-                            child: Text(
-                              'see_more'.tr(),
-                              style: TextStyle(
-                                fontSize: AppResponsive.fontSize(context, 12),
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'see_more'.tr(),
+                                  style: TextStyle(
+                                    fontSize: AppResponsive.fontSize(context, 12),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(width: AppResponsive.spacing(context, 4)),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: AppResponsive.fontSize(context, 12),
+                                  color: Colors.white,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -887,6 +902,20 @@ class LotteryResultsSection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Helper method to format date from YYYY-MM-DD to DD-MM-YYYY
+  String _formatDateToDDMMYYYY(String dateString) {
+    try {
+      // Parse the date string (assuming it's in YYYY-MM-DD format)
+      final DateTime date = DateTime.parse(dateString);
+      
+      // Format to DD-MM-YYYY
+      return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+    } catch (e) {
+      // If parsing fails, return the original string
+      return dateString;
+    }
   }
 }
 

@@ -311,22 +311,14 @@ class _HomeScreenState extends State<HomeScreen>
       final bool canLaunch = await canLaunchUrl(url);
 
       if (canLaunch) {
-        // Try to launch the URL with platform default mode first
+        // Force launch in external browser
         final bool launched = await launchUrl(
           url,
-          mode: LaunchMode.platformDefault,
+          mode: LaunchMode.externalApplication,
         );
 
         if (!launched) {
-          // If platform default failed, try external application
-          final bool launchedExternal = await launchUrl(
-            url,
-            mode: LaunchMode.externalApplication,
-          );
-
-          if (!launchedExternal) {
-            _showErrorSnackBar('could_not_open_website'.tr());
-          }
+          _showErrorSnackBar('could_not_open_website'.tr());
         }
       } else {
         _showErrorSnackBar('could_not_open_website'.tr());
@@ -766,11 +758,15 @@ class _HomeScreenState extends State<HomeScreen>
             size: AppResponsive.fontSize(context, 20),
           ),
           SizedBox(width: AppResponsive.spacing(context, 12)),
-          Text(
-            textKey
-                .tr(), // Call .tr() on the textKey to get the translated string
-            style: TextStyle(
-              fontSize: AppResponsive.fontSize(context, 14),
+          Expanded(
+            child: Text(
+              textKey
+                  .tr(), // Call .tr() on the textKey to get the translated string
+              style: TextStyle(
+                fontSize: AppResponsive.fontSize(context, 14),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
