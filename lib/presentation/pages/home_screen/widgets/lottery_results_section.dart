@@ -229,7 +229,6 @@ class LotteryResultsSection extends StatelessWidget {
     );
   }
 
-
   Widget _buildResultCard(
       HomeScreenResultModel result, ThemeData theme, BuildContext context) {
     // Get first 6 consolation tickets for display
@@ -238,6 +237,23 @@ class LotteryResultsSection extends StatelessWidget {
     // Split into 2 rows of 3
     List<String> firstRow = consolationTickets.take(3).toList();
     List<String> secondRow = consolationTickets.skip(3).take(3).toList();
+
+    // Define colors based on bumper status
+    final bool isBumper = result.isBumper;
+    final Gradient firstPrizeGradient = isBumper
+        ? const LinearGradient(
+            colors: [Colors.purple, Colors.deepPurple, Colors.indigo],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          )
+        : const LinearGradient(
+            colors: [
+              Color(0xFFFB0000),
+              Color(0xFFE75353),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
 
     return Stack(
       clipBehavior: Clip.none,
@@ -277,190 +293,251 @@ class LotteryResultsSection extends StatelessWidget {
             },
             borderRadius:
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
-            child: Padding(
-              padding:
-                  AppResponsive.padding(context, horizontal: 20, vertical: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title with accent line
-                  Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section - Lottery Name, Prize Amount, Date
+                Container(
+                  width: double.infinity,
+                  padding: AppResponsive.padding(context,
+                      horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.brightness == Brightness.light
+                        ? Colors.grey[100]
+                        : Colors.grey[800],
+                    borderRadius: BorderRadius.only(
+                      topLeft:
+                          Radius.circular(AppResponsive.spacing(context, 12)),
+                      topRight:
+                          Radius.circular(AppResponsive.spacing(context, 12)),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 4,
-                        height: AppResponsive.spacing(context, 20),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          borderRadius: BorderRadius.circular(2),
+                      // Lottery Name
+                      Text(
+                        result.getFormattedTitle(context),
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 22),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: theme.textTheme.titleLarge?.color,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      // SizedBox(height: AppResponsive.spacing(context, 2)),
+
+                      // Prize Amount and Date Column
+                      Column(
+                        children: [
+                          // Prize Amount
+                          Text(
+                            result.firstPrize.amount >= 10000000
+                                ? '₹${result.firstPrize.amount.toInt()}/-  [${(result.firstPrize.amount / 10000000)} Crore]'
+                                : '₹${result.firstPrize.amount.toInt()}/-  [${(result.firstPrize.amount / 100000).toInt()} Lakh]',
+                            style: TextStyle(
+                              fontSize: AppResponsive.fontSize(context, 16),
+                              fontWeight: FontWeight.w700,
+                              color: theme.textTheme.titleMedium?.color,
+                            ),
+                          ),
+
+                          SizedBox(height: AppResponsive.spacing(context, 6)),
+
+                          // Date with calendar icon
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: AppResponsive.fontSize(context, 14),
+                                color: theme.textTheme.bodyMedium?.color,
+                              ),
+                              SizedBox(
+                                  width: AppResponsive.spacing(context, 4)),
+                              Text(
+                                result.date,
+                                style: TextStyle(
+                                  fontSize: AppResponsive.fontSize(context, 16),
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // First Prize Section - Red Background with Gradient
+                Container(
+                  width: double.infinity,
+                  padding: AppResponsive.padding(context,
+                      horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: firstPrizeGradient,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // "FIRST PRIZE" Text
+                      Text(
+                        'FIRST PRIZE',
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 14),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.0,
                         ),
                       ),
-                      SizedBox(width: AppResponsive.spacing(context, 10)),
-                      Expanded(
-                        child: Text(
-                          result.getFormattedTitle(context),
-                          style: TextStyle(
-                            fontSize: AppResponsive.fontSize(context, 16),
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
-                            color: theme.textTheme.titleLarge?.color,
+
+                      // Winner Number
+                      Text(
+                        result.firstPrize.ticketNumber,
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 34),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+
+                      // Location with icon
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: AppResponsive.fontSize(context, 16),
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: AppResponsive.spacing(context, 4)),
+                          Text(
+                            result.firstPrize.place, // You might need to add location to your model
+                            style: TextStyle(
+                              fontSize: AppResponsive.fontSize(context, 16),
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Consolation Section
+                Container(
+                  width: double.infinity,
+                  padding: AppResponsive.padding(context,
+                      horizontal: 22, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Consolation Prize Title
+                      Text(
+                        result.formattedConsolationPrize,
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 14),
+                          fontWeight: FontWeight.w600,
+                          color: theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+
+                      SizedBox(height: AppResponsive.spacing(context, 10)),
+
+                      // First row of consolation prizes
+                      if (firstRow.isNotEmpty)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: firstRow
+                              .map((prize) =>
+                                  ConsolationPrizeContainer(prize: prize))
+                              .toList(),
+                        ),
+
+                      if (secondRow.isNotEmpty)
+                        SizedBox(height: AppResponsive.spacing(context, 8)),
+
+                      // Second row of consolation prizes
+                      if (secondRow.isNotEmpty)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: secondRow
+                              .map((prize) =>
+                                  ConsolationPrizeContainer(prize: prize))
+                              .toList(),
+                        ),
+
+                      SizedBox(height: AppResponsive.spacing(context, 10)),
+
+                      // "See More" button
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isBumper
+                                  ? [Colors.purple, Colors.deepPurple]
+                                  : const [
+                                      Color(0xFFFB0000),
+                                      Color(0xFFE75353),
+                                    ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                                AppResponsive.spacing(context, 6)),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Track see more button analytics
+                              AnalyticsService.trackLotteryEvent(
+                                eventType: 'see_more_pressed',
+                                lotteryName: result.getFormattedTitle(context),
+                                resultDate: result.formattedDate,
+                                additionalParams: {
+                                  'unique_id': result.uniqueId,
+                                  'source': 'see_more_button',
+                                },
+                              );
+
+                              context.go('/result-details', extra: {
+                                'uniqueId': result.uniqueId,
+                                'isNew': result.isNew,
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              padding: AppResponsive.padding(context,
+                                  horizontal: 12, vertical: 6),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    AppResponsive.spacing(context, 6)),
+                              ),
+                            ),
+                            child: Text(
+                              'see_more'.tr(),
+                              style: TextStyle(
+                                fontSize: AppResponsive.fontSize(context, 12),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-
-                  SizedBox(height: AppResponsive.spacing(context, 6)),
-
-                  // Prize amount in highlighted container
-                  Container(
-                    padding: AppResponsive.padding(context,
-                        horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.brightness == Brightness.light
-                          ? Colors.pink[50]
-                          : const Color(0xFF2D1518),
-                      borderRadius: BorderRadius.circular(
-                          AppResponsive.spacing(context, 3)),
-                    ),
-                    child: Text(
-                      result.formattedFirstPrize,
-                      style: TextStyle(
-                        fontSize: AppResponsive.fontSize(context, 14),
-                        fontWeight: FontWeight.w600,
-                        color: theme.brightness == Brightness.light
-                            ? Colors.pink[900]
-                            : Colors.red[300],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: AppResponsive.spacing(context, 16)),
-
-                  // Winner section
-                  Text(
-                    'first_prize_winner'.tr(),
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 13),
-                      fontWeight: FontWeight.w500,
-                      color: theme.textTheme.bodyMedium?.color
-                          ?.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  SizedBox(height: AppResponsive.spacing(context, 4)),
-                  Text(
-                    result.formattedWinner,
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 16),
-                      fontWeight: FontWeight.bold,
-                      color: theme.textTheme.bodyLarge?.color,
-                    ),
-                  ),
-
-                  // Consolation prizes section with divider
-                  Divider(
-                    color: theme.dividerTheme.color,
-                    thickness: 1,
-                  ),
-                  SizedBox(height: AppResponsive.spacing(context, 8)),
-
-                  Text(
-                    result.formattedConsolationPrize,
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 14),
-                      fontWeight: FontWeight.w500,
-                      color: theme.textTheme.bodyLarge?.color,
-                    ),
-                  ),
-
-                  SizedBox(height: AppResponsive.spacing(context, 12)),
-
-                  // First row of consolation prizes
-                  if (firstRow.isNotEmpty)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: firstRow
-                          .map((prize) => ConsolationPrizeContainer(prize: prize))
-                          .toList(),
-                    ),
-
-                  if (secondRow.isNotEmpty)
-                    SizedBox(height: AppResponsive.spacing(context, 8)),
-
-                  // Second row of consolation prizes
-                  if (secondRow.isNotEmpty)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: secondRow
-                          .map((prize) => ConsolationPrizeContainer(prize: prize))
-                          .toList(),
-                    ),
-
-                  SizedBox(height: AppResponsive.spacing(context, 16)),
-
-                  // "See More" button
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Track see more button analytics
-                        AnalyticsService.trackLotteryEvent(
-                          eventType: 'see_more_pressed',
-                          lotteryName: result.getFormattedTitle(context),
-                          resultDate: result.formattedDate,
-                          additionalParams: {
-                            'unique_id': result.uniqueId,
-                            'source': 'see_more_button',
-                          },
-                        );
-
-                        context.go('/result-details', extra: {
-                          'uniqueId': result.uniqueId,
-                          'isNew': result.isNew,
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.brightness == Brightness.light
-                            ? Colors.red[50]
-                            : Colors.red[900],
-                        foregroundColor: theme.brightness == Brightness.light
-                            ? Colors.red[800]
-                            : Colors.red[100],
-                        padding: AppResponsive.padding(context,
-                            horizontal: 12, vertical: 6),
-                        elevation:
-                            theme.brightness == Brightness.dark ? 2.0 : 1.0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppResponsive.spacing(context, 6)),
-                          side: BorderSide(
-                            color: theme.brightness == Brightness.dark
-                                ? Colors.red[700]!
-                                : Colors.red[200]!,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'see_more'.tr(),
-                            style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 12),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: AppResponsive.fontSize(context, 10),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -537,7 +614,6 @@ class LotteryResultsSection extends StatelessWidget {
     );
   }
 
-
   Widget _buildResultsList(
     HomeScreenResultsModel data,
     ThemeData theme, {
@@ -603,7 +679,7 @@ class LotteryResultsSection extends StatelessWidget {
     for (final entry in groupedResults.entries) {
       // Add date divider first
       widgets.add(_buildDateDivider(entry.key, theme, context));
-      
+
       // Add result cards for this date
       for (final result in entry.value) {
         widgets.add(_buildResultCard(result, theme, context));
@@ -654,9 +730,7 @@ class LotteryResultsSection extends StatelessWidget {
           ),
           TextButton.icon(
             onPressed: () {
-              context
-                  .read<HomeScreenResultsBloc>()
-                  .add(ClearDateFilterEvent());
+              context.read<HomeScreenResultsBloc>().add(ClearDateFilterEvent());
             },
             icon: Icon(
               Icons.clear,
@@ -672,7 +746,8 @@ class LotteryResultsSection extends StatelessWidget {
               ),
             ),
             style: TextButton.styleFrom(
-              padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+              padding:
+                  AppResponsive.padding(context, horizontal: 8, vertical: 4),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
@@ -754,12 +829,12 @@ class LotteryResultsSection extends StatelessWidget {
     List<HomeScreenResultModel> results,
   ) {
     final Map<String, List<HomeScreenResultModel>> groupedResults = {};
-    
+
     for (final result in results) {
       final dateCategory = result.formattedDate;
       groupedResults.putIfAbsent(dateCategory, () => []).add(result);
     }
-    
+
     return groupedResults;
   }
 
@@ -773,47 +848,46 @@ class LotteryResultsSection extends StatelessWidget {
     IconData? icon,
   }) {
     return Container(
-        padding: AppResponsive.padding(context, horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          color: backgroundColor,
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
-            bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
+      padding: AppResponsive.padding(context, horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        color: backgroundColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
+          bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              color: Colors.white,
+              size: AppResponsive.fontSize(context, 12),
             ),
+            SizedBox(width: AppResponsive.spacing(context, 4)),
           ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                color: Colors.white,
-                size: AppResponsive.fontSize(context, 12),
-              ),
-              SizedBox(width: AppResponsive.spacing(context, 4)),
-            ],
-            Text(
-              text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: AppResponsive.fontSize(context, 10),
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: AppResponsive.fontSize(context, 10),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
-
 }
 
 class ConsolationPrizeContainer extends StatelessWidget {
@@ -827,9 +901,9 @@ class ConsolationPrizeContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
-      padding: AppResponsive.padding(context, horizontal: 8, vertical: 4),
+      padding: AppResponsive.padding(context, horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
         color: theme.brightness == Brightness.light
             ? Colors.grey[200]

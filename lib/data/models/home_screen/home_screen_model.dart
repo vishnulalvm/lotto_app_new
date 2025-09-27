@@ -149,9 +149,9 @@ class HomeScreenResultModel {
   String getFormattedTitle(BuildContext context) {
     final lotteryKey = LotteryLocalizationHelper.getLotteryKey(lotteryName);
     final localizedLotteryName = lotteryKey.tr();
-    final localizedWinners = 'winners'.tr();
 
-    return '$localizedLotteryName $localizedWinners - $drawNumber';
+
+    return '$localizedLotteryName - $drawNumber';
   }
 
   // Keep the original method for backward compatibility (optional)
