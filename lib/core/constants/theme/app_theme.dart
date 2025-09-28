@@ -14,7 +14,7 @@ class AppTheme {
           bodyMedium: TextStyle(color: Colors.black87, fontSize: 14),
           bodySmall: TextStyle(color: Colors.black54, fontSize: 12),
           titleLarge: TextStyle(
-              color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+              color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
           titleMedium: TextStyle(
               color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500),
         ),
@@ -74,7 +74,7 @@ class AppTheme {
               TextStyle(color: Color(0xFFBDBDBD), fontSize: 12), // Medium grey
           titleLarge: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold), // Pure white
           titleMedium: TextStyle(
               color: Color(0xFFE0E0E0),

@@ -74,6 +74,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
     _darkBackground = const Color(0xFF2D1518);
   }
 
+
   void _cacheResponsiveValues(BuildContext context) {
     _iconSize = AppResponsive.fontSize(context, 24);
     _imageSize = AppResponsive.fontSize(context, 24); // Smaller size for images
@@ -164,7 +165,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppResponsive.fontSize(context, 12),
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
                 color: theme.textTheme.bodyMedium?.color,
               ),
             ),
@@ -210,7 +211,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppResponsive.fontSize(context, 12),
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
                 color: theme.textTheme.bodyMedium?.color,
               ),
             ),

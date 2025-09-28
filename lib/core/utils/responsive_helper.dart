@@ -14,7 +14,7 @@ class AppResponsive {
     double screenWidth = MediaQuery.of(context).size.width;
     // Base width is 375 (iPhone SE width)
     double scaleFactor = screenWidth / 375;
-    return size * scaleFactor.clamp(0.8, 1.4); // Limit scaling between 0.8 and 1.4
+    return size * scaleFactor.clamp(0.9, 1.4); // Limit scaling between 0.9 and 1.4
   }
 
   // Responsive spacing
