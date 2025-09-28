@@ -372,5 +372,13 @@
   "your_predictions": "आपकी भविष्यवाणियां",
   "results_available_after_430": "परिणाम शाम 4:30 बजे के बाद उपलब्ध होंगे",
   "check_back_in_time": "{time} बाद वापस जांचें",
-  "prediction_match_info": "हम आपकी भविष्यवाणियों की तुलना आज के परिणामों से करेंगे"
+  "prediction_match_info": "हम आपकी भविष्यवाणियों की तुलना आज के परिणामों से करेंगे",
+  "most_repeated_patterns": "सबसे ज्यादा दोहराए गए पैटर्न",
+  "pattern_analysis_subtitle": "ऐतिहासिक लॉटरी परिणामों के आधार पर",
+  "times": "बार",
+  "show_less": "कम दिखाएं",
+  "show_more_patterns": "और पैटर्न दिखाएं",
+  "no_patterns_found": "कोई पैटर्न नहीं मिला",
+  "no_patterns_subtitle": "पैटर्न का विश्लेषण करने के लिए पर्याप्त ऐतिहासिक डेटा उपलब्ध नहीं है",
+  "check_back_later": "बाद में जांचें"
 }

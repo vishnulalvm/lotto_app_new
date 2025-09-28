@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/lucky_number_dialog.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_card.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/prediction_match_card.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/pattern_statistics_card.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
@@ -215,6 +216,11 @@ class _PredictScreenState extends State<PredictScreen>
             _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
             const SizedBox(height: 5),
             _buildMostRepeatedCard(theme, data.repeatedNumbers),
+            const SizedBox(height: 5),
+            const PatternStatisticsCard(
+              showMockData: true,
+              // forceEmptyState: true, // Uncomment to test empty state
+            ),
             const SizedBox(height: 5),
             AiPredictionCard(
               initialPrizeType: _selectedPrizeType,

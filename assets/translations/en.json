@@ -503,5 +503,13 @@
   "your_predictions": "Your Predictions",
   "results_available_after_430": "Results available after 4:30 PM",
   "check_back_in_time": "Check back in {time}",
-  "prediction_match_info": "We'll compare your predictions with today's results"
+  "prediction_match_info": "We'll compare your predictions with today's results",
+  "most_repeated_patterns": "Most Repeated Patterns",
+  "pattern_analysis_subtitle": "Based on historical lottery results",
+  "times": "times",
+  "show_less": "Show Less",
+  "show_more_patterns": "Show More Patterns",
+  "no_patterns_found": "No Patterns Found",
+  "no_patterns_subtitle": "Not enough historical data available to analyze patterns",
+  "check_back_later": "Check back later"
 }
