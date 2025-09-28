@@ -54,7 +54,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
         'label': 'Predict',
         'route': '/predict'
       },
-      {'icon': Icons.newspaper, 'label': 'News', 'route': '/news_screen'},
+      {'icon': Icons.emoji_events, 'label': 'Challenge', 'route': '/challenge_screen'},
       {
         'image': 'assets/icons/lotto_points.png',
         'label': 'Points',

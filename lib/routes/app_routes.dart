@@ -4,7 +4,7 @@ class RouteNames {
   static const String resultDetails = 'result-details';
   static const String barcodeScannerScreen = 'barcode_scanner_screen';
   static const String saveScreen = 'saved-results';
-  static const String newsScreen = 'news_screen';
+  static const String challengeScreen = 'challenge_screen';
   static const String notifications = 'notifications';
   static const String predict = 'predict';
   static const String search = 'search';

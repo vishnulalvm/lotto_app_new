@@ -8,7 +8,7 @@ import 'package:lotto_app/presentation/pages/bar_code_screen/barcode_scanner_scr
 import 'package:lotto_app/presentation/pages/claim_screen/claim_screen.dart';
 import 'package:lotto_app/presentation/pages/home_screen/home_screen.dart';
 import 'package:lotto_app/presentation/pages/login_screen/login_screen.dart';
-import 'package:lotto_app/presentation/pages/news_screen/news_screen.dart';
+import 'package:lotto_app/presentation/pages/challenge_screen/challenge_screen.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/predict_screen.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/result_details.dart';
 import 'package:lotto_app/presentation/pages/save_result_screen/save_result_screen.dart';
@@ -112,9 +112,9 @@ class AppRouter {
                 builder: (context, state) => const SavedResultsScreen(),
               ),
               GoRoute(
-                path: 'news_screen',
-                name: RouteNames.newsScreen,
-                builder: (context, state) => const LotteryNewsScreen(),
+                path: 'challenge_screen',
+                name: RouteNames.challengeScreen,
+                builder: (context, state) => const ChallengeScreen(),
               ),
               GoRoute(
                 path: '/probability_barcode-scanner',
