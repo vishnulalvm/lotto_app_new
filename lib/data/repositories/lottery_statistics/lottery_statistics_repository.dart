@@ -118,7 +118,6 @@ class LotteryStatisticsRepository {
       await cacheRepository.cacheLotteryStatistics(data);
     } catch (e) {
       // Log cache error but don't fail the operation
-      print('Failed to update cache: $e');
     }
   }
 

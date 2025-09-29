@@ -362,7 +362,7 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
               result: result,
               ticketData: widget.ticketData,
               onCheckAgain: () async => context.go('/'),
-              onScanAgain: () async => context.go('/barcode_scanner_screen'),
+              onScanAgain: () async => context.push('/barcode_scanner_screen'),
             ),
           ],
         ),

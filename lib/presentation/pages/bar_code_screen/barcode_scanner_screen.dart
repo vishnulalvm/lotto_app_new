@@ -17,9 +17,7 @@ class BarcodeScannerScreen extends StatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with WidgetsBindingObserver {
-  MobileScannerController cameraController = MobileScannerController(
-    autoStart: false,
-  );
+  MobileScannerController cameraController = MobileScannerController();
   bool isFlashOn = false;
   DateTime selectedDate = DateTime.now();
   String? lastScannedCode;
@@ -106,7 +104,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
     });
     
     try {
-      // The start() method handles both initial start and restarting.
+      // Restart the camera
       await cameraController.start();
       if (mounted) {
         setState(() {
