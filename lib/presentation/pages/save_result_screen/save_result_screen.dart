@@ -145,6 +145,7 @@ class _SavedResultsScreenState extends State<SavedResultsScreen> {
   void _navigateToResultDetails(String uniqueId) {
     context.go('/result-details', extra: {
       'uniqueId': uniqueId,
+      'lotteryNumber': null, // No lottery number available from saved results
       'isNew': false,
     });
   }

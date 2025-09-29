@@ -10,6 +10,9 @@ import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statisti
 import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_state.dart';
 import 'package:lotto_app/data/models/lottery_statistics/lottery_entry_model.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
+import 'dart:async';
 
 class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key});
@@ -23,12 +26,31 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   bool _isStatisticsExpanded = false;
   final UserService _userService = UserService();
   List<LotteryEntry> _lotteryEntries = [];
+  Timer? _adTimer;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadLotteryStatistics();
+    
+    // Track screen view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
+        AnalyticsService.trackScreenView(
+          screenName: 'challenge_screen',
+          screenClass: 'ChallengeScreen',
+          parameters: {
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          },
+        );
+      });
+    });
+    
+    // Preload and schedule interstitial ad
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadAndScheduleInterstitialAd();
+    });
   }
 
   Future<void> _loadLotteryStatistics({bool forceRefresh = false}) async {
@@ -49,6 +71,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _adTimer?.cancel();
     super.dispose();
   }
 
@@ -70,6 +93,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       dateAdded: model.dateAdded,
       winningAmount: model.winningAmount,
       status: _convertStatus(model.status),
+      lotteryUniqueId: model.lotteryUniqueId,
     );
   }
 
@@ -511,7 +535,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: 700, // Total of all column widths: 60+150+120+80+80+90+60+50 = 690 + 60 padding
+          width: 810, // Total of all column widths: 60+150+120+80+80+90+60+80+50 = 770 + 70 padding
           child: Column(
             children: [
               // Table Header
@@ -610,7 +634,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(width: 50), // Space for delete button
+                    
+                    SizedBox(
+                      width: 100,
+                      child: Text(
+                        'view_result'.tr(),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -640,6 +676,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 60,
@@ -726,6 +764,28 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 color: _getStatusColor(entry.status),
               ),
             ),
+          ),
+          SizedBox(
+            width: 20,
+          ),
+          SizedBox(
+            width: 80,
+            child: _shouldShowViewResultButton(entry.status)
+                ? ElevatedButton(
+                    onPressed: () => _navigateToResultDetails(entry.lotteryUniqueId, entry.lotteryNumber),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: const Size(60, 28),
+                      textStyle: const TextStyle(fontSize: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('view'.tr()),
+                  )
+                : const SizedBox.shrink(),
           ),
           SizedBox(
             width: 50,
@@ -955,6 +1015,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         dateAdded: date,
         winningAmount: 0.0,
         status: LotteryStatus.pending,
+        lotteryUniqueId: null, // Will be updated when API returns the data
       );
       _lotteryEntries.insert(0, newEntry); // Add to the beginning for newest first
     });
@@ -992,6 +1053,40 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       ),
     );
   }
+
+  void _preloadAndScheduleInterstitialAd() {
+    AdMobService.instance.loadChallengeInterstitialAd();
+
+    _adTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        _showInterstitialAd();
+      }
+    });
+  }
+
+  void _showInterstitialAd() async {
+    if (AdMobService.instance.isChallengeInterstitialAdLoaded) {
+      await AdMobService.instance.showInterstitialAd('challenge_interstitial');
+    }
+  }
+
+  bool _shouldShowViewResultButton(LotteryStatus status) {
+    return status == LotteryStatus.won || status == LotteryStatus.lost;
+  }
+
+  void _navigateToResultDetails(String? lotteryUniqueId, String lotteryNumber) {
+    if (lotteryUniqueId != null && lotteryUniqueId.isNotEmpty) {
+      context.go('/result-details', extra: {
+        'uniqueId': lotteryUniqueId,
+        'lotteryNumber': lotteryNumber,
+        'isNew': false,
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('lottery_unique_id_not_available'.tr())),
+      );
+    }
+  }
 }
 
 // Data Models
@@ -1004,6 +1099,7 @@ class LotteryEntry {
   final DateTime dateAdded;
   final double winningAmount;
   final LotteryStatus status;
+  final String? lotteryUniqueId;
 
   LotteryEntry({
     required this.id,
@@ -1014,6 +1110,7 @@ class LotteryEntry {
     required this.dateAdded,
     required this.winningAmount,
     required this.status,
+    this.lotteryUniqueId,
   });
 }
 

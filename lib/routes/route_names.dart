@@ -72,24 +72,17 @@ class AppRouter {
             name: RouteNames.home,
             builder: (context, state) => const HomeScreen(),
             routes: [
-              // Result screens
-              // GoRoute(
-              //   path: 'rewarded-ad/:title',
-              //   name: RouteNames.rewardedAd,
-              //   builder: (context, state) => RewardedAdScreen(
-              //     resultTitle:
-              //         Uri.decodeComponent(state.pathParameters['title'] ?? ''),
-              //   ),
-              // ),
               GoRoute(
                 path: '/result-details',
                 builder: (context, state) {
                   if (state.extra is Map) {
                     final extra = state.extra as Map<String, dynamic>;
                     final uniqueId = extra['uniqueId'] as String?;
+                    final lotteryNumber = extra['lotteryNumber'] as String?;
                     final isNew = extra['isNew'] as bool? ?? false;
                     return LotteryResultDetailsScreen(
                       uniqueId: uniqueId ?? "",
+                      lotteryNumber: lotteryNumber,
                       isNew: isNew,
                     );
                   } else {

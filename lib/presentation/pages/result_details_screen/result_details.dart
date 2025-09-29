@@ -21,11 +21,13 @@ import 'dart:async';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
   final String? uniqueId;
+  final String? lotteryNumber;
   final bool isNew;
 
   const LotteryResultDetailsScreen({
     super.key,
     this.uniqueId,
+    this.lotteryNumber,
     this.isNew = false,
   });
 
@@ -108,6 +110,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
           screenClass: 'LotteryResultDetailsScreen',
           parameters: {
             'unique_id': widget.uniqueId ?? 'unknown',
+            'lottery_number': widget.lotteryNumber ?? 'none',
             'is_new': widget.isNew ? 1 : 0,
             'timestamp': DateTime.now().millisecondsSinceEpoch,
           },
@@ -130,6 +133,13 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
 
     // Load and show interstitial ad after 8 seconds
     _scheduleInterstitialAd();
+
+    // Auto-highlight lottery number if provided
+    if (widget.lotteryNumber != null && widget.lotteryNumber!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _autoHighlightLotteryNumber(widget.lotteryNumber!);
+      });
+    }
     
   }
 
@@ -273,6 +283,16 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         });
       }
     }
+  }
+
+  // Auto-highlight lottery number when provided from challenge screen
+  void _autoHighlightLotteryNumber(String lotteryNumber) {
+    // Wait for the lottery data to be loaded
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted && _allLotteryNumbers.isNotEmpty) {
+        _performSearch(lotteryNumber);
+      }
+    });
   }
 
   // Updated method to handle search functionality with minimum length and smart fallback

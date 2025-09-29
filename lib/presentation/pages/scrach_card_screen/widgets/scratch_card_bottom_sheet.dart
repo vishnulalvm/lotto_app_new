@@ -543,7 +543,11 @@ class ScratchCardBottomSheet extends StatelessWidget {
     final uniqueId = result.uniqueId;
 
     if (uniqueId.isNotEmpty) {
-      context.go('/result-details', extra: uniqueId);
+      context.go('/result-details', extra: {
+        'uniqueId': uniqueId,
+        'lotteryNumber': null, // No lottery number available from scratch card screen
+        'isNew': false,
+      });
     } else {
       // Fallback to home if no unique ID available
       context.go('/');

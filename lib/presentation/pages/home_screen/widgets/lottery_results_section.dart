@@ -288,6 +288,7 @@ class LotteryResultsSection extends StatelessWidget {
 
               context.go('/result-details', extra: {
                 'uniqueId': result.uniqueId,
+                'lotteryNumber': null, // No lottery number available from home screen results
                 'isNew': result.isNew,
               });
             },
@@ -513,6 +514,7 @@ class LotteryResultsSection extends StatelessWidget {
 
                               context.go('/result-details', extra: {
                                 'uniqueId': result.uniqueId,
+                                'lotteryNumber': null, // No lottery number available from home screen results
                                 'isNew': result.isNew,
                               });
                             },
