@@ -1,4 +1,5 @@
 class LotteryPurchaseResponseModel {
+  final int id;
   final String userId;
   final String lotteryNumber;
   final String lotteryName;
@@ -7,6 +8,7 @@ class LotteryPurchaseResponseModel {
   final String message;
 
   LotteryPurchaseResponseModel({
+    required this.id,
     required this.userId,
     required this.lotteryNumber,
     required this.lotteryName,
@@ -17,6 +19,7 @@ class LotteryPurchaseResponseModel {
 
   factory LotteryPurchaseResponseModel.fromJson(Map<String, dynamic> json) {
     return LotteryPurchaseResponseModel(
+      id: json['id'],
       userId: json['user_id'],
       lotteryNumber: json['lottery_number'],
       lotteryName: json['lottery_name'],
@@ -28,6 +31,7 @@ class LotteryPurchaseResponseModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'user_id': userId,
       'lottery_number': lotteryNumber,
       'lottery_name': lotteryName,

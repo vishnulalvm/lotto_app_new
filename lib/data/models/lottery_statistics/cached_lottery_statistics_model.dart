@@ -145,6 +145,9 @@ class CachedLotteryEntryModel extends HiveObject {
   @HiveField(7)
   final String status;
 
+  @HiveField(8)
+  final int id;
+
   CachedLotteryEntryModel({
     this.lotteryUniqueId,
     required this.slNo,
@@ -154,11 +157,13 @@ class CachedLotteryEntryModel extends HiveObject {
     required this.purchaseDate,
     this.winnings,
     required this.status,
+    required this.id,
   });
 
   /// Convert from API model to cached model
   factory CachedLotteryEntryModel.fromApiModel(LotteryEntryModel apiModel) {
     return CachedLotteryEntryModel(
+      id: apiModel.id,
       lotteryUniqueId: apiModel.lotteryUniqueId,
       slNo: apiModel.slNo,
       lotteryNumber: apiModel.lotteryNumber,
@@ -173,6 +178,7 @@ class CachedLotteryEntryModel extends HiveObject {
   /// Convert back to API model
   LotteryEntryModel toApiModel() {
     return LotteryEntryModel(
+      id: id,
       lotteryUniqueId: lotteryUniqueId,
       slNo: slNo,
       lotteryNumber: lotteryNumber,

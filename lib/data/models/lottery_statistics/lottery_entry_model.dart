@@ -17,6 +17,7 @@ enum LotteryEntryStatus {
 }
 
 class LotteryEntryModel {
+  final int id;
   final String? lotteryUniqueId;
   final int slNo;
   final String lotteryNumber;
@@ -27,6 +28,7 @@ class LotteryEntryModel {
   final LotteryEntryStatus status;
 
   LotteryEntryModel({
+    required this.id,
     this.lotteryUniqueId,
     required this.slNo,
     required this.lotteryNumber,
@@ -39,6 +41,7 @@ class LotteryEntryModel {
 
   factory LotteryEntryModel.fromJson(Map<String, dynamic> json) {
     return LotteryEntryModel(
+      id: json['id'] ?? 0,
       lotteryUniqueId: json['lottery_unique_id'],
       slNo: json['sl_no'] ?? 0,
       lotteryNumber: json['lottery_number'] ?? '',
@@ -52,6 +55,7 @@ class LotteryEntryModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'lottery_unique_id': lotteryUniqueId,
       'sl_no': slNo,
       'lottery_number': lotteryNumber,
@@ -66,5 +70,5 @@ class LotteryEntryModel {
   // Convert to the existing LotteryEntry class used in UI
   DateTime get dateAdded => DateTime.tryParse(purchaseDate) ?? DateTime.now();
   double get winningAmount => winnings ?? 0.0;
-  String get id => lotteryUniqueId ?? '$slNo-$lotteryNumber';
+  String get uniqueId => lotteryUniqueId ?? '$id-$lotteryNumber';
 }

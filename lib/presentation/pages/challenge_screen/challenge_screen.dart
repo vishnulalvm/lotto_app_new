@@ -8,6 +8,9 @@ import 'package:lotto_app/presentation/pages/challenge_screen/widgets/challenge_
 import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_event.dart';
 import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_state.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_event.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_state.dart';
 import 'package:lotto_app/data/models/lottery_statistics/lottery_entry_model.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
@@ -85,7 +88,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
   LotteryEntry _convertToLotteryEntry(LotteryEntryModel model) {
     return LotteryEntry(
-      id: model.id,
+      id: model.id.toString(),
       serialNo: model.slNo,
       lotteryNumber: model.lotteryNumber,
       lotteryName: model.lotteryName,
@@ -112,16 +115,47 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return BlocListener<LotteryStatisticsBloc, LotteryStatisticsState>(
-      listener: (context, state) {
-        if (state is LotteryStatisticsLoaded) {
-          setState(() {
-            _lotteryEntries = state.data.lotteryEntries
-                .map(_convertToLotteryEntry)
-                .toList();
-          });
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<LotteryStatisticsBloc, LotteryStatisticsState>(
+          listener: (context, state) {
+            if (state is LotteryStatisticsLoaded) {
+              setState(() {
+                _lotteryEntries = state.data.lotteryEntries
+                    .map(_convertToLotteryEntry)
+                    .toList();
+              });
+            }
+          },
+        ),
+        BlocListener<LotteryPurchaseBloc, LotteryPurchaseState>(
+          listener: (context, state) {
+            if (state is LotteryPurchaseDeleteSuccess) {
+              // Hide loading snackbar
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('entry_deleted_successfully'.tr())),
+              );
+              
+              // Refresh data
+              _loadLotteryStatistics(forceRefresh: true);
+            } else if (state is LotteryPurchaseDeleteError) {
+              // Hide loading snackbar
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              
+              // Show error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${'delete_failed'.tr()}: ${state.message}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: _buildAppBar(theme),
@@ -1007,32 +1041,71 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     });
   }
 
-  void _deleteEntry(String entryId) {
-    showDialog(
+  Future<void> _deleteEntry(String entryId) async {
+    final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('delete_entry'.tr()),
         content: Text('delete_entry_confirmation'.tr()),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: Text('cancel'.tr()),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _lotteryEntries.removeWhere((entry) => entry.id == entryId);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('entry_deleted_successfully'.tr())),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: Text('delete'.tr()),
           ),
         ],
       ),
     );
+
+    if (shouldDelete != true || !mounted) return;
+
+    try {
+      // Get user ID
+      final userId = await _userService.getUserId();
+      if (userId == null) {
+        throw Exception('User not found');
+      }
+
+      // Convert string ID to integer for API call
+      final id = int.parse(entryId);
+
+      // Show loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text('deleting_entry'.tr()),
+            ],
+          ),
+          duration: const Duration(seconds: 30),
+        ),
+      );
+
+      // Call delete API
+      if (!mounted) return;
+      context.read<LotteryPurchaseBloc>().add(
+        DeleteLotteryPurchase(userId: userId, id: id),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${'delete_failed'.tr()}: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _preloadAndScheduleInterstitialAd() {

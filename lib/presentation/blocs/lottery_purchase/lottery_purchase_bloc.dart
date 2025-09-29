@@ -8,6 +8,7 @@ class LotteryPurchaseBloc extends Bloc<LotteryPurchaseEvent, LotteryPurchaseStat
 
   LotteryPurchaseBloc({required this.useCase}) : super(LotteryPurchaseInitial()) {
     on<PurchaseLottery>(_onPurchaseLottery);
+    on<DeleteLotteryPurchase>(_onDeleteLotteryPurchase);
   }
 
   Future<void> _onPurchaseLottery(
@@ -26,7 +27,29 @@ class LotteryPurchaseBloc extends Bloc<LotteryPurchaseEvent, LotteryPurchaseStat
       
       emit(LotteryPurchaseSuccess(response));
     } catch (e) {
-      emit(LotteryPurchaseError(e.toString()));
+      // Check if it's a duplicate purchase error
+      if (e.toString().contains('already purchased this lottery number')) {
+        emit(LotteryPurchaseError(e.toString(), isDuplicate: true));
+      } else {
+        emit(LotteryPurchaseError(e.toString()));
+      }
+    }
+  }
+
+  Future<void> _onDeleteLotteryPurchase(
+    DeleteLotteryPurchase event,
+    Emitter<LotteryPurchaseState> emit,
+  ) async {
+    emit(LotteryPurchaseDeleteLoading());
+    try {
+      final response = await useCase.deleteLotteryPurchase(
+        userId: event.userId,
+        id: event.id,
+      );
+      
+      emit(LotteryPurchaseDeleteSuccess(response));
+    } catch (e) {
+      emit(LotteryPurchaseDeleteError(e.toString()));
     }
   }
 }

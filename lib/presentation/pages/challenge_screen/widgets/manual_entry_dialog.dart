@@ -89,16 +89,20 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             _isLoading = false;
           });
           
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Purchase failed: ${state.message}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          if (state.isDuplicate) {
+            _showDuplicatePurchaseDialog(context);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Purchase failed: ${state.message}'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-            ),
-          );
+            );
+          }
         } else if (state is LotteryPurchaseLoading) {
           setState(() {
             _isLoading = true;
@@ -583,5 +587,100 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
         );
       }
     }
+  }
+
+  void _showDuplicatePurchaseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange,
+            size: 48,
+          ),
+          title: Text(
+            'Duplicate Purchase',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'You have already purchased this lottery number for the selected date.',
+                style: theme.textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Try selecting a different date or lottery number.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.primaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                'Change Details',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close duplicate dialog
+                Navigator.of(context).pop(); // Close manual entry dialog
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

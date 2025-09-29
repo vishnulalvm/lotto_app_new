@@ -15,3 +15,13 @@ class PurchaseLottery extends LotteryPurchaseEvent {
     required this.purchaseDate,
   });
 }
+
+class DeleteLotteryPurchase extends LotteryPurchaseEvent {
+  final String userId;
+  final int id;
+
+  DeleteLotteryPurchase({
+    required this.userId,
+    required this.id,
+  });
+}

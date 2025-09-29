@@ -120,13 +120,14 @@ class CachedLotteryEntryModelAdapter
       purchaseDate: fields[5] as String,
       winnings: fields[6] as double?,
       status: fields[7] as String,
+      id: fields[8] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, CachedLotteryEntryModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.lotteryUniqueId)
       ..writeByte(1)
@@ -142,7 +143,9 @@ class CachedLotteryEntryModelAdapter
       ..writeByte(6)
       ..write(obj.winnings)
       ..writeByte(7)
-      ..write(obj.status);
+      ..write(obj.status)
+      ..writeByte(8)
+      ..write(obj.id);
   }
 
   @override
