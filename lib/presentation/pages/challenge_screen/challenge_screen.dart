@@ -190,31 +190,45 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   Widget _buildMotivationalBanner(ThemeData theme) {
     return Container(
       width: double.infinity,
-      // margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.primaryColor.withValues(alpha: 0.2),
-            theme.primaryColor.withValues(alpha: 0.1),
+            theme.primaryColor.withValues(alpha: theme.brightness == Brightness.dark ? 0.15 : 0.2),
+            theme.primaryColor.withValues(alpha: theme.brightness == Brightness.dark ? 0.08 : 0.1),
           ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.primaryColor.withValues(alpha: 0.3),
+          color: theme.primaryColor.withValues(alpha: theme.brightness == Brightness.dark ? 0.25 : 0.3),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.primaryColor.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(
+            Icons.emoji_events_outlined,
+            color: theme.primaryColor,
+            size: 32,
+          ),
+          const SizedBox(height: 12),
           Text(
             'Add Lottery and Start Challenge',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.primaryColor,
-              fontSize: 18,
+              fontSize: 20,
             ),
             textAlign: TextAlign.center,
           ),
@@ -222,8 +236,9 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             'Track your wins, losses, and see your progress!',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade600,
-              fontSize: 14,
+              color: theme.textTheme.bodySmall?.color,
+              fontSize: 15,
+              height: 1.4,
             ),
             textAlign: TextAlign.center,
           ),
@@ -285,25 +300,20 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             borderRadius: BorderRadius.circular(16),
             child: Row(
               children: [
-                Icon(
-                  Icons.trending_up,
-                  color: theme.primaryColor,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'challenge_statistics'.tr(),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.primaryColor,
+                      fontSize: 20,
                     ),
                   ),
                 ),
                 Icon(
                   _isStatisticsExpanded ? Icons.expand_less : Icons.expand_more,
                   color: theme.primaryColor,
-                  size: 24,
+                  size: 28,
                 ),
               ],
             ),
@@ -331,25 +341,21 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.emoji_events,
-                    color: theme.primaryColor,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
                   Text(
                     'Start Your Challenge!',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.primaryColor,
+                      fontSize: 20,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     'Add your lottery tickets and track your wins! Use the + button to scan or manually enter your lottery entries.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade600,
+                      color: theme.textTheme.bodySmall?.color,
+                      fontSize: 16,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -432,7 +438,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               children: [
                 Icon(
                   netProfitLoss >= 0 ? Icons.trending_up : Icons.trending_down,
-                  color: netProfitLoss >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                  color: netProfitLoss >= 0 ? Colors.green : Colors.red,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -440,7 +446,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   'net_result'.tr(),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: netProfitLoss >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                    color: netProfitLoss >= 0 ? Colors.green : Colors.red,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -448,7 +454,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   '�${netProfitLoss.abs().toStringAsFixed(0)}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: netProfitLoss >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                    color: netProfitLoss >= 0 ? Colors.green : Colors.red,
                     fontSize: 18,
                   ),
                 ),
@@ -477,30 +483,24 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
-          const SizedBox(height: 6),
           Text(
             title,
             style: theme.textTheme.bodySmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w500,
-              fontSize: 11,
+              fontSize: 14,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
               color: color,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 18,
             ),
             textAlign: TextAlign.center,
           ),
@@ -525,7 +525,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: theme.primaryColor.withValues(alpha: 0.3),
@@ -534,283 +534,264 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: 810, // Total of all column widths: 60+150+120+80+80+90+60+80+50 = 770 + 70 padding
-          child: Column(
-            children: [
-              // Table Header
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      child: Text(
-                        'sl_no'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 150,
-                      child: Text(
-                        'lottery_number'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        'lottery_name'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        'price'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        'date'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 90,
-                      child: Text(
-                        'winnings'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 60,
-                      child: Text(
-                        'status'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    
-                    SizedBox(
-                      width: 100,
-                      child: Text(
-                        'view_result'.tr(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Table Content
-              Expanded(
-                child: ListView.separated(
-                  controller: _scrollController,
-                  itemCount: _lotteryEntries.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    color: theme.dividerColor.withValues(alpha: 0.3),
-                  ),
-                  itemBuilder: (context, index) {
-                    final entry = _lotteryEntries[index];
-                    return _buildTableRow(theme, entry, index);
-                  },
-                ),
-              ),
-            ],
+        child: DataTable(
+          columnSpacing: 20,
+          horizontalMargin: 16,
+          dataRowMinHeight: 60,
+          dataRowMaxHeight: 80,
+          headingRowHeight: 50,
+          headingRowColor: WidgetStateColor.resolveWith(
+            (states) => theme.primaryColor.withValues(alpha: 0.1),
           ),
+          headingTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.primaryColor,
+            fontSize: 16,
+          ),
+          dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 16,
+          ),
+          columns: [
+            DataColumn(
+              label: SizedBox(
+                width: 40,
+                child: Text(
+                  'sl_no'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 120,
+                child: Text(
+                  'lottery_number'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 100,
+                child: Text(
+                  'lottery_name'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 60,
+                child: Text(
+                  'price'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 60,
+                child: Text(
+                  'date'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 70,
+                child: Text(
+                  'winnings'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 60,
+                child: Text(
+                  'status'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 80,
+                child: Text(
+                  'view_result'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: 50,
+                child: Text(
+                  'action'.tr(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+          rows: _lotteryEntries.map((entry) {
+            return DataRow(
+              cells: [
+                DataCell(
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      entry.serialNo.toString(),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      entry.lotteryNumber,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      entry.lotteryName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.primaryColor.withValues(alpha: 0.8),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 60,
+                    child: Text(
+                      '₹${entry.price.toStringAsFixed(0)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 60,
+                    child: Text(
+                      DateFormat('dd/MM').format(entry.dateAdded),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 70,
+                    child: Text(
+                      entry.winningAmount > 0 ? '₹${entry.winningAmount.toStringAsFixed(0)}' : '-',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: entry.winningAmount > 0 ? Colors.green : null,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 60,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(entry.status).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _getStatusIcon(entry.status),
+                        size: 20,
+                        color: _getStatusColor(entry.status),
+                      ),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 80,
+                    child: _shouldShowViewResultButton(entry.status)
+                        ? ElevatedButton(
+                            onPressed: () => _navigateToResultDetails(entry.lotteryUniqueId, entry.lotteryNumber),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: const Size(60, 28),
+                              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              elevation: 1,
+                            ),
+                            child: Text('view'.tr()),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: 50,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Colors.red.withValues(alpha: 0.7),
+                        size: 22,
+                      ),
+                      onPressed: () => _deleteEntry(entry.id),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildTableRow(ThemeData theme, LotteryEntry entry, int index) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 60,
-            child: Text(
-              entry.serialNo.toString(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(
-            width: 150,
-            child: Text(
-              entry.lotteryNumber,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(
-            width: 120,
-            child: Text(
-              entry.lotteryName,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: theme.primaryColor.withValues(alpha: 0.8),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(
-            width: 80,
-            child: Text(
-              '₹${entry.price.toStringAsFixed(0)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(
-            width: 80,
-            child: Text(
-              DateFormat('dd/MM').format(entry.dateAdded),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(
-            width: 90,
-            child: Text(
-              entry.winningAmount > 0 ? '₹${entry.winningAmount.toStringAsFixed(0)}' : '-',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: entry.winningAmount > 0 ? Colors.green.shade700 : null,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(
-            width: 60,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getStatusColor(entry.status).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _getStatusIcon(entry.status),
-                size: 20,
-                color: _getStatusColor(entry.status),
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 20,
-          ),
-          SizedBox(
-            width: 80,
-            child: _shouldShowViewResultButton(entry.status)
-                ? ElevatedButton(
-                    onPressed: () => _navigateToResultDetails(entry.lotteryUniqueId, entry.lotteryNumber),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      minimumSize: const Size(60, 28),
-                      textStyle: const TextStyle(fontSize: 11),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text('view'.tr()),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          SizedBox(
-            width: 50,
-            child: IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                color: Colors.red.shade400,
-                size: 22,
-              ),
-              onPressed: () => _deleteEntry(entry.id),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildLoadingState(ThemeData theme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: theme.primaryColor.withValues(alpha: 0.3),
@@ -827,7 +808,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             'Loading lottery statistics...',
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.grey.shade600,
+              color: theme.textTheme.bodySmall?.color,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -841,7 +822,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.red.withValues(alpha: 0.3),
@@ -854,13 +835,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.red.shade400,
+            color: Colors.red.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'Error loading data',
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.red.shade600,
+              color: Colors.red,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -868,7 +849,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             errorMessage,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade500,
+              color: theme.textTheme.bodySmall?.color,
             ),
             textAlign: TextAlign.center,
           ),
@@ -891,7 +872,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: theme.cardTheme.color,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
@@ -907,13 +888,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Icon(
             Icons.confirmation_number_outlined,
             size: 64,
-            color: Colors.grey.shade400,
+            color: theme.iconTheme.color?.withValues(alpha: 0.6),
           ),
           const SizedBox(height: 16),
           Text(
             'no_lottery_entries'.tr(),
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.grey.shade600,
+              color: theme.textTheme.bodySmall?.color,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -921,7 +902,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             'tap_add_button_to_start'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade500,
+              color: theme.textTheme.bodySmall?.color,
             ),
             textAlign: TextAlign.center,
           ),

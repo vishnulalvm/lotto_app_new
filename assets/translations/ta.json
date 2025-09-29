@@ -444,5 +444,8 @@
   "select_purchase_date": "வாங்கிய தேதியை தேர்ந்தெடுக்கவும்",
   "select": "தேர்ந்தெடுக்கவும்",
   "lottery_entry_added_successfully": "லாட்டரி பதிவு வெற்றிகரமாக சேர்க்கப்பட்டது",
-  "error_adding_entry": "பதிவு சேர்ப்பதில் பிழை"
+  "error_adding_entry": "பதிவு சேர்ப்பதில் பிழை",
+  "view": "பார்க்கவும்",
+  "view_result": "முடிவைப் பார்க்கவும்",
+  "action": "செயல்"
 }

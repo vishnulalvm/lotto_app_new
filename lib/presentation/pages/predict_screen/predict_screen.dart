@@ -211,6 +211,8 @@ class _PredictScreenState extends State<PredictScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildMotivationalBanner(theme),
+            const SizedBox(height: 10),
             _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
             const SizedBox(height: 5),
             _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
@@ -294,6 +296,51 @@ class _PredictScreenState extends State<PredictScreen>
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotivationalBanner(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.primaryColor.withValues(alpha: 0.2),
+            theme.primaryColor.withValues(alpha: 0.1),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        border: Border.all(
+          color: theme.primaryColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Use App Daily for More Accurate Predictions',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+              fontSize: 18,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Regular usage helps our AI learn your preferences and improve prediction accuracy',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

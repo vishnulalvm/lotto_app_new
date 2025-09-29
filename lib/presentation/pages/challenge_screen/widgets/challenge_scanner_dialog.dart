@@ -270,7 +270,9 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
         // Loading indicator
         if (isProcessing)
           Container(
-            color: Colors.black54,
+            color: theme.brightness == Brightness.dark 
+                ? Colors.black87 
+                : Colors.black54,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -297,7 +299,9 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
               padding: AppResponsive.padding(context, 
                   horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: theme.brightness == Brightness.dark 
+                    ? Colors.black87 
+                    : Colors.black54,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -321,7 +325,9 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.black,
+      color: theme.brightness == Brightness.dark 
+          ? Colors.grey.shade900 
+          : Colors.black,
       child: Center(
         child: Padding(
           padding: AppResponsive.padding(context, horizontal: 24, vertical: 24),

@@ -398,5 +398,8 @@
   "select_purchase_date": "खरीदारी की तारीख चुनें",
   "select": "चुनें",
   "lottery_entry_added_successfully": "लॉटरी एंट्री सफलतापूर्वक जोड़ी गई",
-  "error_adding_entry": "एंट्री जोड़ने में त्रुटि"
+  "error_adding_entry": "एंट्री जोड़ने में त्रुटि",
+  "view": "देखें",
+  "view_result": "परिणाम देखें",
+  "action": "कार्य"
 }

@@ -223,6 +223,8 @@
   "removed_from_saved": "Removed from saved results",
   "saved_to_collection": "Saved to your collection",
   "view": "View",
+  "view_result": "View Result",
+  "action": "Action",
   "failed_save_result": "Failed to save result",
   "generating_pdf": "Generating PDF...",
   "pdf_generated_success": "PDF generated successfully!",

@@ -156,7 +156,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
         Text(
           'enter_lottery_details_below'.tr(),
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: Colors.grey.shade600,
+            color: theme.textTheme.bodySmall?.color,
           ),
           textAlign: TextAlign.center,
         ),
@@ -204,7 +204,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.grey.shade300,
+                color: theme.dividerColor,
                 width: 1,
               ),
             ),
@@ -223,7 +223,9 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: theme.brightness == Brightness.dark 
+                ? theme.cardTheme.color?.withValues(alpha: 0.3)
+                : Colors.grey.shade50,
           ),
           style: const TextStyle(
             fontSize: 18,
@@ -273,7 +275,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.grey.shade300,
+                color: theme.dividerColor,
                 width: 1,
               ),
             ),
@@ -292,7 +294,9 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: theme.brightness == Brightness.dark 
+                ? theme.cardTheme.color?.withValues(alpha: 0.3)
+                : Colors.grey.shade50,
           ),
           style: const TextStyle(
             fontSize: 16,
@@ -345,7 +349,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.grey.shade300,
+                color: theme.dividerColor,
                 width: 1,
               ),
             ),
@@ -364,7 +368,9 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: theme.brightness == Brightness.dark 
+                ? theme.cardTheme.color?.withValues(alpha: 0.3)
+                : Colors.grey.shade50,
           ),
           style: const TextStyle(
             fontSize: 16,
@@ -412,9 +418,11 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: theme.brightness == Brightness.dark 
+                  ? theme.cardTheme.color?.withValues(alpha: 0.3)
+                  : Colors.grey.shade50,
               border: Border.all(
-                color: Colors.grey.shade300,
+                color: theme.dividerColor,
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -423,7 +431,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               children: [
                 Icon(
                   Icons.date_range,
-                  color: Colors.grey.shade600,
+                  color: theme.iconTheme.color?.withValues(alpha: 0.7),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -438,7 +446,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                 ),
                 Icon(
                   Icons.arrow_drop_down,
-                  color: Colors.grey.shade600,
+                  color: theme.iconTheme.color?.withValues(alpha: 0.7),
                 ),
               ],
             ),
@@ -459,14 +467,14 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              side: BorderSide(color: Colors.grey.shade400),
+              side: BorderSide(color: theme.dividerColor),
             ),
             child: Text(
               'cancel'.tr(),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: theme.textTheme.bodyMedium?.color,
               ),
             ),
           ),

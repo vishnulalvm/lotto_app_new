@@ -181,6 +181,8 @@
   "removed_from_saved": "സേവ് ചെയ്തതിൽ നിന്ന് മാറ്റി",
   "saved_to_collection": "സേവ് ചെയ്തിരിക്കുന്നു",
   "view": "കാണുക",
+  "view_result": "ഫലം കാണുക",
+  "action": "പ്രവർത്തനം",
   "failed_save_result": "സേവ് ചെയ്യാൻ പറ്റിയില്ല",
   "generating_pdf": "PDF ഉണ്ടാക്കുന്നു...",
   "pdf_generated_success": "PDF റെഡി!",
