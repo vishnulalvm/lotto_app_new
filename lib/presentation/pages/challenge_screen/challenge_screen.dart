@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotto_app/presentation/pages/challenge_screen/widgets/manual_entry_dialog.dart';
 import 'package:lotto_app/presentation/pages/challenge_screen/widgets/challenge_scanner_dialog.dart';
+import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_event.dart';
+import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_state.dart';
+import 'package:lotto_app/data/models/lottery_statistics/lottery_entry_model.dart';
+import 'package:lotto_app/data/services/user_service.dart';
 
 class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key});
@@ -15,44 +21,29 @@ class ChallengeScreen extends StatefulWidget {
 class _ChallengeScreenState extends State<ChallengeScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isStatisticsExpanded = false;
-  final List<LotteryEntry> _lotteryEntries = [
-    // Sample data for UI demonstration
-    LotteryEntry(
-      id: '1',
-      serialNo: 1,
-      lotteryNumber: '1234',
-      lotteryName: 'Akshaya',
-      price: 100.0,
-      dateAdded: DateTime.now().subtract(const Duration(days: 1)),
-      winningAmount: 0.0,
-      status: LotteryStatus.lost,
-    ),
-    LotteryEntry(
-      id: '2',
-      serialNo: 2,
-      lotteryNumber: '5678',
-      lotteryName: 'Karunya',
-      price: 150.0,
-      dateAdded: DateTime.now().subtract(const Duration(days: 2)),
-      winningAmount: 5000.0,
-      status: LotteryStatus.won,
-    ),
-    LotteryEntry(
-      id: '3',
-      serialNo: 3,
-      lotteryNumber: '9012',
-      lotteryName: 'Win Win',
-      price: 100.0,
-      dateAdded: DateTime.now(),
-      winningAmount: 0.0,
-      status: LotteryStatus.pending,
-    ),
-  ];
+  final UserService _userService = UserService();
+  List<LotteryEntry> _lotteryEntries = [];
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadLotteryStatistics();
+  }
+
+  Future<void> _loadLotteryStatistics({bool forceRefresh = false}) async {
+    final userId = await _userService.getPhoneNumber();
+    if (userId != null && mounted) {
+      if (forceRefresh) {
+        context.read<LotteryStatisticsBloc>().add(
+          RefreshLotteryStatistics(userId: userId),
+        );
+      } else {
+        context.read<LotteryStatisticsBloc>().add(
+          LoadLotteryStatistics(userId: userId),
+        );
+      }
+    }
   }
 
   @override
@@ -69,24 +60,63 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
 
 
+  LotteryEntry _convertToLotteryEntry(LotteryEntryModel model) {
+    return LotteryEntry(
+      id: model.id,
+      serialNo: model.slNo,
+      lotteryNumber: model.lotteryNumber,
+      lotteryName: model.lotteryName,
+      price: model.price,
+      dateAdded: model.dateAdded,
+      winningAmount: model.winningAmount,
+      status: _convertStatus(model.status),
+    );
+  }
+
+  LotteryStatus _convertStatus(LotteryEntryStatus status) {
+    switch (status) {
+      case LotteryEntryStatus.won:
+        return LotteryStatus.won;
+      case LotteryEntryStatus.lost:
+        return LotteryStatus.lost;
+      case LotteryEntryStatus.pending:
+        return LotteryStatus.pending;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: _buildAppBar(theme),
-      body: Column(
-        children: [
-          _buildMotivationalBanner(theme),
-          _buildStatisticsSection(theme),
-          // const SizedBox(height: 16),
-          Expanded(
-            child: _buildCombinedTable(theme),
-          ),
-        ],
+    return BlocListener<LotteryStatisticsBloc, LotteryStatisticsState>(
+      listener: (context, state) {
+        if (state is LotteryStatisticsLoaded) {
+          setState(() {
+            _lotteryEntries = state.data.lotteryEntries
+                .map(_convertToLotteryEntry)
+                .toList();
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: _buildAppBar(theme),
+        body: BlocBuilder<LotteryStatisticsBloc, LotteryStatisticsState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                _buildMotivationalBanner(theme),
+                _buildStatisticsSection(theme, state),
+                Expanded(
+                  child: _buildCombinedTable(theme, state),
+                ),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: _buildFloatingActionButton(theme),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      floatingActionButton: _buildFloatingActionButton(theme),
     );
   }
 
@@ -102,12 +132,34 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         },
       ),
       title: Text(
-        'challenge_tracker'.tr(),
+        'Challenge',
         style: theme.textTheme.titleLarge?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
       ),
+      actions: [
+        PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, color: theme.appBarTheme.iconTheme?.color),
+          onSelected: (value) {
+            if (value == 'manual_entry') {
+              _showManualEntryDialog();
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'manual_entry',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit),
+                  const SizedBox(width: 12),
+                  Text('manual_entry'.tr()),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -156,12 +208,28 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
-  Widget _buildStatisticsSection(ThemeData theme) {
-    final totalExpense = _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.price);
-    final totalWinnings = _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.winningAmount);
-    final totalTickets = _lotteryEntries.length;
-    final netProfitLoss = totalWinnings - totalExpense;
-    final winRate = totalTickets > 0 ? (_lotteryEntries.where((e) => e.status == LotteryStatus.won).length / totalTickets) * 100 : 0.0;
+  Widget _buildStatisticsSection(ThemeData theme, LotteryStatisticsState state) {
+    double totalExpense = 0.0;
+    double totalWinnings = 0.0;
+    int totalTickets = 0;
+    double netProfitLoss = 0.0;
+    double winRate = 0.0;
+
+    if (state is LotteryStatisticsLoaded) {
+      final stats = state.data.challengeStatistics;
+      totalExpense = stats.totalExpense;
+      totalWinnings = stats.totalWinnings;
+      totalTickets = stats.totalTickets;
+      netProfitLoss = stats.netResult;
+      winRate = stats.winRate;
+    } else {
+      // Fallback to calculate from local data if API data not available
+      totalExpense = _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.price);
+      totalWinnings = _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.winningAmount);
+      totalTickets = _lotteryEntries.length;
+      netProfitLoss = totalWinnings - totalExpense;
+      winRate = totalTickets > 0 ? (_lotteryEntries.where((e) => e.status == LotteryStatus.won).length / totalTickets) * 100 : 0.0;
+    }
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -417,7 +485,15 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
-  Widget _buildCombinedTable(ThemeData theme) {
+  Widget _buildCombinedTable(ThemeData theme, LotteryStatisticsState state) {
+    if (state is LotteryStatisticsLoading) {
+      return _buildLoadingState(theme);
+    }
+
+    if (state is LotteryStatisticsError) {
+      return _buildErrorState(theme, state.message);
+    }
+
     if (_lotteryEntries.isEmpty) {
       return _buildEmptyState(theme);
     }
@@ -669,6 +745,87 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
+  Widget _buildLoadingState(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.primaryColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: theme.primaryColor,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading lottery statistics...',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme, String errorMessage) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.red.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.red.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading data',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.red.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => _loadLotteryStatistics(forceRefresh: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyState(ThemeData theme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -715,11 +872,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
   Widget _buildFloatingActionButton(ThemeData theme) {
     return FloatingActionButton.extended(
-      onPressed: () => _showAddEntryOptions(),
+      onPressed: _scanLottery,
       backgroundColor: theme.primaryColor,
       foregroundColor: Colors.white,
-      icon: const Icon(Icons.add),
-      label: Text('add_entry'.tr()),
+      icon: const Icon(Icons.qr_code_scanner),
+      label: Text('scan_lottery'.tr()),
+      elevation: 8,
+      extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
     );
   }
 
@@ -745,37 +904,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     }
   }
 
-  void _showAddEntryOptions() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text('manual_entry'.tr()),
-              subtitle: Text('enter_lottery_details_manually'.tr()),
-              onTap: () {
-                Navigator.pop(context);
-                _showManualEntryDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code_scanner),
-              title: Text('scan_lottery'.tr()),
-              subtitle: Text('scan_lottery_with_camera'.tr()),
-              onTap: () {
-                Navigator.pop(context);
-                _scanLottery();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showManualEntryDialog() {
     showDialog(
@@ -788,18 +916,35 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
-  void _scanLottery() {
-    showDialog(
-      context: context,
-      builder: (context) => ChallengeScannerDialog(
-        onScanResult: (String lotteryNumber, double? price, DateTime date, String? lotteryName) {
-          _addNewEntry(lotteryNumber, price ?? 0.0, date, lotteryName);
-        },
+  void _scanLottery() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChallengeScannerDialog(
+          onScanResult: (String lotteryNumber, double? price, DateTime date, String? lotteryName) {
+            Navigator.pop(context, {
+              'lotteryNumber': lotteryNumber,
+              'price': price ?? 0.0,
+              'date': date,
+              'lotteryName': lotteryName,
+            });
+          },
+        ),
       ),
     );
+    
+    if (result != null && result is Map<String, dynamic>) {
+      _addNewEntry(
+        result['lotteryNumber'] as String,
+        result['price'] as double,
+        result['date'] as DateTime,
+        result['lotteryName'] as String?,
+      );
+    }
   }
 
   void _addNewEntry(String lotteryNumber, double price, DateTime date, [String? lotteryName]) {
+    // Optimistic update - add entry to UI immediately
     setState(() {
       final newEntry = LotteryEntry(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -812,6 +957,11 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         status: LotteryStatus.pending,
       );
       _lotteryEntries.insert(0, newEntry); // Add to the beginning for newest first
+    });
+    
+    // Refresh statistics from API in background to get updated data
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _loadLotteryStatistics(forceRefresh: true);
     });
   }
 

@@ -4,7 +4,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:lotto_app/core/utils/barcode_validator.dart';
+import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/widgets/validation_error_dialog.dart';
+import 'package:lotto_app/presentation/pages/challenge_screen/widgets/manual_entry_dialog.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ChallengeScannerDialog extends StatefulWidget {
   final Function(String lotteryNumber, double? price, DateTime date, String? lotteryName) onScanResult;
@@ -31,7 +34,8 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
   PermissionStatus _cameraPermissionStatus = PermissionStatus.denied;
   bool _isRequestingPermission = false;
   bool _isCameraStarting = false;
-  bool _isNavigatingAway = false;
+  final bool _isNavigatingAway = false;
+  bool isAutoAddEnabled = false;
 
   @override
   void initState() {
@@ -49,24 +53,54 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted || _isNavigatingAway) return;
-
+    // Handle app going to background/foreground
     switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        // App is going to background - stop camera to save battery
+        _stopCameraSafely();
+        break;
       case AppLifecycleState.resumed:
-        if (_cameraPermissionStatus == PermissionStatus.granted) {
-          _startOrRestartCamera();
+        // Only restart camera if we haven't navigated away and permission is granted
+        if (!_isNavigatingAway && _cameraPermissionStatus == PermissionStatus.granted) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (!_isNavigatingAway && mounted) {
+              _startOrRestartCamera();
+            }
+          });
         }
         break;
-      case AppLifecycleState.paused:
       case AppLifecycleState.detached:
-        cameraController.stop();
-        break;
-      default:
         break;
     }
   }
 
+  Future<void> _stopCameraSafely() async {
+    try {
+      await cameraController.stop();
+    } catch (e) {
+      // Camera stop failed, but continue
+    }
+  }
+
   Future<void> _checkCameraPermission() async {
+    if (_isRequestingPermission) return;
+    
+    final permission = await Permission.camera.status;
+    if (mounted) {
+      setState(() {
+        _cameraPermissionStatus = permission;
+      });
+      
+      // Start camera automatically if permission is granted
+      if (permission == PermissionStatus.granted) {
+        _startOrRestartCamera();
+      }
+    }
+  }
+
+  Future<void> _requestCameraPermission() async {
     if (_isRequestingPermission) return;
 
     setState(() {
@@ -74,20 +108,20 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
     });
 
     try {
-      _cameraPermissionStatus = await Permission.camera.status;
-
-      if (_cameraPermissionStatus.isDenied) {
-        _cameraPermissionStatus = await Permission.camera.request();
-      }
-
-      if (_cameraPermissionStatus.isGranted) {
-        await _startOrRestartCamera();
-      } else if (_cameraPermissionStatus.isPermanentlyDenied) {
-        if (mounted) {
-          _showPermissionDialog();
+      final permission = await Permission.camera.request();
+      
+      if (mounted) {
+        setState(() {
+          _cameraPermissionStatus = permission;
+          _isRequestingPermission = false;
+        });
+        
+        // Start camera automatically if permission is granted
+        if (permission == PermissionStatus.granted) {
+          _startOrRestartCamera();
         }
       }
-    } finally {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isRequestingPermission = false;
@@ -129,349 +163,52 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
     }
   }
 
-  void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('camera_permission_required'.tr()),
-        content: Text('camera_permission_message'.tr()),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(); // Close the scanner dialog too
-            },
-            child: Text('cancel'.tr()),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              openAppSettings();
-            },
-            child: Text('open_settings'.tr()),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenSize = MediaQuery.of(context).size;
-
-    return Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Container(
-        width: screenSize.width,
-        height: screenSize.height * 0.8,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Colors.black,
-        ),
-        child: Column(
-          children: [
-            _buildHeader(theme),
-            Expanded(
-              child: _buildScannerBody(theme),
-            ),
-            _buildBottomControls(theme),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.qr_code_scanner,
-              color: theme.primaryColor,
-              size: 24,
-            ),
+    
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
+        title: Text(
+          'scan_lottery_ticket'.tr(),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontSize: AppResponsive.fontSize(context, 20),
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(width: 12),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.appBarTheme.iconTheme?.color,
+          ),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+      body: Column(
+        children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'scan_lottery_ticket'.tr(),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'scan_barcode_to_add_entry'.tr(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
+            child: _cameraPermissionStatus == PermissionStatus.granted 
+                   ? _buildScannerView() 
+                   : _buildPermissionRequestUI(),
           ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: Icon(
-              Icons.close,
-              color: Colors.grey.shade600,
-            ),
-          ),
+          _buildBottomControls(),
         ],
       ),
     );
   }
 
-  Widget _buildScannerBody(ThemeData theme) {
-    if (_cameraPermissionStatus != PermissionStatus.granted) {
-      return _buildPermissionContent(theme);
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.primaryColor,
-          width: 2,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Stack(
-          children: [
-            MobileScanner(
-              controller: cameraController,
-              onDetect: _onBarcodeDetected,
-            ),
-            _buildScannerOverlay(theme),
-            if (isProcessing)
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionContent(ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.camera_alt_outlined,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'camera_permission_required'.tr(),
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'camera_permission_message'.tr(),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _checkCameraPermission,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text('grant_permission'.tr()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScannerOverlay(ThemeData theme) {
-    return Center(
-      child: Container(
-        width: 250,
-        height: 250,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.white,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          children: [
-            // Corner brackets
-            Positioned(
-              top: -2,
-              left: -2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: theme.primaryColor, width: 4),
-                    left: BorderSide(color: theme.primaryColor, width: 4),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: -2,
-              right: -2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: theme.primaryColor, width: 4),
-                    right: BorderSide(color: theme.primaryColor, width: 4),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -2,
-              left: -2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: theme.primaryColor, width: 4),
-                    left: BorderSide(color: theme.primaryColor, width: 4),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -2,
-              right: -2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: theme.primaryColor, width: 4),
-                    right: BorderSide(color: theme.primaryColor, width: 4),
-                  ),
-                ),
-              ),
-            ),
-            // Instruction text
-            Positioned(
-              bottom: -50,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'align_barcode_within_frame'.tr(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomControls(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildControlButton(
-            theme,
-            icon: isFlashOn ? Icons.flash_off : Icons.flash_on,
-            label: isFlashOn ? 'flash_off'.tr() : 'flash_on'.tr(),
-            onTap: _toggleFlash,
-          ),
-          _buildControlButton(
-            theme,
-            icon: Icons.date_range,
-            label: 'select_date'.tr(),
-            onTap: () => _selectDate(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildControlButton(
-    ThemeData theme, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildDateChooserButton() {
+    final theme = Theme.of(context);
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      onTap: () => _selectDate(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: AppResponsive.padding(context, horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: theme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
@@ -480,22 +217,345 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
             width: 1,
           ),
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              icon,
+              Icons.calendar_today,
               color: theme.primaryColor,
-              size: 24,
+              size: AppResponsive.spacing(context, 24),
             ),
-            const SizedBox(height: 4),
+            SizedBox(width: AppResponsive.spacing(context, 12)),
+            Text(
+              DateFormat('dd-MM-yyyy').format(selectedDate),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.primaryColor,
+                fontSize: AppResponsive.fontSize(context, 16),
+              ),
+            ),
+            SizedBox(width: AppResponsive.spacing(context, 8)),
+            Icon(
+              Icons.arrow_drop_down,
+              color: theme.primaryColor,
+              size: AppResponsive.spacing(context, 20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScannerView() {
+    final theme = Theme.of(context);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        MobileScanner(
+          controller: cameraController,
+          onDetect: _onBarcodeDetected,
+        ),
+        // Overlay
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.primaryColor,
+              width: 2.0,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          width: AppResponsive.width(context, 80),
+          height: AppResponsive.height(context, 25),
+        ),
+        // Loading indicator
+        if (isProcessing)
+          Container(
+            color: Colors.black54,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 16),
+                  Text(
+                    'processing'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Instruction text
+        if (!isProcessing)
+          Positioned(
+            bottom: AppResponsive.spacing(context, 45),
+            child: Container(
+              width: AppResponsive.width(context, 80),
+              padding: AppResponsive.padding(context, 
+                  horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'align_barcode_within_frame'.tr(),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: AppResponsive.fontSize(context, 14),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionRequestUI() {
+    final theme = Theme.of(context);
+    
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: AppResponsive.padding(context, horizontal: 24, vertical: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.camera_alt_outlined,
+                size: AppResponsive.spacing(context, 80),
+                color: theme.primaryColor,
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 24)),
+              Text(
+                'camera_permission_required'.tr(),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppResponsive.fontSize(context, 20),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 16)),
+              Text(
+                _cameraPermissionStatus == PermissionStatus.permanentlyDenied
+                    ? 'camera_permission_denied_message'.tr()
+                    : 'camera_permission_message'.tr(),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: Colors.white70,
+                  fontSize: AppResponsive.fontSize(context, 16),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: AppResponsive.spacing(context, 32)),
+              if (_cameraPermissionStatus == PermissionStatus.permanentlyDenied)
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        await openAppSettings();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: AppResponsive.padding(context, horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('open_settings'.tr()),
+                    ),
+                    SizedBox(height: AppResponsive.spacing(context, 16)),
+                    TextButton(
+                      onPressed: _isRequestingPermission ? null : () async {
+                        await _checkCameraPermission();
+                      },
+                      child: Text(
+                        'check_permission_again'.tr(),
+                        style: TextStyle(
+                          color: _isRequestingPermission 
+                              ? theme.primaryColor.withValues(alpha: 0.5)
+                              : theme.primaryColor
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                ElevatedButton(
+                  onPressed: _isRequestingPermission ? null : () async {
+                    await _requestCameraPermission();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: AppResponsive.padding(context, horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isRequestingPermission
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text('grant_camera_permission'.tr()),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildBottomControls() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: AppResponsive.padding(context, horizontal: 20, vertical: 20),
+      color: theme.cardTheme.color,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Date chooser button
+          Container(
+            margin: EdgeInsets.only(bottom: AppResponsive.spacing(context, 20)),
+            child: _buildDateChooserButton(),
+          ),
+          AppResponsive.isMobile(context) 
+              ? Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(child: _buildActionButton(
+                          icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                          label: 'flash'.tr(),
+                          isActive: isFlashOn,
+                          onTap: _toggleFlash,
+                        )),
+                        SizedBox(width: AppResponsive.spacing(context, 8)),
+                        Expanded(child: _buildActionButton(
+                          icon: Icons.photo_library,
+                          label: 'gallery'.tr(),
+                          onTap: _pickImageFromGallery,
+                        )),
+                      ],
+                    ),
+                    SizedBox(height: AppResponsive.spacing(context, 12)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(child: _buildActionButton(
+                          icon: Icons.edit,
+                          label: 'manual_entry'.tr(),
+                          onTap: _showManualEntryDialog,
+                        )),
+                        SizedBox(width: AppResponsive.spacing(context, 8)),
+                        Expanded(child: _buildActionButton(
+                          icon: isAutoAddEnabled ? Icons.check_circle : Icons.check_circle_outline,
+                          label: 'auto_add'.tr(),
+                          isActive: isAutoAddEnabled,
+                          onTap: _toggleAutoAdd,
+                        )),
+                      ],
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildActionButton(
+                          icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+                          label: 'flash'.tr(),
+                          isActive: isFlashOn,
+                          onTap: _toggleFlash,
+                        ),
+                        _buildActionButton(
+                          icon: Icons.photo_library,
+                          label: 'gallery'.tr(),
+                          onTap: _pickImageFromGallery,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppResponsive.spacing(context, 12)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildActionButton(
+                          icon: Icons.edit,
+                          label: 'manual_entry'.tr(),
+                          onTap: _showManualEntryDialog,
+                        ),
+                        _buildActionButton(
+                          icon: isAutoAddEnabled ? Icons.check_circle : Icons.check_circle_outline,
+                          label: 'auto_add'.tr(),
+                          isActive: isAutoAddEnabled,
+                          onTap: _toggleAutoAdd,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+          SizedBox(height: AppResponsive.spacing(context, 20)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: isProcessing ? null : onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: AppResponsive.padding(context, horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? theme.primaryColor.withValues(alpha: 0.2)
+                    : theme.primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: isActive
+                    ? Border.all(color: theme.primaryColor, width: 2)
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                color: isActive ? theme.primaryColor : theme.iconTheme.color,
+                size: AppResponsive.spacing(context, 24),
+              ),
+            ),
+            SizedBox(height: AppResponsive.spacing(context, 8)),
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.primaryColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                fontSize: AppResponsive.fontSize(context, 14),
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -504,33 +564,236 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    // Store context values before async operation
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-      helpText: 'select_purchase_date'.tr(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      helpText: 'select_date'.tr(),
       cancelText: 'cancel'.tr(),
-      confirmText: 'select'.tr(),
+      confirmText: 'confirm'.tr(),
     );
-
     if (picked != null && picked != selectedDate) {
+      
       setState(() {
         selectedDate = picked;
+        // Reset scanner state when date changes
+        lastScannedCode = null;
+        isProcessing = false;
       });
+
+      // Show feedback to user
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('date_updated_scanner_ready'.tr()),
+            backgroundColor: theme.primaryColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _toggleFlash() async {
     try {
-      await cameraController.toggleTorch();
       setState(() {
         isFlashOn = !isFlashOn;
+        cameraController.toggleTorch();
       });
       HapticFeedback.lightImpact();
     } catch (e) {
       // Flash not available
     }
+  }
+
+  void _toggleAutoAdd() {
+    setState(() {
+      isAutoAddEnabled = !isAutoAddEnabled;
+    });
+    HapticFeedback.lightImpact();
+    
+    // Show feedback to user
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isAutoAddEnabled 
+            ? 'auto_add_enabled'.tr() 
+            : 'auto_add_disabled'.tr()
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showManualEntryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ManualEntryDialog(
+        onEntryAdded: (String lotteryNumber, double price, DateTime date, String lotteryName) {
+          // Call the same callback as scan result
+          widget.onScanResult(lotteryNumber, price, date, lotteryName);
+        },
+      ),
+    ).then((_) {
+      // Dialog was dismissed (either by cancel or by completing entry)
+      // Reset scanner state and restart scanner if still mounted
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+          lastScannedCode = null;
+        });
+        
+        // Restart the scanner for next scan
+        if (_cameraPermissionStatus == PermissionStatus.granted) {
+          _startOrRestartCamera();
+        }
+      }
+    });
+  }
+
+  void _showScannedManualEntryDialog(String scannedLotteryNumber, String? scannedLotteryName) {
+    showDialog(
+      context: context,
+      builder: (context) => ManualEntryDialog(
+        initialLotteryNumber: scannedLotteryNumber,
+        initialLotteryName: scannedLotteryName,
+        onEntryAdded: (String lotteryNumber, double price, DateTime date, String lotteryName) {
+          // Call the same callback as scan result
+          widget.onScanResult(lotteryNumber, price, date, lotteryName);
+        },
+      ),
+    ).then((_) {
+      // Dialog was dismissed (either by cancel or by completing entry)
+      // Reset scanner state and restart scanner if still mounted
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+          lastScannedCode = null;
+        });
+        
+        // Restart the scanner for next scan
+        if (_cameraPermissionStatus == PermissionStatus.granted) {
+          _startOrRestartCamera();
+        }
+      }
+    });
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null) {
+        // Show processing state
+        setState(() {
+          isProcessing = true;
+        });
+
+        // Scan barcode from the picked image
+        await _scanBarcodeFromImage(image.path);
+      }
+    } catch (e) {
+      setState(() {
+        isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('gallery_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _scanBarcodeFromImage(String imagePath) async {
+    try {
+      // Use MobileScanner to analyze the image
+      final BarcodeCapture? barcodeCapture =
+          await cameraController.analyzeImage(imagePath);
+
+      setState(() {
+        isProcessing = false;
+      });
+
+      if (barcodeCapture != null && barcodeCapture.barcodes.isNotEmpty) {
+        // Process the first detected barcode
+        final barcode = barcodeCapture.barcodes.first;
+        final scannedValue = barcode.rawValue ?? '';
+
+        if (scannedValue.isNotEmpty) {
+          // Handle the scanned barcode same as camera scan
+          _onBarcodeDetected(barcodeCapture);
+        } else {
+          _showNoBarcodeFoundDialog();
+        }
+      } else {
+        // No barcode found in the image
+        _showNoBarcodeFoundDialog();
+      }
+    } catch (e) {
+      setState(() {
+        isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('image_scan_error'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showNoBarcodeFoundDialog() {
+    showDialog(
+      context: context,
+      useRootNavigator: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('no_barcode_found'.tr()),
+          content: Text('no_barcode_found_message'.tr()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('ok'.tr()),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Allow user to pick another image
+                _pickImageFromGallery();
+              },
+              child: Text('try_again'.tr()),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      // Dialog was dismissed - restart scanner
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+          lastScannedCode = null;
+        });
+        
+        // Restart the scanner for next scan
+        if (_cameraPermissionStatus == PermissionStatus.granted) {
+          _startOrRestartCamera();
+        }
+      }
+    });
   }
 
   void _onBarcodeDetected(BarcodeCapture capture) {
@@ -557,19 +820,10 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
       // Extract lottery number from barcode (assuming it contains the 4-digit number)
       String lotteryNumber = _extractLotteryNumber(code);
       
-      // Try to extract price if available
-      double? price = _extractPrice(code);
-      
       // Try to extract lottery name from barcode format (like RP for specific lottery types)
       String? lotteryName = _extractLotteryName(code);
 
-      // Call the callback with extracted data
-      widget.onScanResult(lotteryNumber, price, selectedDate, lotteryName);
-
-      // Close the dialog
-      Navigator.of(context).pop();
-
-      // Show success message
+      // Show success message first
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('lottery_ticket_scanned_successfully'.tr()),
@@ -580,6 +834,14 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
           ),
         ),
       );
+
+      if (isAutoAddEnabled) {
+        // Auto-add mode: add directly with default price and close scanner
+        widget.onScanResult(lotteryNumber, 50.0, selectedDate, lotteryName);
+      } else {
+        // Manual mode: show manual entry dialog with lottery number pre-filled
+        _showScannedManualEntryDialog(lotteryNumber, lotteryName);
+      }
     } else {
       // Show validation error
       _showValidationError(BarcodeValidator.getValidationError(code));
@@ -587,47 +849,32 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
   }
 
   String _extractLotteryNumber(String barcode) {
-    // Simple extraction - you might need to adjust this based on your barcode format
-    // This assumes the lottery number is the last 4 digits of the barcode
-    if (barcode.length >= 4) {
-      return barcode.substring(barcode.length - 4);
-    }
-    return barcode.padLeft(4, '0');
+    // Use the full scanned barcode as the lottery number
+    // Clean it using the BarcodeValidator utility to ensure proper format
+    return BarcodeValidator.cleanTicketNumber(barcode);
   }
 
-  double? _extractPrice(String barcode) {
-    // Try to extract price from barcode if it follows a specific format
-    // This is a placeholder - implement based on your barcode format
-    return null;
-  }
 
   String? _extractLotteryName(String barcode) {
-    // Extract lottery name based on prefix codes in Kerala lottery system
-    // Common Kerala lottery prefixes and their names
-    final Map<String, String> lotteryPrefixes = {
-      'RP': 'Akshaya',
-      'SC': 'Sthree Sakthi', 
-      'AB': 'Akshaya',
-      'AD': 'Adithya',
-      'AK': 'Akshaya',
-      'BH': 'Bhagyanidhi',
-      'BR': 'Bhagyanidhi',
-      'DE': 'Dhanasree',
-      'DH': 'Dhanasree',
-      'KA': 'Karunya',
-      'KR': 'Karunya',
-      'KN': 'Karunya Plus',
-      'NR': 'Nirmal',
-      'PU': 'Pournami',
-      'SS': 'Sthree Sakthi',
-      'WW': 'Win Win',
-      'WN': 'Win Win',
+    // Extract lottery name based on first letter of lottery number
+    // Kerala lottery first letter mapping
+    final Map<String, String> lotteryFirstLetterMap = {
+      'M': 'SAMRUDHI',           // M - SAMRUDHI
+      'B': 'BHAGYATHARA',        // B - BHAGYATHARA
+      'S': 'STHREE SAKTHI',      // S - STHREE SAKTHI
+      'D': 'DHANALEKSHMI',       // D - DHANALEKSHMI
+      'P': 'KARUNYA PLUS',       // P - KARUNYA PLUS
+      'R': 'SUVARNA KERALAM',    // R - SUVARNA KERALAM
+      'K': 'KARUNYA',            // K - KARUNYA
+      'T': 'THIRUVONAM BUMPER',  // T - THIRUVONAM BUMPER
+      'V': 'VISHU BUMPER',       // V - VISHU BUMPER
+      'X': 'CHRISTMAS NEW YEAR BUMPER', // X - CHRISTMAS NEW YEAR BUMPER
     };
 
     String cleanedBarcode = BarcodeValidator.cleanTicketNumber(barcode);
-    if (cleanedBarcode.length >= 2) {
-      String prefix = cleanedBarcode.substring(0, 2).toUpperCase();
-      return lotteryPrefixes[prefix];
+    if (cleanedBarcode.isNotEmpty) {
+      String firstLetter = cleanedBarcode.substring(0, 1).toUpperCase();
+      return lotteryFirstLetterMap[firstLetter];
     }
     
     return null; // Unknown lottery type

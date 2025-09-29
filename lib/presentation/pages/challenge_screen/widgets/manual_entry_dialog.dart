@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_event.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_state.dart';
+import 'package:lotto_app/data/services/user_service.dart';
 
 class ManualEntryDialog extends StatefulWidget {
   final Function(String lotteryNumber, double price, DateTime date, String lotteryName) onEntryAdded;
+  final String? initialLotteryNumber;
+  final String? initialLotteryName;
 
   const ManualEntryDialog({
     super.key,
     required this.onEntryAdded,
+    this.initialLotteryNumber,
+    this.initialLotteryName,
   });
 
   @override
@@ -21,6 +30,19 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
   final _priceController = TextEditingController(text: '50');
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  final UserService _userService = UserService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill controllers with initial values if provided
+    if (widget.initialLotteryNumber != null) {
+      _lotteryNumberController.text = widget.initialLotteryNumber!;
+    }
+    if (widget.initialLotteryName != null) {
+      _lotteryNameController.text = widget.initialLotteryName!;
+    }
+  }
 
   @override
   void dispose() {
@@ -35,34 +57,83 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
     final theme = Theme.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
     
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.7,
+    return BlocListener<LotteryPurchaseBloc, LotteryPurchaseState>(
+      listener: (context, state) {
+        if (state is LotteryPurchaseSuccess) {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          // Add entry to local UI
+          final lotteryNumber = _lotteryNumberController.text;
+          final lotteryName = _lotteryNameController.text.trim();
+          final price = double.parse(_priceController.text);
+          final finalLotteryName = lotteryName.isEmpty ? 'Unknown' : lotteryName;
+          
+          widget.onEntryAdded(lotteryNumber, price, _selectedDate, finalLotteryName);
+          
+          Navigator.of(context).pop();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.response.message),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        } else if (state is LotteryPurchaseError) {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Purchase failed: ${state.message}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        } else if (state is LotteryPurchaseLoading) {
+          setState(() {
+            _isLoading = true;
+          });
+        }
+      },
+      child: Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(theme),
-                const SizedBox(height: 24),
-                _buildLotteryNumberField(theme),
-                const SizedBox(height: 16),
-                _buildLotteryNameField(theme),
-                const SizedBox(height: 16),
-                _buildPriceField(theme),
-                const SizedBox(height: 16),
-                _buildDateField(theme),
-                const SizedBox(height: 24),
-                _buildActionButtons(theme),
-              ],
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7,
+          ),
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(theme),
+                  const SizedBox(height: 24),
+                  _buildLotteryNumberField(theme),
+                  const SizedBox(height: 16),
+                  _buildLotteryNameField(theme),
+                  const SizedBox(height: 16),
+                  _buildPriceField(theme),
+                  const SizedBox(height: 16),
+                  _buildDateField(theme),
+                  const SizedBox(height: 24),
+                  _buildActionButtons(theme),
+                ],
+              ),
             ),
           ),
         ),
@@ -74,7 +145,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
     return Column(
       children: [
         Text(
-          'Add Lottery Entry',
+          'add_lottery_entry'.tr(),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.primaryColor,
@@ -83,7 +154,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Enter lottery details below',
+          'enter_lottery_details_below'.tr(),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: Colors.grey.shade600,
           ),
@@ -106,7 +177,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Lottery Number',
+              'lottery_number'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.primaryColor,
@@ -124,7 +195,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             LengthLimitingTextInputFormatter(4),
           ],
           decoration: InputDecoration(
-            hintText: 'Enter 4-digit number',
+            hintText: 'enter_4_digit_number'.tr(),
             prefixIcon: const Icon(Icons.numbers),
             counterText: '',
             border: OutlineInputBorder(
@@ -161,12 +232,6 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
           ),
           textAlign: TextAlign.center,
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Lottery number is required';
-            }
-            if (value.length != 4) {
-              return 'Lottery number must be 4 digits';
-            }
             return null;
           },
         ),
@@ -187,7 +252,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Lottery Name',
+              'lottery_name'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.primaryColor,
@@ -200,7 +265,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
           controller: _lotteryNameController,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
-            hintText: 'Enter lottery name (optional)',
+            hintText: 'enter_lottery_name_optional'.tr(),
             prefixIcon: const Icon(Icons.label),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -255,7 +320,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Ticket Price',
+              'ticket_price'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.primaryColor,
@@ -271,7 +336,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
           ],
           decoration: InputDecoration(
-            hintText: 'Enter ticket price',
+            hintText: 'enter_ticket_price'.tr(),
             prefixIcon: const Icon(Icons.attach_money),
             prefixText: '₹ ',
             border: OutlineInputBorder(
@@ -307,11 +372,11 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Ticket price is required';
+              return 'ticket_price_required'.tr();
             }
             final price = double.tryParse(value);
             if (price == null || price <= 0) {
-              return 'Invalid price';
+              return 'invalid_price'.tr();
             }
             return null;
           },
@@ -333,7 +398,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Purchase Date',
+              'purchase_date'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.primaryColor,
@@ -397,7 +462,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               side: BorderSide(color: Colors.grey.shade400),
             ),
             child: Text(
-              'Cancel',
+              'cancel'.tr(),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -429,7 +494,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                     ),
                   )
                 : Text(
-                    'Add Entry',
+                    'add_entry'.tr(),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -447,9 +512,9 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
       initialDate: _selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
-      helpText: 'Select purchase date',
-      cancelText: 'Cancel',
-      confirmText: 'Select',
+      helpText: 'select_purchase_date'.tr(),
+      cancelText: 'cancel'.tr(),
+      confirmText: 'select'.tr(),
     );
     
     if (picked != null && picked != _selectedDate) {
@@ -469,36 +534,38 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
     });
 
     try {
-      // Add a small delay to show loading state
-      await Future.delayed(const Duration(milliseconds: 500));
-
       final lotteryNumber = _lotteryNumberController.text;
       final lotteryName = _lotteryNameController.text.trim();
       final price = double.parse(_priceController.text);
+      final finalLotteryName = lotteryName.isEmpty ? 'Unknown' : lotteryName;
 
-      // Call the callback with the entered data
-      widget.onEntryAdded(lotteryNumber, price, _selectedDate, lotteryName.isEmpty ? 'Unknown' : lotteryName);
+      // Get current user phone number
+      final userId = await _userService.getPhoneNumber();
+      
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
 
+      // Call the API via BLoC
       if (mounted) {
-        Navigator.of(context).pop();
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lottery entry added successfully'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+        context.read<LotteryPurchaseBloc>().add(
+          PurchaseLottery(
+            userId: userId,
+            lotteryNumber: lotteryNumber,
+            lotteryName: finalLotteryName,
+            ticketPrice: price.toInt(),
+            purchaseDate: DateFormat('yyyy-MM-dd').format(_selectedDate),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding entry'),
+            content: Text('error_adding_entry'.tr()),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -506,12 +573,6 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
             ),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }

@@ -3,15 +3,18 @@ import 'package:lotto_app/data/models/home_screen/cached_home_screen_model.dart'
 import 'package:lotto_app/data/models/results_screen/cached_result_details_model.dart';
 import 'package:lotto_app/data/models/results_screen/save_result.dart';
 import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
+import 'package:lotto_app/data/models/lottery_statistics/cached_lottery_statistics_model.dart';
 
 class HiveService {
   static const String _homeScreenBoxName = 'home_screen_cache';
   static const String _userPreferencesBoxName = 'user_preferences';
   static const String _appMetadataBoxName = 'app_metadata';
+  static const String _lotteryStatisticsBoxName = 'lottery_statistics_cache';
   
   static late Box<CachedHomeScreenModel> _homeScreenBox;
   static late Box<dynamic> _userPreferencesBox;
   static late Box<dynamic> _appMetadataBox;
+  static late Box<CachedLotteryStatisticsModel> _lotteryStatisticsBox;
 
   /// Initialize Hive database
   static Future<void> init() async {
@@ -44,22 +47,34 @@ class HiveService {
       if (!Hive.isAdapterRegistered(10)) {
         Hive.registerAdapter(AiPredictionModelAdapter());
       }
+      if (!Hive.isAdapterRegistered(20)) {
+        Hive.registerAdapter(CachedLotteryStatisticsModelAdapter());
+      }
+      if (!Hive.isAdapterRegistered(21)) {
+        Hive.registerAdapter(CachedChallengeStatisticsModelAdapter());
+      }
+      if (!Hive.isAdapterRegistered(22)) {
+        Hive.registerAdapter(CachedLotteryEntryModelAdapter());
+      }
       
       // Try to open boxes with error handling for schema changes
       try {
         _homeScreenBox = await Hive.openBox<CachedHomeScreenModel>(_homeScreenBoxName);
         _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
         _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
+        _lotteryStatisticsBox = await Hive.openBox<CachedLotteryStatisticsModel>(_lotteryStatisticsBoxName);
       } catch (e) {
         // Clear existing boxes if there's a schema mismatch
         await Hive.deleteBoxFromDisk(_homeScreenBoxName);
         await Hive.deleteBoxFromDisk(_userPreferencesBoxName);
         await Hive.deleteBoxFromDisk(_appMetadataBoxName);
+        await Hive.deleteBoxFromDisk(_lotteryStatisticsBoxName);
         
         // Reopen boxes with fresh schema
         _homeScreenBox = await Hive.openBox<CachedHomeScreenModel>(_homeScreenBoxName);
         _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
         _appMetadataBox = await Hive.openBox(_appMetadataBoxName);
+        _lotteryStatisticsBox = await Hive.openBox<CachedLotteryStatisticsModel>(_lotteryStatisticsBoxName);
       }
       
     } catch (e) {
@@ -76,11 +91,15 @@ class HiveService {
   /// Get app metadata box
   static Box<dynamic> get appMetadataBox => _appMetadataBox;
 
+  /// Get lottery statistics cache box
+  static Box<CachedLotteryStatisticsModel> get lotteryStatisticsBox => _lotteryStatisticsBox;
+
   /// Close all boxes
   static Future<void> close() async {
     await _homeScreenBox.close();
     await _userPreferencesBox.close();
     await _appMetadataBox.close();
+    await _lotteryStatisticsBox.close();
   }
 
   /// Clear all cache data
@@ -88,6 +107,7 @@ class HiveService {
     await _homeScreenBox.clear();
     await _userPreferencesBox.clear();
     await _appMetadataBox.clear();
+    await _lotteryStatisticsBox.clear();
   }
 
   /// Get cache size in bytes

@@ -6,7 +6,6 @@ import 'package:lotto_app/core/constants/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'package:lotto_app/data/datasource/api/auth_screen/auth_api_service.dart';
 import 'package:lotto_app/data/datasource/api/home_screen/home_screen_api.dart';
-import 'package:lotto_app/data/datasource/api/news_screen/news_api_service.dart';
 import 'package:lotto_app/data/datasource/api/results_screen/results_screen.dart';
 import 'package:lotto_app/data/datasource/api/scratch_card_screen/result_checker.dart';
 import 'package:lotto_app/data/datasource/api/predict_screen/predict_api_service.dart';
@@ -16,7 +15,6 @@ import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
 import 'package:lotto_app/data/repositories/cache/home_screen_cache_repository.dart';
 import 'package:lotto_app/data/repositories/cache/result_details_cache_repository.dart';
-import 'package:lotto_app/data/repositories/news_screen/news_repository.dart';
 import 'package:lotto_app/data/repositories/results_screen/result_screen.dart';
 import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dart';
 import 'package:lotto_app/data/repositories/predict_screen/predict_repository.dart';
@@ -28,18 +26,25 @@ import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/app_update_service.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
-import 'package:lotto_app/domain/usecases/news_screen/news_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
 import 'package:lotto_app/domain/usecases/predict_screen/predict_usecase.dart';
 import 'package:lotto_app/domain/usecases/probability_screen/probability_usecase.dart';
 import 'package:lotto_app/domain/usecases/live_video_screen/live_video_usecase.dart';
+import 'package:lotto_app/domain/usecases/lottery_purchase/lottery_purchase_usecase.dart';
+import 'package:lotto_app/domain/usecases/lottery_statistics/lottery_statistics_usecase.dart';
+import 'package:lotto_app/data/datasource/api/lottery_purchase/lottery_purchase_api_service.dart';
+import 'package:lotto_app/data/datasource/api/lottery_statistics/lottery_statistics_api_service.dart';
+import 'package:lotto_app/data/repositories/lottery_purchase/lottery_purchase_repository.dart';
+import 'package:lotto_app/data/repositories/lottery_statistics/lottery_statistics_repository.dart';
+import 'package:lotto_app/data/repositories/cache/lottery_statistics_cache_repository.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_bloc.dart';
+import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_bloc.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_bloc.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_event.dart';
 import 'package:lotto_app/presentation/blocs/color_theme/theme_state.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
-import 'package:lotto_app/presentation/blocs/news_screen/news_bloc.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
@@ -168,16 +173,6 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           lazy: true,
-          create: (context) => NewsBloc(
-            newsUseCase: NewsUseCase(
-              NewsRepositoryImpl(
-                apiService: NewsApiService(),
-              ),
-            ),
-          ),
-        ),
-        BlocProvider(
-          lazy: true,
           create: (context) => PredictBloc(
             PredictUseCase(
               PredictRepositoryImpl(
@@ -209,6 +204,28 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           lazy: true,
           create: (context) => UserPointsBloc(),
+        ),
+        BlocProvider(
+          lazy: true,
+          create: (context) => LotteryPurchaseBloc(
+            useCase: LotteryPurchaseUseCase(
+              LotteryPurchaseRepository(
+                apiService: LotteryPurchaseApiService(),
+              ),
+            ),
+          ),
+        ),
+        BlocProvider(
+          lazy: true,
+          create: (context) => LotteryStatisticsBloc(
+            useCase: LotteryStatisticsUseCase(
+              LotteryStatisticsRepository(
+                apiService: LotteryStatisticsApiService(),
+                cacheRepository: LotteryStatisticsCacheRepositoryImpl(),
+                connectivityService: _getConnectivityService(),
+              ),
+            ),
+          ),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
