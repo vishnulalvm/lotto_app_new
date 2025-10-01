@@ -17,6 +17,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
+import 'package:lotto_app/data/services/prediction_match_service.dart';
+import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
 import 'dart:async';
 
 class LotteryResultDetailsScreen extends StatefulWidget {
@@ -77,6 +79,13 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
 
   // ValueNotifier for highlighted ticket to avoid rebuilding entire widget tree
   late final ValueNotifier<String> _highlightedTicketNotifier;
+
+  // Filter options state
+  String _selectedFilter = 'matched'; // Default: matched
+
+  // Matched numbers from AI predictions
+  Set<String> _matchedNumbers = {};
+  bool _isLoadingMatches = false;
 
   @override
   void initState() {
@@ -173,6 +182,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     _detectNewlyUpdatedTickets(result);
 
     _allLotteryNumbers.clear();
+
+    // Load matched numbers if filter is 'matched'
+    _loadMatchedNumbers(result);
 
     // Custom ordering: 1st prize, then consolation, then other prizes
     final prizes = result.prizes;
@@ -608,6 +620,75 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   // Helper method to check if search is active
   bool get _isSearchActive =>
       _searchQuery.isNotEmpty && _searchQuery.length >= _minSearchLength;
+
+  // Load matched numbers from AI predictions
+  Future<void> _loadMatchedNumbers(LotteryResultModel result) async {
+    if (_selectedFilter != 'matched') {
+      setState(() {
+        _matchedNumbers = {};
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingMatches = true;
+    });
+
+    try {
+      // Get predictions for all prize types (5th-9th)
+      final List<AiPredictionModel> allPredictions = [];
+
+      for (int prizeType = 5; prizeType <= 9; prizeType++) {
+        final prediction = await PredictionMatchService.getTodaysPrediction(prizeType);
+        if (prediction != null) {
+          allPredictions.add(prediction);
+        }
+      }
+
+      // Compare predictions with lottery results
+      final matchedMap = PredictionMatchService.compareAllPredictionsWithDetailedResults(
+        allPredictions,
+        result,
+      );
+
+      setState(() {
+        _matchedNumbers = matchedMap.keys.toSet();
+        _isLoadingMatches = false;
+      });
+    } catch (e) {
+      setState(() {
+        _matchedNumbers = {};
+        _isLoadingMatches = false;
+      });
+    }
+  }
+
+  // Helper methods for filter options
+  Color _getFilterColor(String filter) {
+    switch (filter) {
+      case 'matched':
+        return Colors.green;
+      case 'repeated':
+        return Colors.blue;
+      case 'patterns':
+        return Colors.purple;
+      default:
+        return Colors.green;
+    }
+  }
+
+  IconData _getFilterIcon(String filter) {
+    switch (filter) {
+      case 'matched':
+        return Icons.check_circle_outline;
+      case 'repeated':
+        return Icons.repeat;
+      case 'patterns':
+        return Icons.grid_view;
+      default:
+        return Icons.check_circle_outline;
+    }
+  }
 
   // Helper method to check if it's live hours based on current result
   bool _isLiveHours(LotteryResultModel result) {
@@ -1139,6 +1220,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 ticketGlobalKeys: _ticketGlobalKeys,
                 isLiveHours: _isLiveHours(result),
                 newlyUpdatedTickets: _newlyUpdatedTickets,
+                matchedNumbers: _matchedNumbers,
+                matchHighlightColor: Colors.green,
               ),
               // In-app review widget - triggers after user views results
               const InAppReviewWidget(
@@ -1457,6 +1540,156 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         },
       ),
       actions: [
+        // Filter dropdown menu
+        BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+          builder: (context, state) {
+            if (state is LotteryResultDetailsLoaded) {
+              return PopupMenuButton<String>(
+                icon: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: _getFilterColor(_selectedFilter).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getFilterIcon(_selectedFilter),
+                    color: _getFilterColor(_selectedFilter),
+                  ),
+                ),
+                tooltip: 'Filter options',
+                onSelected: (String value) async {
+                  setState(() {
+                    _selectedFilter = value;
+                  });
+
+                  // Reload matched numbers if filter is 'matched' and we have results
+                  final currentState = context.read<LotteryResultDetailsBloc>().state;
+                  if (currentState is LotteryResultDetailsLoaded && value == 'matched') {
+                    await _loadMatchedNumbers(currentState.data.result);
+                  } else if (value != 'matched') {
+                    setState(() {
+                      _matchedNumbers = {};
+                    });
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'matched',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.green,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Matched',
+                          style: TextStyle(
+                            color: _selectedFilter == 'matched'
+                                ? Colors.green
+                                : theme.textTheme.bodyLarge?.color,
+                            fontWeight: _selectedFilter == 'matched'
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_selectedFilter == 'matched')
+                          Icon(
+                            Icons.radio_button_checked,
+                            color: Colors.green,
+                            size: 18,
+                          )
+                        else
+                          Icon(
+                            Icons.radio_button_unchecked,
+                            color: theme.iconTheme.color?.withValues(alpha: 0.5),
+                            size: 18,
+                          ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'repeated',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.repeat,
+                          color: Colors.blue,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Repeated',
+                          style: TextStyle(
+                            color: _selectedFilter == 'repeated'
+                                ? Colors.blue
+                                : theme.textTheme.bodyLarge?.color,
+                            fontWeight: _selectedFilter == 'repeated'
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_selectedFilter == 'repeated')
+                          Icon(
+                            Icons.radio_button_checked,
+                            color: Colors.blue,
+                            size: 18,
+                          )
+                        else
+                          Icon(
+                            Icons.radio_button_unchecked,
+                            color: theme.iconTheme.color?.withValues(alpha: 0.5),
+                            size: 18,
+                          ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'patterns',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.grid_view,
+                          color: Colors.purple,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Patterns',
+                          style: TextStyle(
+                            color: _selectedFilter == 'patterns'
+                                ? Colors.purple
+                                : theme.textTheme.bodyLarge?.color,
+                            fontWeight: _selectedFilter == 'patterns'
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_selectedFilter == 'patterns')
+                          Icon(
+                            Icons.radio_button_checked,
+                            color: Colors.purple,
+                            size: 18,
+                          )
+                        else
+                          Icon(
+                            Icons.radio_button_unchecked,
+                            color: theme.iconTheme.color?.withValues(alpha: 0.5),
+                            size: 18,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         // Copy Button
         BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
           builder: (context, state) {

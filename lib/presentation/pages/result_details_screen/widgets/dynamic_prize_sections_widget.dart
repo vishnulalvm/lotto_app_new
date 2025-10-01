@@ -10,6 +10,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
   final Map<String, GlobalKey> ticketGlobalKeys; // Add GlobalKeys for auto-scroll
   final bool isLiveHours; // Add isLiveHours parameter
   final Set<String> newlyUpdatedTickets; // Add set of newly updated tickets
+  final Set<String> matchedNumbers; // AI prediction matched numbers
+  final Color? matchHighlightColor; // Color for matched numbers (green)
 
   const DynamicPrizeSectionsWidget({
     super.key,
@@ -19,6 +21,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
     required this.ticketGlobalKeys, // Add GlobalKeys parameter
     this.isLiveHours = false, // Default to false
     this.newlyUpdatedTickets = const {}, // Default to empty set
+    this.matchedNumbers = const {}, // Default to empty set
+    this.matchHighlightColor, // Optional green color for matches
   });
 
   @override
@@ -120,6 +124,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
                     theme: theme,
                     variant: TicketVariant.withLocation,
                     isNewlyUpdated: newlyUpdatedTickets.contains(ticket.ticketNumber),
+                    matchedNumbers: matchedNumbers,
+                    matchHighlightColor: matchHighlightColor,
                   );
                 }),
               ],
@@ -163,6 +169,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
                       theme: theme,
                       variant: TicketVariant.singleLarge,
                       isNewlyUpdated: newlyUpdatedTickets.contains(ticketNumbers.first),
+                      matchedNumbers: matchedNumbers,
+                      matchHighlightColor: matchHighlightColor,
                     );
                   }(),
               ],
@@ -197,6 +205,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
                 theme: theme,
                 variant: TicketVariant.twoColumn,
                 isNewlyUpdated: newlyUpdatedTickets.contains(ticketNumber),
+                matchedNumbers: matchedNumbers,
+                matchHighlightColor: matchHighlightColor,
               ),
             );
           }).toList(),
@@ -261,6 +271,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
                 theme: theme,
                 variant: TicketVariant.consolationGrid,
                 isNewlyUpdated: newlyUpdatedTickets.contains(number),
+                matchedNumbers: matchedNumbers,
+                matchHighlightColor: matchHighlightColor,
               ),
             );
           }).toList(),
@@ -293,6 +305,8 @@ class DynamicPrizeSectionsWidget extends StatelessWidget {
                 theme: theme,
                 variant: TicketVariant.standardGrid,
                 isNewlyUpdated: newlyUpdatedTickets.contains(number),
+                matchedNumbers: matchedNumbers,
+                matchHighlightColor: matchHighlightColor,
               ),
             );
           }).toList(),
@@ -355,6 +369,8 @@ class _HighlightedTicketWidget extends StatefulWidget {
   final ThemeData theme;
   final TicketVariant variant;
   final bool isNewlyUpdated; // Renamed from isShimmering for clarity
+  final Set<String> matchedNumbers; // AI prediction matched numbers
+  final Color? matchHighlightColor; // Color for matched numbers (green)
 
   const _HighlightedTicketWidget({
     super.key,
@@ -366,6 +382,8 @@ class _HighlightedTicketWidget extends StatefulWidget {
     required this.theme,
     required this.variant,
     this.isNewlyUpdated = false, // Default to false
+    this.matchedNumbers = const {}, // Default to empty set
+    this.matchHighlightColor, // Optional green color for matches
   });
 
   @override
@@ -428,13 +446,19 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
         highlightedTicketNumber.toLowerCase());
   }
 
+  bool _checkIfMatched() {
+    // Check if this ticket number is in the matched numbers set
+    return widget.matchedNumbers.contains(widget.ticketNumber);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: widget.highlightedTicketNotifier,
       builder: (context, highlightedNumber, child) {
         final isHighlighted = _checkIfHighlighted(highlightedNumber);
-        
+        final isMatched = _checkIfMatched();
+
         // Update animation based on highlight status
         if (isHighlighted && _animationController.value == 0) {
           HapticFeedback.selectionClick();
@@ -452,7 +476,7 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeInOut,
                 padding: _getPadding(),
-                decoration: _getDecoration(isHighlighted: isHighlighted),
+                decoration: _getDecoration(isHighlighted: isHighlighted, isMatched: isMatched),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -531,36 +555,47 @@ class _HighlightedTicketWidgetState extends State<_HighlightedTicketWidget>
     }
   }
 
-  BoxDecoration _getDecoration({required bool isHighlighted}) {
-    final baseColor = isHighlighted
+  BoxDecoration _getDecoration({required bool isHighlighted, required bool isMatched}) {
+    // Priority: isMatched (green) > isHighlighted (search - red)
+    final baseColor = isMatched
         ? (widget.theme.brightness == Brightness.dark
-            ? const Color(0xFF2D1B1B)
-            : const Color(0xFFFFEBEE))
-        : widget.theme.scaffoldBackgroundColor;
+            ? const Color(0xFF1B2D1B) // Dark green background
+            : const Color(0xFFE8F5E9)) // Light green background
+        : (isHighlighted
+            ? (widget.theme.brightness == Brightness.dark
+                ? const Color(0xFF2D1B1B)
+                : const Color(0xFFFFEBEE))
+            : widget.theme.scaffoldBackgroundColor);
 
-    final borderColor = isHighlighted
-        ? widget.theme.primaryColor
-        : (widget.theme.dividerTheme.color ??
-            (widget.theme.brightness == Brightness.dark
-                ? const Color(0xFF424242)
-                : Colors.grey[400]!));
+    final borderColor = isMatched
+        ? (widget.matchHighlightColor ?? Colors.green)
+        : (isHighlighted
+            ? widget.theme.primaryColor
+            : (widget.theme.dividerTheme.color ??
+                (widget.theme.brightness == Brightness.dark
+                    ? const Color(0xFF424242)
+                    : Colors.grey[400]!)));
 
-    final borderWidth = isHighlighted ? 2.0 : 1.0;
+    final borderWidth = (isMatched || isHighlighted) ? 2.0 : 1.0;
     final borderRadius = widget.variant == TicketVariant.singleLarge
         ? 12.0
         : (widget.variant == TicketVariant.standardGrid ? 6.0 : 8.0);
 
     List<BoxShadow>? shadows;
-    if (isHighlighted) {
+    if (isMatched || isHighlighted) {
       final shadowBlur =
           widget.variant == TicketVariant.singleLarge ? 12.0 : 8.0;
       final shadowOffset = widget.variant == TicketVariant.singleLarge
           ? const Offset(0, 4)
           : const Offset(0, 2);
 
+      final shadowColor = isMatched
+          ? (widget.matchHighlightColor ?? Colors.green)
+          : widget.theme.primaryColor;
+
       shadows = [
         BoxShadow(
-          color: widget.theme.primaryColor.withValues(alpha: 0.2),
+          color: shadowColor.withValues(alpha: 0.2),
           blurRadius: shadowBlur,
           offset: shadowOffset,
         )
