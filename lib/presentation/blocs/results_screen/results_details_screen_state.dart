@@ -36,6 +36,7 @@ class LotteryResultDetailsLoaded extends LotteryResultDetailsState {
   final String selectedFilter;
   final Set<String> matchedNumbers;
   final Set<String> patternNumbers;
+  final Set<String> repeatedNumbers;
 
   // Newly updated tickets (for shimmer effect)
   final Set<String> newlyUpdatedTickets;
@@ -56,6 +57,7 @@ class LotteryResultDetailsLoaded extends LotteryResultDetailsState {
     this.selectedFilter = 'matched',
     this.matchedNumbers = const {},
     this.patternNumbers = const {},
+    this.repeatedNumbers = const {},
     this.newlyUpdatedTickets = const {},
     this.successMessage,
     this.errorMessage,
@@ -73,6 +75,7 @@ class LotteryResultDetailsLoaded extends LotteryResultDetailsState {
     String? selectedFilter,
     Set<String>? matchedNumbers,
     Set<String>? patternNumbers,
+    Set<String>? repeatedNumbers,
     Set<String>? newlyUpdatedTickets,
     String? successMessage,
     String? errorMessage,
@@ -90,6 +93,7 @@ class LotteryResultDetailsLoaded extends LotteryResultDetailsState {
       selectedFilter: selectedFilter ?? this.selectedFilter,
       matchedNumbers: matchedNumbers ?? this.matchedNumbers,
       patternNumbers: patternNumbers ?? this.patternNumbers,
+      repeatedNumbers: repeatedNumbers ?? this.repeatedNumbers,
       newlyUpdatedTickets: newlyUpdatedTickets ?? this.newlyUpdatedTickets,
       successMessage: clearMessages ? null : (successMessage ?? this.successMessage),
       errorMessage: clearMessages ? null : (errorMessage ?? this.errorMessage),
@@ -109,6 +113,7 @@ class LotteryResultDetailsLoaded extends LotteryResultDetailsState {
     selectedFilter,
     matchedNumbers,
     patternNumbers,
+    repeatedNumbers,
     newlyUpdatedTickets,
     successMessage,
     errorMessage,

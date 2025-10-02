@@ -13,6 +13,8 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
   final Color? matchHighlightColor;
   final Set<String> patternNumbers;
   final Color? patternHighlightColor;
+  final Set<String> repeatedNumbers;
+  final Color? repeatedHighlightColor;
 
   const DynamicPrizeSectionsWidget({
     super.key,
@@ -26,6 +28,8 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
     this.matchHighlightColor,
     this.patternNumbers = const {},
     this.patternHighlightColor,
+    this.repeatedNumbers = const {},
+    this.repeatedHighlightColor,
   });
 
   @override
@@ -61,6 +65,7 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     if (oldWidget.result != widget.result ||
         oldWidget.matchedNumbers != widget.matchedNumbers ||
         oldWidget.patternNumbers != widget.patternNumbers ||
+        oldWidget.repeatedNumbers != widget.repeatedNumbers ||
         oldWidget.newlyUpdatedTickets != widget.newlyUpdatedTickets) {
       // Rebuild sections with current search query
       _cachedSearchQuery = widget.highlightedTicketNotifier.value;
@@ -195,6 +200,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                     matchHighlightColor: widget.matchHighlightColor,
                     isPattern: widget.patternNumbers.contains(ticket.ticketNumber),
                     patternHighlightColor: widget.patternHighlightColor,
+                    isRepeated: widget.repeatedNumbers.contains(ticket.ticketNumber),
+                    repeatedHighlightColor: widget.repeatedHighlightColor,
                   );
                 }),
               ],
@@ -241,6 +248,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                       matchHighlightColor: widget.matchHighlightColor,
                       isPattern: widget.patternNumbers.contains(ticketNumbers.first),
                       patternHighlightColor: widget.patternHighlightColor,
+                      isRepeated: widget.repeatedNumbers.contains(ticketNumbers.first),
+                      repeatedHighlightColor: widget.repeatedHighlightColor,
                     );
                   }(),
               ],
@@ -278,6 +287,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 matchHighlightColor: widget.matchHighlightColor,
                 isPattern: widget.patternNumbers.contains(ticketNumber),
                 patternHighlightColor: widget.patternHighlightColor,
+                isRepeated: widget.repeatedNumbers.contains(ticketNumber),
+                repeatedHighlightColor: widget.repeatedHighlightColor,
               ),
             );
           }).toList(),
@@ -345,6 +356,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 matchHighlightColor: widget.matchHighlightColor,
                 isPattern: widget.patternNumbers.contains(number),
                 patternHighlightColor: widget.patternHighlightColor,
+                isRepeated: widget.repeatedNumbers.contains(number),
+                repeatedHighlightColor: widget.repeatedHighlightColor,
               ),
             );
           }).toList(),
@@ -380,6 +393,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 matchHighlightColor: widget.matchHighlightColor,
                 isPattern: widget.patternNumbers.contains(number),
                 patternHighlightColor: widget.patternHighlightColor,
+                isRepeated: widget.repeatedNumbers.contains(number),
+                repeatedHighlightColor: widget.repeatedHighlightColor,
               ),
             );
           }).toList(),
@@ -445,6 +460,8 @@ class _HighlightedTicketWidget extends StatelessWidget {
   final Color? matchHighlightColor;
   final bool isPattern; // Pre-calculated pattern status
   final Color? patternHighlightColor;
+  final bool isRepeated; // Pre-calculated repeated status
+  final Color? repeatedHighlightColor;
 
   const _HighlightedTicketWidget({
     super.key,
@@ -459,6 +476,8 @@ class _HighlightedTicketWidget extends StatelessWidget {
     this.matchHighlightColor,
     this.isPattern = false,
     this.patternHighlightColor,
+    this.isRepeated = false,
+    this.repeatedHighlightColor,
   });
 
   @override
@@ -537,7 +556,7 @@ class _HighlightedTicketWidget extends StatelessWidget {
   }
 
   BoxDecoration _getDecoration() {
-    // Priority: isMatched (green) > isPattern (purple) > isHighlighted (search - red)
+    // Priority: isMatched (green) > isPattern (purple) > isRepeated (blue) > isHighlighted (search - red)
     final baseColor = isMatched
         ? (theme.brightness == Brightness.dark
             ? const Color(0xFF1B2D1B) // Dark green background
@@ -546,30 +565,36 @@ class _HighlightedTicketWidget extends StatelessWidget {
             ? (theme.brightness == Brightness.dark
                 ? const Color(0xFF2D1B2D) // Dark purple background
                 : const Color(0xFFF3E5F5)) // Light purple background
-            : (isHighlighted
+            : (isRepeated
                 ? (theme.brightness == Brightness.dark
-                    ? const Color(0xFF2D1B1B)
-                    : const Color(0xFFFFEBEE))
-                : theme.scaffoldBackgroundColor));
+                    ? const Color(0xFF1B1F2D) // Dark blue background
+                    : const Color(0xFFE3F2FD)) // Light blue background
+                : (isHighlighted
+                    ? (theme.brightness == Brightness.dark
+                        ? const Color(0xFF2D1B1B)
+                        : const Color(0xFFFFEBEE))
+                    : theme.scaffoldBackgroundColor)));
 
     final borderColor = isMatched
         ? (matchHighlightColor ?? Colors.green)
         : (isPattern
             ? (patternHighlightColor ?? Colors.purple.shade200)
-            : (isHighlighted
-                ? theme.primaryColor
-                : (theme.dividerTheme.color ??
-                    (theme.brightness == Brightness.dark
-                        ? const Color(0xFF424242)
-                        : Colors.grey[400]!))));
+            : (isRepeated
+                ? (repeatedHighlightColor ?? Colors.blue)
+                : (isHighlighted
+                    ? theme.primaryColor
+                    : (theme.dividerTheme.color ??
+                        (theme.brightness == Brightness.dark
+                            ? const Color(0xFF424242)
+                            : Colors.grey[400]!)))));
 
-    final borderWidth = (isMatched || isPattern || isHighlighted) ? 2.0 : 1.0;
+    final borderWidth = (isMatched || isPattern || isRepeated || isHighlighted) ? 2.0 : 1.0;
     final borderRadius = variant == TicketVariant.singleLarge
         ? 12.0
         : (variant == TicketVariant.standardGrid ? 6.0 : 8.0);
 
     List<BoxShadow>? shadows;
-    if (isMatched || isPattern || isHighlighted) {
+    if (isMatched || isPattern || isRepeated || isHighlighted) {
       final shadowBlur = variant == TicketVariant.singleLarge ? 12.0 : 8.0;
       final shadowOffset = variant == TicketVariant.singleLarge
           ? const Offset(0, 4)
@@ -579,7 +604,9 @@ class _HighlightedTicketWidget extends StatelessWidget {
           ? (matchHighlightColor ?? Colors.green)
           : (isPattern
               ? (patternHighlightColor ?? Colors.purple.shade200)
-              : theme.primaryColor);
+              : (isRepeated
+                  ? (repeatedHighlightColor ?? Colors.blue)
+                  : theme.primaryColor));
 
       shadows = [
         BoxShadow(

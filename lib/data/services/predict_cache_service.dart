@@ -101,4 +101,21 @@ class PredictCacheService {
       return null;
     }
   }
+
+  /// Get only repeated numbers (last 4 digits) from cache
+  Future<List<String>> getRepeatedNumbers() async {
+    try {
+      final cachedData = await getCachedPredictionData();
+      if (cachedData == null) {
+        return [];
+      }
+
+      // Extract just the numbers from repeatedNumbers list
+      return cachedData.repeatedNumbers
+          .map((item) => item.number)
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

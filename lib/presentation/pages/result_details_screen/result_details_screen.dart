@@ -393,6 +393,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                       previous.selectedFilter != current.selectedFilter ||
                       previous.matchedNumbers != current.matchedNumbers ||
                       previous.patternNumbers != current.patternNumbers ||
+                      previous.repeatedNumbers != current.repeatedNumbers ||
                       previous.newlyUpdatedTickets !=
                           current.newlyUpdatedTickets ||
                       previous.data.result.uniqueId !=
@@ -545,6 +546,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 matchHighlightColor: Colors.green,
                 patternNumbers: state.patternNumbers,
                 patternHighlightColor: Colors.purple.shade200,
+                repeatedNumbers: state.repeatedNumbers,
+                repeatedHighlightColor: Colors.blue,
               ),
               const InAppReviewWidget(
                 viewThreshold: 3,

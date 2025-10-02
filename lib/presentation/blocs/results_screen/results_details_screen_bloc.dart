@@ -7,6 +7,7 @@ import 'package:lotto_app/data/services/save_results.dart';
 import 'package:lotto_app/data/services/pdf_service.dart';
 import 'package:lotto_app/data/services/prediction_match_service.dart';
 import 'package:lotto_app/data/services/pattern_analysis_service.dart';
+import 'package:lotto_app/data/services/predict_cache_service.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_state.dart';
@@ -288,17 +289,21 @@ class LotteryResultDetailsBloc
 
     Set<String> matchedNumbers = {};
     Set<String> patternNumbers = {};
+    Set<String> repeatedNumbers = {};
 
     if (event.filterType == 'matched') {
       matchedNumbers = await _loadMatchedNumbers(currentState.data.result);
     } else if (event.filterType == 'patterns') {
       patternNumbers = _analyzePatterns(currentState.data.result);
+    } else if (event.filterType == 'repeated') {
+      repeatedNumbers = await _loadRepeatedNumbers(currentState.data.result);
     }
 
     emit(currentState.copyWith(
       selectedFilter: event.filterType,
       matchedNumbers: matchedNumbers,
       patternNumbers: patternNumbers,
+      repeatedNumbers: repeatedNumbers,
       clearMessages: true,
     ));
   }
@@ -622,6 +627,60 @@ class LotteryResultDetailsBloc
     } catch (e) {
       return {};
     }
+  }
+
+  /// Load repeated numbers from predict cache
+  Future<Set<String>> _loadRepeatedNumbers(LotteryResultModel result) async {
+    try {
+      final cacheService = PredictCacheService();
+
+      // Get repeated numbers from predict cache (last 4 digits patterns)
+      final cachedRepeatedNumbers = await cacheService.getRepeatedNumbers();
+
+      if (cachedRepeatedNumbers.isEmpty) {
+        return {};
+      }
+
+      // Match lottery result numbers with cached repeated numbers
+      // We check if the last 4 digits of any lottery number matches any repeated pattern
+      final Set<String> matchedTickets = {};
+
+      // Get all ticket numbers from the result
+      for (final prize in result.prizes) {
+        // Check tickets with location
+        for (final ticket in prize.ticketsWithLocation) {
+          if (_matchesRepeatedPattern(ticket.ticketNumber, cachedRepeatedNumbers)) {
+            matchedTickets.add(ticket.ticketNumber);
+          }
+        }
+
+        // Check ticket numbers from grid
+        for (final ticketNumber in result.getPrizeTicketNumbers(prize)) {
+          if (_matchesRepeatedPattern(ticketNumber, cachedRepeatedNumbers)) {
+            matchedTickets.add(ticketNumber);
+          }
+        }
+      }
+
+      return matchedTickets;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  /// Check if a ticket number's last 4 digits match any repeated pattern
+  bool _matchesRepeatedPattern(String ticketNumber, List<String> repeatedPatterns) {
+    // Extract last 4 digits from ticket number (remove any prefix letters)
+    final digitsOnly = ticketNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.length < 4) {
+      return false;
+    }
+
+    final lastFourDigits = digitsOnly.substring(digitsOnly.length - 4);
+
+    // Check if this last 4 digits matches any repeated pattern
+    return repeatedPatterns.contains(lastFourDigits);
   }
 
   /// Check if it's live hours based on current result
