@@ -149,94 +149,134 @@ class _PredictScreenState extends State<PredictScreen>
     }
 
     if (state is PredictError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'failed_to_load_prediction_data'.tr(),
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.grey[600],
+      return RefreshIndicator(
+        onRefresh: () async {
+          context.read<PredictBloc>().add(const GetPredictionDataEvent());
+          // Wait a bit for the state to update
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - 200,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'failed_to_load_prediction_data'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      context.read<PredictBloc>().add(const GetPredictionDataEvent());
+                    },
+                    child: Text('retry'.tr()),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {
-                context.read<PredictBloc>().add(const GetPredictionDataEvent());
-              },
-              child: Text('retry'.tr()),
-            ),
-          ],
+          ),
         ),
       );
     }
 
     if (state is PredictDataLoaded) {
       final data = state.displayData;
-      return _buildDataContent(theme, data);
+      return _buildDataContentWithRefresh(theme, data);
     }
 
     if (state is PredictDataWithUserPrediction) {
       final data = state.displayData;
-      return Column(
-        children: [
-          _buildUserPredictionResult(theme, state),
-          Expanded(
-            child: _buildDataContent(theme, data),
-          ),
-        ],
+      return _buildDataContentWithRefresh(
+        theme,
+        data,
+        userPredictionState: state,
       );
     }
 
     if (state is PredictLoaded) {
       final data = state.prediction;
-      return _buildDataContent(theme, data);
+      return _buildDataContentWithRefresh(theme, data);
     }
 
-    return Center(
-      child: Text('no_data_available'.tr()),
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<PredictBloc>().add(const GetPredictionDataEvent());
+        await Future.delayed(const Duration(milliseconds: 500));
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - 200,
+          child: Center(
+            child: Text('no_data_available'.tr()),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildDataContent(ThemeData theme, PredictResponseModel data) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(10),
+  Widget _buildDataContentWithRefresh(
+    ThemeData theme,
+    PredictResponseModel data, {
+    PredictDataWithUserPrediction? userPredictionState,
+  }) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<PredictBloc>().add(const GetPredictionDataEvent());
+        // Wait for the refresh to complete
+        await Future.delayed(const Duration(milliseconds: 800));
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildMotivationalBanner(theme),
-            const SizedBox(height: 10),
-            _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
-            const SizedBox(height: 5),
-            _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
-            const SizedBox(height: 5),
-            _buildMostRepeatedCard(theme, data.repeatedNumbers),
-            const SizedBox(height: 5),
-            const PatternStatisticsCard(
-              showMockData: true,
-              // forceEmptyState: true, // Uncomment to test empty state
-            ),
-            const SizedBox(height: 5),
-            AiPredictionCard(
-              initialPrizeType: _selectedPrizeType,
-              onPrizeTypeChanged: (newPrizeType) {
-                // Update shared state but don't rebuild entire widget tree
-                _selectedPrizeType = newPrizeType;
-                // Notify PredictionMatchCard of the change
-                _predictionMatchCardKey.currentState?.updatePrizeType(newPrizeType);
-              },
-            ),
-            const SizedBox(height: 5),
-            PredictionMatchCard(
-              key: _predictionMatchCardKey,
-              selectedPrizeType: _selectedPrizeType,
+            if (userPredictionState != null)
+              _buildUserPredictionResult(theme, userPredictionState),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildMotivationalBanner(theme),
+                  const SizedBox(height: 10),
+                  _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
+                  const SizedBox(height: 5),
+                  _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
+                  const SizedBox(height: 5),
+                  _buildMostRepeatedCard(theme, data.repeatedNumbers),
+                  const SizedBox(height: 5),
+                  const PatternStatisticsCard(
+                    showMockData: true,
+                    // forceEmptyState: true, // Uncomment to test empty state
+                  ),
+                  const SizedBox(height: 5),
+                  AiPredictionCard(
+                    initialPrizeType: _selectedPrizeType,
+                    onPrizeTypeChanged: (newPrizeType) {
+                      // Update shared state but don't rebuild entire widget tree
+                      _selectedPrizeType = newPrizeType;
+                      // Notify PredictionMatchCard of the change
+                      _predictionMatchCardKey.currentState?.updatePrizeType(newPrizeType);
+                    },
+                  ),
+                  const SizedBox(height: 5),
+                  PredictionMatchCard(
+                    key: _predictionMatchCardKey,
+                    selectedPrizeType: _selectedPrizeType,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

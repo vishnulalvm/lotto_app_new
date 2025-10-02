@@ -13,7 +13,22 @@ class PredictUseCase {
   }
 
   /// Get prediction data for display
-  Future<PredictResponseModel> getPredictionData() async {
-    return await _repository.getPredictionData();
+  Future<PredictResponseModel> getPredictionData({bool forceRefresh = false}) async {
+    return await _repository.getPredictionData(forceRefresh: forceRefresh);
+  }
+
+  /// Get cached prediction data
+  Future<PredictResponseModel?> getCachedPredictionData() async {
+    return await _repository.getCachedPredictionData();
+  }
+
+  /// Refresh prediction data in background and return updated data
+  Future<PredictResponseModel?> refreshPredictionDataInBackground() async {
+    try {
+      await _repository.refreshPredictionDataInBackground();
+      return await _repository.getCachedPredictionData();
+    } catch (e) {
+      return null;
+    }
   }
 }

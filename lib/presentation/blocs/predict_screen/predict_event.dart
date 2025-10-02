@@ -25,3 +25,7 @@ class ClearPredictionEvent extends PredictEvent {
 class GetPredictionDataEvent extends PredictEvent {
   const GetPredictionDataEvent();
 }
+
+class UpdatePredictionDataEvent extends PredictEvent {
+  const UpdatePredictionDataEvent();
+}

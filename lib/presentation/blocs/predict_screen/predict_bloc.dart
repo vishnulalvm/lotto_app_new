@@ -13,6 +13,7 @@ class PredictBloc extends Bloc<PredictEvent, PredictState> {
     on<GetPredictionEvent>(_onGetPrediction);
     on<ClearPredictionEvent>(_onClearPrediction);
     on<GetPredictionDataEvent>(_onGetPredictionData);
+    on<UpdatePredictionDataEvent>(_onUpdatePredictionData);
   }
 
   Future<void> _onGetPrediction(
@@ -62,12 +63,44 @@ class PredictBloc extends Bloc<PredictEvent, PredictState> {
     Emitter<PredictState> emit,
   ) async {
     try {
-      emit(const PredictLoading());
-      final result = await _useCase.getPredictionData();
-      _displayData = result;
-      emit(PredictDataLoaded(result));
+      // Try to get cached data first for immediate display
+      final cachedData = await _useCase.getCachedPredictionData();
+
+      if (cachedData != null) {
+        // Show cached data immediately for smooth UI
+        _displayData = cachedData;
+        emit(PredictDataLoaded(cachedData));
+
+        // Refresh in background
+        _useCase.refreshPredictionDataInBackground().then((updatedData) {
+          if (updatedData != null) {
+            _displayData = updatedData;
+            // Only emit new state if still in loaded state
+            if (state is PredictDataLoaded || state is PredictDataWithUserPrediction) {
+              add(const UpdatePredictionDataEvent());
+            }
+          }
+        }).catchError((_) {
+          // Silent fail for background refresh
+        });
+      } else {
+        // No cache, show loading and fetch from API
+        emit(const PredictLoading());
+        final result = await _useCase.getPredictionData();
+        _displayData = result;
+        emit(PredictDataLoaded(result));
+      }
     } catch (e) {
       emit(PredictError('Failed to get prediction data: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onUpdatePredictionData(
+    UpdatePredictionDataEvent event,
+    Emitter<PredictState> emit,
+  ) async {
+    if (_displayData != null) {
+      emit(PredictDataLoaded(_displayData!));
     }
   }
 }

@@ -25,6 +25,7 @@ import 'package:lotto_app/data/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/app_update_service.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
+import 'package:lotto_app/data/services/predict_cache_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
@@ -177,6 +178,7 @@ class MyApp extends StatelessWidget {
             PredictUseCase(
               PredictRepositoryImpl(
                 PredictApiService(),
+                PredictCacheService(),
               ),
             ),
           ),
