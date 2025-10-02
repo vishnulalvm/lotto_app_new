@@ -192,16 +192,10 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _lotteryNumberController,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(4),
-          ],
+          keyboardType: TextInputType.text,
           decoration: InputDecoration(
-            hintText: 'enter_4_digit_number'.tr(),
+            hintText: 'enter_lottery_number'.tr(),
             prefixIcon: const Icon(Icons.numbers),
-            counterText: '',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),

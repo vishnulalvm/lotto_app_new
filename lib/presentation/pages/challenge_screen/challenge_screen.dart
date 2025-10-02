@@ -15,6 +15,7 @@ import 'package:lotto_app/data/models/lottery_statistics/lottery_entry_model.dar
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class ChallengeScreen extends StatefulWidget {
@@ -30,13 +31,16 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   final UserService _userService = UserService();
   List<LotteryEntry> _lotteryEntries = [];
   Timer? _adTimer;
+  bool _hasDummyData = false;
+  static const String _firstVisitKey = 'challenge_screen_first_visit';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _checkAndLoadDummyData();
     _loadLotteryStatistics();
-    
+
     // Track screen view for analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.microtask(() {
@@ -49,11 +53,65 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         );
       });
     });
-    
+
     // Preload and schedule interstitial ad
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadAndScheduleInterstitialAd();
     });
+  }
+
+  Future<void> _checkAndLoadDummyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstVisit = prefs.getBool(_firstVisitKey) ?? true;
+
+    if (isFirstVisit) {
+      setState(() {
+        _hasDummyData = true;
+        _lotteryEntries = _generateDummyData();
+      });
+
+      // Mark as visited
+      await prefs.setBool(_firstVisitKey, false);
+    }
+  }
+
+  List<LotteryEntry> _generateDummyData() {
+    final now = DateTime.now();
+    return [
+      LotteryEntry(
+        id: 'dummy_1',
+        serialNo: 1,
+        lotteryNumber: 'MN123456',
+        lotteryName: 'SAMRUDHI',
+        price: 50.0,
+        dateAdded: now.subtract(const Duration(days: 2)),
+        winningAmount: 0.0,
+        status: LotteryStatus.pending,
+        lotteryUniqueId: null,
+      ),
+      LotteryEntry(
+        id: 'dummy_2',
+        serialNo: 2,
+        lotteryNumber: 'PB654321',
+        lotteryName: 'KARUNYA PLUS',
+        price: 50.0,
+        dateAdded: now.subtract(const Duration(days: 5)),
+        winningAmount: 100.0,
+        status: LotteryStatus.won,
+        lotteryUniqueId: null,
+      ),
+      LotteryEntry(
+        id: 'dummy_3',
+        serialNo: 3,
+        lotteryNumber: 'KB987654',
+        lotteryName: 'KARUNYA',
+        price: 50.0,
+        dateAdded: now.subtract(const Duration(days: 7)),
+        winningAmount: 0.0,
+        status: LotteryStatus.lost,
+        lotteryUniqueId: null,
+      ),
+    ];
   }
 
   Future<void> _loadLotteryStatistics({bool forceRefresh = false}) async {
@@ -120,10 +178,20 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         BlocListener<LotteryStatisticsBloc, LotteryStatisticsState>(
           listener: (context, state) {
             if (state is LotteryStatisticsLoaded) {
+              // Don't override if we have dummy data and API returns empty
+              if (_hasDummyData && state.data.lotteryEntries.isEmpty) {
+                return;
+              }
+
               setState(() {
                 _lotteryEntries = state.data.lotteryEntries
                     .map(_convertToLotteryEntry)
                     .toList();
+
+                // If API has real data, remove dummy data flag
+                if (state.data.lotteryEntries.isNotEmpty) {
+                  _hasDummyData = false;
+                }
               });
             }
           },
@@ -224,8 +292,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   Widget _buildMotivationalBanner(ThemeData theme) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -251,12 +319,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.emoji_events_outlined,
-            color: theme.primaryColor,
-            size: 32,
-          ),
-          const SizedBox(height: 12),
           Text(
             'Add Lottery and Start Challenge',
             style: theme.textTheme.titleLarge?.copyWith(
@@ -305,7 +367,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -651,7 +713,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             ),
             DataColumn(
               label: SizedBox(
-                width: 80,
+                width: 90,
                 child: Text(
                   'view_result'.tr(),
                   textAlign: TextAlign.center,
@@ -1021,6 +1083,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   void _addNewEntry(String lotteryNumber, double price, DateTime date, [String? lotteryName]) {
     // Optimistic update - add entry to UI immediately
     setState(() {
+      // Remove dummy data when first real entry is added
+      if (_hasDummyData) {
+        _lotteryEntries.clear();
+        _hasDummyData = false;
+      }
+
       final newEntry = LotteryEntry(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         serialNo: _lotteryEntries.length + 1,
@@ -1034,7 +1102,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       );
       _lotteryEntries.insert(0, newEntry); // Add to the beginning for newest first
     });
-    
+
     // Refresh statistics from API in background to get updated data
     Future.delayed(const Duration(milliseconds: 500), () {
       _loadLotteryStatistics(forceRefresh: true);
@@ -1042,6 +1110,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   }
 
   Future<void> _deleteEntry(String entryId) async {
+    // Check if this is a dummy entry
+    if (entryId.startsWith('dummy_')) {
+      // Simply remove from UI for dummy entries
+      setState(() {
+        _lotteryEntries.removeWhere((entry) => entry.id == entryId);
+        // If all dummy entries are deleted, clear the flag
+        if (_lotteryEntries.isEmpty) {
+          _hasDummyData = false;
+        }
+      });
+      return;
+    }
+
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

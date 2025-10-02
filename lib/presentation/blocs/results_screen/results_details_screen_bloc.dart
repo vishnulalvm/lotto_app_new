@@ -132,6 +132,10 @@ class LotteryResultDetailsBloc
           ? currentState.patternNumbers
           : <String>{};
 
+      final repeatedNumbers = currentState is LotteryResultDetailsLoaded
+          ? currentState.repeatedNumbers
+          : <String>{};
+
       final selectedFilter = currentState is LotteryResultDetailsLoaded
           ? currentState.selectedFilter
           : 'matched';
@@ -157,6 +161,7 @@ class LotteryResultDetailsBloc
         selectedFilter: selectedFilter,
         matchedNumbers: matchedNumbers,
         patternNumbers: patternNumbers,
+        repeatedNumbers: repeatedNumbers,
         newlyUpdatedTickets: newlyUpdated,
       ));
 
