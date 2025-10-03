@@ -23,6 +23,9 @@ class LotteryResultDetailsBloc
   // Timer for live hour background refresh
   Timer? _liveRefreshTimer;
 
+  // Timer for clearing shimmer effect
+  Timer? _shimmerClearTimer;
+
   // Store previous result for detecting newly updated tickets
   LotteryResultModel? _previousResult;
 
@@ -41,11 +44,13 @@ class LotteryResultDetailsBloc
     on<CopyResultEvent>(_onCopyResult);
     on<GeneratePdfEvent>(_onGeneratePdf);
     on<ClearMessagesEvent>(_onClearMessages);
+    on<ClearShimmerEffectEvent>(_onClearShimmerEffect);
   }
 
   @override
   Future<void> close() {
     _liveRefreshTimer?.cancel();
+    _shimmerClearTimer?.cancel();
     return super.close();
   }
 
@@ -89,6 +94,11 @@ class LotteryResultDetailsBloc
 
       // Start live refresh timer if in live hours
       _startLiveRefreshTimer();
+
+      // Start shimmer clear timer if there are newly updated tickets
+      if (newlyUpdated.isNotEmpty) {
+        _startShimmerClearTimer();
+      }
 
       // Store previous result for next comparison
       _previousResult = result.result;
@@ -168,6 +178,11 @@ class LotteryResultDetailsBloc
       // Restart live refresh timer
       _startLiveRefreshTimer();
 
+      // Start shimmer clear timer if there are newly updated tickets
+      if (newlyUpdated.isNotEmpty) {
+        _startShimmerClearTimer();
+      }
+
       // Store previous result for next comparison
       _previousResult = result.result;
     } catch (e) {
@@ -208,6 +223,11 @@ class LotteryResultDetailsBloc
           newlyUpdatedTickets: newlyUpdated,
           clearMessages: true,
         ));
+
+        // Start shimmer clear timer if there are newly updated tickets
+        if (newlyUpdated.isNotEmpty) {
+          _startShimmerClearTimer();
+        }
 
         // Store previous result for next comparison
         _previousResult = result.result;
@@ -430,6 +450,31 @@ class LotteryResultDetailsBloc
     if (_currentUniqueId != null) {
       await _useCase.clearCache(_currentUniqueId!);
     }
+  }
+
+  // Handler for clearing shimmer effect
+  Future<void> _onClearShimmerEffect(
+    ClearShimmerEffectEvent event,
+    Emitter<LotteryResultDetailsState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! LotteryResultDetailsLoaded) return;
+
+    // Clear the newly updated tickets set to stop shimmer
+    emit(currentState.copyWith(
+      newlyUpdatedTickets: {},
+    ));
+  }
+
+  // Start timer to clear shimmer effect after 500ms
+  void _startShimmerClearTimer() {
+    _shimmerClearTimer?.cancel();
+    _shimmerClearTimer = Timer(
+      const Duration(milliseconds: 500),
+      () {
+        add(const ClearShimmerEffectEvent());
+      },
+    );
   }
 
   // ========== BUSINESS LOGIC METHODS (Moved from Widget) ==========

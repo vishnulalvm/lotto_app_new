@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotto_app/core/utils/responsive_helper.dart';
 
 class FloatingSearchBar extends StatefulWidget {
   final String? hintText;
@@ -58,10 +59,15 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
         ? backgroundColor.withValues(alpha: 0.4)
         : backgroundColor.withValues(alpha: 0.3);
 
-    // When expanded, take full width with 12px padding on both ends
+    // Responsive dimensions
+    final horizontalPadding = AppResponsive.spacing(context, 12);
+    final collapsedSize = AppResponsive.spacing(context, 56);
+    final searchBarHeight = AppResponsive.spacing(context, 56);
+
+    // When expanded, take full width with responsive padding on both ends
     final expandedWidth = _isExpanded
-        ? screenWidth - 24  // 12px padding on each side
-        : 56.0;
+        ? screenWidth - (horizontalPadding * 2)
+        : collapsedSize;
 
     // Smooth bi-directional animation
     const animationDuration = Duration(milliseconds: 300);
@@ -70,15 +76,15 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
       duration: animationDuration,
       curve: Curves.easeInOut,
       width: expandedWidth,
-      height: 56,
+      height: searchBarHeight,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 28)),
         boxShadow: [
           BoxShadow(
             color: shadowColor,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: AppResponsive.spacing(context, 12),
+            offset: Offset(0, AppResponsive.spacing(context, 4)),
           ),
         ],
       ),
@@ -89,89 +95,114 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
   }
 
   Widget _buildExpandedSearchBar(BuildContext context, Color textColor) {
+    final searchIconWidth = AppResponsive.spacing(context, 48);
+    final closeButtonWidth = AppResponsive.spacing(context, 40);
+    final rightPadding = AppResponsive.spacing(context, 8);
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: Row(
-        children: [
-          // Search icon with fixed width
-          SizedBox(
-            width: 48,
-            child: Icon(
-              Icons.search,
-              color: textColor,
-              size: 24,
-            ),
-          ),
-          // Flexible text field that takes remaining space
-          Flexible(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: widget.hintText,
-                hintStyle: TextStyle(
-                  color: textColor.withValues(alpha: 0.7),
-                  fontSize: 16,
+      borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 28)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Only show full content if there's enough space
+          final minWidthNeeded = searchIconWidth + closeButtonWidth + rightPadding + 100;
+
+          if (constraints.maxWidth < minWidthNeeded) {
+            // During animation, just show search icon centered
+            return Center(
+              child: Icon(
+                Icons.search,
+                color: textColor,
+                size: AppResponsive.spacing(context, 24),
+              ),
+            );
+          }
+
+          return Row(
+            children: [
+              // Search icon with responsive width
+              SizedBox(
+                width: searchIconWidth,
+                child: Icon(
+                  Icons.search,
+                  color: textColor,
+                  size: AppResponsive.spacing(context, 24),
                 ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                isDense: true,
               ),
-              style: TextStyle(
-                color: textColor,
-                fontSize: 16,
+              // Expanded text field that takes remaining space
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: widget.hintText,
+                    hintStyle: TextStyle(
+                      color: textColor.withValues(alpha: 0.7),
+                      fontSize: AppResponsive.fontSize(context, 16),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: AppResponsive.spacing(context, 16),
+                    ),
+                    isDense: true,
+                  ),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: AppResponsive.fontSize(context, 16),
+                  ),
+                  onChanged: (value) {
+                    // Provide light haptic feedback when user starts typing
+                    if (value.isNotEmpty && _controller.text.isEmpty) {
+                      HapticFeedback.lightImpact();
+                    }
+                    _onSearchChanged(value);
+                  },
+                  onSubmitted: (value) {
+                    _debounceTimer?.cancel();
+                    widget.onSubmitted?.call(value);
+                    // Don't collapse search bar on submit to keep search active
+                    // _collapseSearchBar();
+                  },
+                ),
               ),
-              onChanged: (value) {
-                // Provide light haptic feedback when user starts typing
-                if (value.isNotEmpty && _controller.text.isEmpty) {
-                  HapticFeedback.lightImpact();
-                }
-                _onSearchChanged(value);
-              },
-              onSubmitted: (value) {
-                _debounceTimer?.cancel();
-                widget.onSubmitted?.call(value);
-                // Don't collapse search bar on submit to keep search active
-                // _collapseSearchBar();
-              },
-            ),
-          ),
-          // Close button with fixed width
-          SizedBox(
-            width: 40,
-            child: IconButton(
-              onPressed: _collapseSearchBar,
-              icon: Icon(
-                Icons.close,
-                color: textColor,
-                size: 22,
+              // Close button with responsive width
+              SizedBox(
+                width: closeButtonWidth,
+                child: IconButton(
+                  onPressed: _collapseSearchBar,
+                  icon: Icon(
+                    Icons.close,
+                    color: textColor,
+                    size: AppResponsive.spacing(context, 22),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(
+                    minWidth: closeButtonWidth,
+                    minHeight: AppResponsive.spacing(context, 56),
+                  ),
+                ),
               ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 40,
-                minHeight: 56,
+              SizedBox(
+                width: rightPadding,
               ),
-            ),
-          ),
-          SizedBox(
-            width: 8, // Padding between close button and right edge
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildCollapsedSearchButton(BuildContext context, Color iconColor) {
+    final buttonSize = AppResponsive.spacing(context, 56);
     return IconButton(
       onPressed: _expandSearchBar,
       icon: Icon(
         Icons.search,
         color: iconColor,
-        size: 24,
+        size: AppResponsive.spacing(context, 24),
       ),
       style: IconButton.styleFrom(
-        minimumSize: const Size(56, 56),
+        minimumSize: Size(buttonSize, buttonSize),
         shape: const CircleBorder(),
       ),
     );

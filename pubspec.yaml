@@ -2,7 +2,7 @@ name: lotto_app
 description: "A Lottery Result App"
 publish_to: "none"
 
-version: 1.5.01+55
+version: 1.5.03+57
 
 environment:
   sdk: ^3.6.0

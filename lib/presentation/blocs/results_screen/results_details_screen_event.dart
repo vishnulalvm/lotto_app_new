@@ -108,3 +108,11 @@ class ClearMessagesEvent extends LotteryResultDetailsEvent {
   @override
   String toString() => 'ClearMessagesEvent()';
 }
+
+// Clear shimmer effect event
+class ClearShimmerEffectEvent extends LotteryResultDetailsEvent {
+  const ClearShimmerEffectEvent();
+
+  @override
+  String toString() => 'ClearShimmerEffectEvent()';
+}
