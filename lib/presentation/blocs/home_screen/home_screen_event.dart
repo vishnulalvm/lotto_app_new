@@ -55,9 +55,31 @@ class BackgroundRefreshEvent extends HomeScreenResultsEvent {
 /// Event triggered when background refresh completes with fresh data
 class BackgroundRefreshCompleteEvent extends HomeScreenResultsEvent {
   final HomeScreenResultsModel freshData;
-  
+
   BackgroundRefreshCompleteEvent(this.freshData);
-  
+
   @override
   String toString() => 'BackgroundRefreshCompleteEvent(count: ${freshData.count})';
+}
+
+/// Event for app lifecycle changes
+class AppLifecycleChangedEvent extends HomeScreenResultsEvent {
+  final bool isResumed;
+
+  AppLifecycleChangedEvent({required this.isResumed});
+
+  @override
+  String toString() => 'AppLifecycleChangedEvent(isResumed: $isResumed)';
+}
+
+/// Event to start periodic refresh timer
+class StartPeriodicRefreshEvent extends HomeScreenResultsEvent {
+  @override
+  String toString() => 'StartPeriodicRefreshEvent()';
+}
+
+/// Event to stop periodic refresh timer
+class StopPeriodicRefreshEvent extends HomeScreenResultsEvent {
+  @override
+  String toString() => 'StopPeriodicRefreshEvent()';
 }

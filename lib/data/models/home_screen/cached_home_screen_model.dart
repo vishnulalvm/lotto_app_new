@@ -31,7 +31,7 @@ class CachedHomeScreenModel extends HiveObject {
     required this.count,
     required this.results,
     required this.cacheTime,
-    this.cacheExpiryHours = 24,
+    this.cacheExpiryHours = 48,
     required this.totalPoints,
     required this.updates,
   });
@@ -70,9 +70,9 @@ class CachedHomeScreenModel extends HiveObject {
     return DateTime.now().isAfter(cacheTime.add(Duration(hours: cacheExpiryHours)));
   }
 
-  /// Check if cache is still fresh (within 30 minutes)
+  /// Check if cache is still fresh (within 5 minutes)
   bool get isFresh {
-    return DateTime.now().isBefore(cacheTime.add(const Duration(minutes: 30)));
+    return DateTime.now().isBefore(cacheTime.add(const Duration(minutes: 5)));
   }
 
   /// Get cache age in minutes

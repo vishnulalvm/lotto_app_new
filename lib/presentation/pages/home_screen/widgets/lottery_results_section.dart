@@ -28,17 +28,6 @@ class LotteryResultsSection extends StatelessWidget {
     final theme = Theme.of(context);
 
     return BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-      buildWhen: (previous, current) {
-        // Only rebuild if the actual data changed, not just loading states
-        if (previous is HomeScreenResultsLoaded &&
-            current is HomeScreenResultsLoaded) {
-          return previous.data.results != current.data.results ||
-              previous.isOffline != current.isOffline ||
-              previous.isFiltered != current.isFiltered ||
-              previous.filteredDate != current.filteredDate;
-        }
-        return true;
-      },
       builder: (context, state) {
         if (state is HomeScreenResultsLoading) {
           return Container(

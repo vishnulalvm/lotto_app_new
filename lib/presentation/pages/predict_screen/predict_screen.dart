@@ -254,6 +254,8 @@ class _PredictScreenState extends State<PredictScreen>
                   const SizedBox(height: 5),
                   _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
                   const SizedBox(height: 5),
+                  _buildMostRepeatedLast2DigitsCard(theme, data.repeatedTwoDigits),
+                  const SizedBox(height: 5),
                   _buildMostRepeatedCard(theme, data.repeatedNumbers),
                   const SizedBox(height: 5),
                   const PatternStatisticsCard(
@@ -429,6 +431,148 @@ class _PredictScreenState extends State<PredictScreen>
           ],
         ),
       ),
+    );
+  }
+
+  // Top 6 Last 2 Digits from cached data
+  Widget _buildMostRepeatedLast2DigitsCard(
+      ThemeData theme, List<RepeatedTwoDigit> data) {
+    // If no data, don't show the card
+    if (data.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      color: theme.cardTheme.color,
+      elevation: theme.cardTheme.elevation,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.stars,
+                  color: Colors.purple[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'top_6_last_2_digits'.tr(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildTwoDigitsRow(
+                theme,
+                data.map((e) => {'number': e.digits, 'count': e.count}).toList()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build two digits in a responsive grid with purple theme
+  Widget _buildTwoDigitsRow(ThemeData theme, List<Map<String, dynamic>> numberData) {
+    return Column(
+      children: [
+        // Use GridView for better responsiveness
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3, // 3 columns
+            childAspectRatio: 1.4, // Width to height ratio
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: numberData.length,
+          itemBuilder: (context, index) {
+            final data = numberData[index];
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.purple[800]!, Colors.purple[900]!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      data['number'],
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'count_times'.tr(namedArgs: {'count': data['count'].toString()}),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.purple.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'two_digits_found'.tr(namedArgs: {'count': numberData.length.toString()}),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.purple[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -752,7 +896,7 @@ class _PredictScreenState extends State<PredictScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'for_entertainment_only_tap_details'.tr(),
+                        'data_driven_predictions_tap_details'.tr(),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.amber[700],
                           fontSize: 12,
@@ -807,23 +951,23 @@ class _PredictScreenState extends State<PredictScreen>
                       const SizedBox(height: 12),
                       _buildDisclaimerPoint(
                         theme,
-                        '🎲',
-                        'entertainment_purpose'.tr(),
-                        'predictions_for_fun_disclaimer'.tr(),
+                        '🎯',
+                        'pattern_based_analysis'.tr(),
+                        'real_data_pattern_analysis'.tr(),
                       ),
                       const SizedBox(height: 8),
                       _buildDisclaimerPoint(
                         theme,
-                        '📊',
-                        'statistical_analysis'.tr(),
-                        'based_on_historical_data_disclaimer'.tr(),
+                        '📈',
+                        'historical_trends'.tr(),
+                        'analyze_previous_results_help_win'.tr(),
                       ),
                       const SizedBox(height: 8),
                       _buildDisclaimerPoint(
                         theme,
                         '⚠️',
-                        'play_responsibly'.tr(),
-                        'past_patterns_no_guarantee'.tr(),
+                        'responsible_play'.tr(),
+                        'no_guaranteed_wins_play_responsibly'.tr(),
                       ),
                     ],
                   ),

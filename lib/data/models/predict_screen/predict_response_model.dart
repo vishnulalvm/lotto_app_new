@@ -3,12 +3,14 @@ class PredictResponseModel {
   final List<RepeatedNumber> repeatedNumbers;
   final List<RepeatedSingleDigit> repeatedSingleDigits;
   final List<PeoplesPrediction> peoplesPredictions;
+  final List<RepeatedTwoDigit> repeatedTwoDigits;
 
   const PredictResponseModel({
     required this.status,
     required this.repeatedNumbers,
     required this.repeatedSingleDigits,
     required this.peoplesPredictions,
+    this.repeatedTwoDigits = const [],
   });
 
   factory PredictResponseModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,9 @@ class PredictResponseModel {
       peoplesPredictions: (json['peoples_predictions'] as List)
           .map((e) => PeoplesPrediction.fromJson(e as Map<String, dynamic>))
           .toList(),
+      repeatedTwoDigits: (json['repeated_two_digits'] as List?)
+          ?.map((e) => RepeatedTwoDigit.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 
@@ -32,12 +37,13 @@ class PredictResponseModel {
       'repeated_numbers': repeatedNumbers.map((e) => e.toJson()).toList(),
       'repeated_single_digits': repeatedSingleDigits.map((e) => e.toJson()).toList(),
       'peoples_predictions': peoplesPredictions.map((e) => e.toJson()).toList(),
+      'repeated_two_digits': repeatedTwoDigits.map((e) => e.toJson()).toList(),
     };
   }
 
   @override
   String toString() {
-    return 'PredictResponseModel(status: $status, repeatedNumbers: $repeatedNumbers, repeatedSingleDigits: $repeatedSingleDigits, peoplesPredictions: $peoplesPredictions)';
+    return 'PredictResponseModel(status: $status, repeatedNumbers: $repeatedNumbers, repeatedSingleDigits: $repeatedSingleDigits, peoplesPredictions: $peoplesPredictions, repeatedTwoDigits: $repeatedTwoDigits)';
   }
 
   @override
@@ -47,7 +53,8 @@ class PredictResponseModel {
         other.status == status &&
         _listEquals(other.repeatedNumbers, repeatedNumbers) &&
         _listEquals(other.repeatedSingleDigits, repeatedSingleDigits) &&
-        _listEquals(other.peoplesPredictions, peoplesPredictions);
+        _listEquals(other.peoplesPredictions, peoplesPredictions) &&
+        _listEquals(other.repeatedTwoDigits, repeatedTwoDigits);
   }
 
   @override
@@ -55,7 +62,8 @@ class PredictResponseModel {
     return status.hashCode ^
         repeatedNumbers.hashCode ^
         repeatedSingleDigits.hashCode ^
-        peoplesPredictions.hashCode;
+        peoplesPredictions.hashCode ^
+        repeatedTwoDigits.hashCode;
   }
 
   bool _listEquals<T>(List<T>? a, List<T>? b) {
@@ -192,5 +200,47 @@ class PeoplesPrediction {
   @override
   int get hashCode {
     return digit.hashCode ^ count.hashCode;
+  }
+}
+
+class RepeatedTwoDigit {
+  final String digits;
+  final int count;
+
+  const RepeatedTwoDigit({
+    required this.digits,
+    required this.count,
+  });
+
+  factory RepeatedTwoDigit.fromJson(Map<String, dynamic> json) {
+    return RepeatedTwoDigit(
+      digits: json['digits'] as String,
+      count: json['count'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'digits': digits,
+      'count': count,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'RepeatedTwoDigit(digits: $digits, count: $count)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is RepeatedTwoDigit &&
+        other.digits == digits &&
+        other.count == count;
+  }
+
+  @override
+  int get hashCode {
+    return digits.hashCode ^ count.hashCode;
   }
 }

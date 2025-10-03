@@ -18,6 +18,14 @@ class HomeScreenResultsBloc
   // Connectivity subscription
   StreamSubscription<bool>? _connectivitySubscription;
 
+  // Periodic refresh timer
+  Timer? _periodicRefreshTimer;
+  DateTime? _lastRefreshTime;
+
+  // Constants for refresh intervals
+  static const Duration _periodicRefreshInterval = Duration(minutes: 5);
+  static const Duration _minRefreshInterval = Duration(minutes: 2);
+
   HomeScreenResultsBloc(
     this._useCase,
     this._connectivityService,
@@ -30,6 +38,9 @@ class HomeScreenResultsBloc
     on<ClearCacheEvent>(_onClearCache);
     on<BackgroundRefreshEvent>(_onBackgroundRefresh);
     on<BackgroundRefreshCompleteEvent>(_onBackgroundRefreshComplete);
+    on<AppLifecycleChangedEvent>(_onAppLifecycleChanged);
+    on<StartPeriodicRefreshEvent>(_onStartPeriodicRefresh);
+    on<StopPeriodicRefreshEvent>(_onStopPeriodicRefresh);
 
     // Listen to connectivity changes
     _connectivitySubscription = _connectivityService.connectionStream.listen(
@@ -40,6 +51,7 @@ class HomeScreenResultsBloc
   @override
   Future<void> close() {
     _connectivitySubscription?.cancel();
+    _periodicRefreshTimer?.cancel();
     // Clear cached results to prevent memory leaks
     _cachedResults = null;
     return super.close();
@@ -59,6 +71,7 @@ class HomeScreenResultsBloc
           _handleBackgroundRefreshComplete(freshData);
         },
       );
+
       // Clear old cached results before storing new ones to prevent memory leaks
       _cachedResults = null;
       _cachedResults = result;
@@ -222,10 +235,18 @@ class HomeScreenResultsBloc
         return;
       }
 
+      // Check if we should refresh
+      if (!_shouldPeriodicRefresh()) {
+        return;
+      }
+
       final result = await _useCase.execute(forceRefresh: true);
       // Clear old cached results before storing new ones to prevent memory leaks
       _cachedResults = null;
       _cachedResults = result;
+
+      // Update refresh time
+      _updateLastRefreshTime();
 
       // Get additional metadata
       final dataSource = await _useCase.getDataSource();
@@ -234,7 +255,7 @@ class HomeScreenResultsBloc
       // If we have a current loaded state, preserve the filter settings
       if (state is HomeScreenResultsLoaded) {
         final currentState = state as HomeScreenResultsLoaded;
-        
+
         // If filtered, apply the same filter to new data
         HomeScreenResultsModel dataToEmit = result;
         if (currentState.isFiltered && currentState.filteredDate != null) {
@@ -382,6 +403,72 @@ class HomeScreenResultsBloc
     return date1.year == date2.year &&
         date1.month == date2.month &&
         date1.day == date2.day;
+  }
+
+  /// Handle app lifecycle changes
+  Future<void> _onAppLifecycleChanged(
+    AppLifecycleChangedEvent event,
+    Emitter<HomeScreenResultsState> emit,
+  ) async {
+    if (event.isResumed) {
+      // App resumed - restart periodic refresh
+      _startPeriodicRefreshTimer();
+
+      // ALWAYS refresh when app resumes (regardless of data age)
+      add(BackgroundRefreshEvent());
+    } else {
+      // App paused - stop periodic refresh to save resources
+      _stopPeriodicRefreshTimer();
+    }
+  }
+
+  /// Start periodic refresh timer
+  Future<void> _onStartPeriodicRefresh(
+    StartPeriodicRefreshEvent event,
+    Emitter<HomeScreenResultsState> emit,
+  ) async {
+    _startPeriodicRefreshTimer();
+  }
+
+  /// Stop periodic refresh timer
+  Future<void> _onStopPeriodicRefresh(
+    StopPeriodicRefreshEvent event,
+    Emitter<HomeScreenResultsState> emit,
+  ) async {
+    _stopPeriodicRefreshTimer();
+  }
+
+  /// Internal method to start periodic refresh timer
+  void _startPeriodicRefreshTimer() {
+    // Cancel existing timer if any
+    _periodicRefreshTimer?.cancel();
+
+    // Start new timer
+    _periodicRefreshTimer = Timer.periodic(
+      _periodicRefreshInterval,
+      (timer) {
+        if (!isClosed && _shouldPeriodicRefresh()) {
+          add(BackgroundRefreshEvent());
+        }
+      },
+    );
+  }
+
+  /// Internal method to stop periodic refresh timer
+  void _stopPeriodicRefreshTimer() {
+    _periodicRefreshTimer?.cancel();
+    _periodicRefreshTimer = null;
+  }
+
+  /// Check if we should do periodic refresh
+  bool _shouldPeriodicRefresh() {
+    if (_lastRefreshTime == null) return true;
+    return DateTime.now().difference(_lastRefreshTime!) >= _minRefreshInterval;
+  }
+
+  /// Update last refresh time (called after successful refresh)
+  void _updateLastRefreshTime() {
+    _lastRefreshTime = DateTime.now();
   }
 
 }

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -11,15 +10,18 @@ import 'package:lotto_app/presentation/pages/home_screen/widgets/first_time_lang
 import 'package:lotto_app/presentation/pages/home_screen/widgets/lottery_results_section.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/navigation_icons_widget.dart';
 import 'package:lotto_app/routes/app_routes.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
+import 'package:lotto_app/core/utils/date_formatter.dart';
+import 'package:lotto_app/core/services/url_launcher_service.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
+import 'package:lotto_app/presentation/blocs/rate_us/rate_us_bloc.dart';
+import 'package:lotto_app/presentation/blocs/rate_us/rate_us_event.dart';
+import 'package:lotto_app/presentation/blocs/rate_us/rate_us_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/core/widgets/rate_us_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,14 +44,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool _isFabVisible = true;
   bool _isScrollingDown = false;
-  DateTime? _lastRefreshTime;
-  Timer? _periodicRefreshTimer;
-  Timer? _attentionAnimationTimer;
-
-  // Rate Us Dialog tracking constants
-  static const String _prefKeyHomeVisitCount = 'home_visit_count';
-  static const String _prefKeyRateUsShown = 'rate_us_permanently_dismissed';
-  static const int _rateUsShowThreshold = 3;
 
   @override
   void initState() {
@@ -73,22 +67,24 @@ class _HomeScreenState extends State<HomeScreen>
         AnalyticsService.trackSessionStart();
       });
 
-      // Check and show rate us dialog if needed
-      _checkAndShowRateUsDialog();
+      // Check and show rate us dialog using BLoC
+      context.read<RateUsBloc>().add(CheckRateUsDialogEvent());
     });
 
-    // Load data immediately (without UI delays)
-    _loadLotteryResultsWithCache();
-
-    // Set up periodic refresh timer (every 5 minutes)
-    _setupPeriodicRefresh();
+    // Load data and start periodic refresh via BLoC
+    context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
+    context.read<HomeScreenResultsBloc>().add(StartPeriodicRefreshEvent());
 
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
     _initializeAnimations();
-    _startAttentionAnimations();
+    _startBlinkAnimation();
     _showLanguageDialogIfNeeded();
+  }
+
+  void _startBlinkAnimation() {
+    _secondaryAnimationController.repeat();
   }
 
   void _initializeAnimations() {
@@ -131,8 +127,6 @@ class _HomeScreenState extends State<HomeScreen>
     AnalyticsService.trackSessionEnd();
 
     WidgetsBinding.instance.removeObserver(this);
-    _periodicRefreshTimer?.cancel();
-    _attentionAnimationTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
 
@@ -140,29 +134,7 @@ class _HomeScreenState extends State<HomeScreen>
     _primaryAnimationController.dispose();
     _secondaryAnimationController.dispose();
 
-    // Dispose any loaded ads to free memory
     super.dispose();
-  }
-
-
-  /// Start attention-grabbing animations using Timer.periodic for better performance
-  void _startAttentionAnimations() {
-    // Start the secondary animation controller cycle immediately
-    _secondaryAnimationController.forward();
-
-    // Use Timer.periodic instead of Future.delayed chains for better performance
-    _attentionAnimationTimer = Timer.periodic(
-      const Duration(
-          seconds: 8), // Repeat every 8 seconds (6 sec animation + 2 sec pause)
-      (timer) {
-        if (mounted) {
-          _secondaryAnimationController.reset();
-          _secondaryAnimationController.forward();
-        } else {
-          timer.cancel();
-        }
-      },
-    );
   }
 
   void _showLanguageDialogIfNeeded() async {
@@ -214,53 +186,6 @@ class _HomeScreenState extends State<HomeScreen>
     context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
   }
 
-  /// Load results with cache-first strategy for better UX
-  void _loadLotteryResultsWithCache() {
-    // Load from cache first (fast), then immediately trigger background refresh
-    // Remove UI delays - let the BLoC handle cache-first then network pattern
-    context.read<HomeScreenResultsBloc>().add(LoadLotteryResultsEvent());
-
-    // Trigger background refresh immediately without delay
-    if (mounted) {
-      _refreshResultsInBackground();
-    }
-  }
-
-  void _refreshResults() {
-    // Add haptic feedback for pull-to-refresh
-    HapticFeedback.mediumImpact();
-
-    _lastRefreshTime = DateTime.now();
-    context.read<HomeScreenResultsBloc>().add(RefreshLotteryResultsEvent());
-  }
-
-  /// Refresh results in background without showing loading state
-  void _refreshResultsInBackground() {
-    // Only refresh if we haven't refreshed recently (within 2 minutes)
-    if (_lastRefreshTime != null &&
-        DateTime.now().difference(_lastRefreshTime!).inMinutes < 2) {
-      return;
-    }
-
-    _lastRefreshTime = DateTime.now();
-    context.read<HomeScreenResultsBloc>().add(BackgroundRefreshEvent());
-
-    // Use BLoC state to manage refresh indicator instead of setState
-    // Remove setState calls to eliminate unnecessary rebuilds
-  }
-
-  /// Set up periodic refresh timer
-  void _setupPeriodicRefresh() {
-    _periodicRefreshTimer = Timer.periodic(
-      const Duration(minutes: 5), // Refresh every 5 minutes
-      (timer) {
-        if (mounted) {
-          _refreshResultsInBackground();
-        }
-      },
-    );
-  }
-
   /// Handle app lifecycle changes
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -268,32 +193,25 @@ class _HomeScreenState extends State<HomeScreen>
 
     switch (state) {
       case AppLifecycleState.resumed:
-        // App came back to foreground - refresh data if it's been a while
+        // App resumed - notify BLoC
         if (mounted) {
-          _handleAppResumed();
+          context
+              .read<HomeScreenResultsBloc>()
+              .add(AppLifecycleChangedEvent(isResumed: true));
         }
         break;
       case AppLifecycleState.paused:
-        // App went to background - cancel periodic timer and dispose ads to save memory
-        _periodicRefreshTimer?.cancel();
+        // App paused - notify BLoC
+        if (mounted) {
+          context
+              .read<HomeScreenResultsBloc>()
+              .add(AppLifecycleChangedEvent(isResumed: false));
+        }
         break;
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
-        break;
       case AppLifecycleState.hidden:
         break;
-    }
-  }
-
-  /// Handle app resume - refresh data if needed
-  void _handleAppResumed() {
-    // Restart periodic refresh timer
-    _setupPeriodicRefresh();
-
-    // Refresh data if we haven't refreshed in the last 3 minutes
-    if (_lastRefreshTime == null ||
-        DateTime.now().difference(_lastRefreshTime!).inMinutes >= 3) {
-      _refreshResultsInBackground();
     }
   }
 
@@ -302,29 +220,10 @@ class _HomeScreenState extends State<HomeScreen>
     // Add haptic feedback for image tap
     HapticFeedback.lightImpact();
 
-    const String websiteUrl = 'https://lottokeralalotteries.com/';
+    final bool launched = await URLLauncherService.launchWebsite();
 
-    try {
-      final Uri url = Uri.parse(websiteUrl);
-
-      // Check if the URL can be launched
-      final bool canLaunch = await canLaunchUrl(url);
-
-      if (canLaunch) {
-        // Force launch in external browser
-        final bool launched = await launchUrl(
-          url,
-          mode: LaunchMode.externalApplication,
-        );
-
-        if (!launched) {
-          _showErrorSnackBar('could_not_open_website'.tr());
-        }
-      } else {
-        _showErrorSnackBar('could_not_open_website'.tr());
-      }
-    } catch (e) {
-      _showErrorSnackBar('error_opening_website'.tr());
+    if (!launched && mounted) {
+      _showErrorSnackBar('could_not_open_website'.tr());
     }
   }
 
@@ -333,73 +232,11 @@ class _HomeScreenState extends State<HomeScreen>
     // Add haptic feedback for menu selection
     HapticFeedback.lightImpact();
 
-    const String whatsappGroupUrl =
-        'https://chat.whatsapp.com/Lp7h3ft3I0xAsbGoLx9IW2?mode=ems_share_t';
+    final bool launched = await URLLauncherService.launchWhatsAppGroup();
 
-    try {
-      final Uri url = Uri.parse(whatsappGroupUrl);
-
-      // Check if the URL can be launched
-      final bool canLaunch = await canLaunchUrl(url);
-
-      if (canLaunch) {
-        // Try to launch the URL with external application mode for WhatsApp
-        final bool launched = await launchUrl(
-          url,
-          mode: LaunchMode.externalApplication,
-        );
-
-        if (!launched) {
-          _showErrorSnackBar('could_not_open_whatsapp'.tr());
-        }
-      } else {
-        _showErrorSnackBar('could_not_open_whatsapp'.tr());
-      }
-    } catch (e) {
-      _showErrorSnackBar('error_opening_whatsapp'.tr());
+    if (!launched && mounted) {
+      _showErrorSnackBar('could_not_open_whatsapp'.tr());
     }
-  }
-
-  /// Check and show rate us dialog based on visit count
-  Future<void> _checkAndShowRateUsDialog() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // Check if rate us has been permanently dismissed
-      final isPermanentlyDismissed = prefs.getBool(_prefKeyRateUsShown) ?? false;
-      if (isPermanentlyDismissed) return;
-      
-      // Increment visit count
-      final visitCount = (prefs.getInt(_prefKeyHomeVisitCount) ?? 0) + 1;
-      await prefs.setInt(_prefKeyHomeVisitCount, visitCount);
-      
-      // Show dialog on threshold visit
-      if (visitCount == _rateUsShowThreshold) {
-        if (mounted) {
-          // Small delay to ensure UI is ready
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              _showRateUsDialogAuto();
-            }
-          });
-        }
-      }
-    } catch (e) {
-      // Silently handle errors
-    }
-  }
-
-  /// Show rate us dialog automatically with tracking
-  void _showRateUsDialogAuto() {
-    HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => RateUsDialog(
-        onNotNow: _handleRateUsNotNow,
-        onContinue: _handleRateUsContinue,
-      ),
-    );
   }
 
   /// Show rate us dialog manually from menu
@@ -407,28 +244,15 @@ class _HomeScreenState extends State<HomeScreen>
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
-      builder: (context) => const RateUsDialog(),
+      builder: (context) => RateUsDialog(
+        onNotNow: () {
+          context.read<RateUsBloc>().add(RateUsNotNowEvent());
+        },
+        onContinue: () {
+          context.read<RateUsBloc>().add(RateUsContinueEvent());
+        },
+      ),
     );
-  }
-
-  /// Handle "Not Now" button - reset counter
-  Future<void> _handleRateUsNotNow() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_prefKeyHomeVisitCount, 0); // Reset counter
-    } catch (e) {
-      // Silently handle errors
-    }
-  }
-
-  /// Handle "Continue" button - permanently dismiss
-  Future<void> _handleRateUsContinue() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_prefKeyRateUsShown, true); // Permanently dismiss
-    } catch (e) {
-      // Silently handle errors
-    }
   }
 
   /// Show error snackbar for website launch failures
@@ -490,53 +314,70 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  // Helper method to format date for display
-  String _formatDateForDisplay(DateTime date) {
-    final months = [
-      'month_jan'.tr(),
-      'month_feb'.tr(),
-      'month_mar'.tr(),
-      'month_apr'.tr(),
-      'month_may'.tr(),
-      'month_jun'.tr(),
-      'month_jul'.tr(),
-      'month_aug'.tr(),
-      'month_sep'.tr(),
-      'month_oct'.tr(),
-      'month_nov'.tr(),
-      'month_dec'.tr()
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: _buildAppBar(theme),
-      body: BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-        listener: (context, state) {
-          // Clear any existing snackbars first
-          ScaffoldMessenger.of(context).clearSnackBars();
+    return MultiBlocListener(
+      listeners: [
+        // HomeScreen results listener
+        BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+          listener: (context, state) {
+            // Clear any existing snackbars first
+            ScaffoldMessenger.of(context).clearSnackBars();
 
-          if (state is HomeScreenResultsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${'error_prefix'.tr()}${state.message}'),
-                backgroundColor: Colors.red,
-                action: SnackBarAction(
-                  label: 'retry'.tr(),
-                  textColor: Colors.white,
-                  onPressed: _loadLotteryResults,
+            if (state is HomeScreenResultsError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${'error_prefix'.tr()}${state.message}'),
+                  backgroundColor: Colors.red,
+                  action: SnackBarAction(
+                    label: 'retry'.tr(),
+                    textColor: Colors.white,
+                    onPressed: _loadLotteryResults,
+                  ),
                 ),
-              ),
-            );
-          }
-        },
-        child: RefreshIndicator(
+              );
+            }
+          },
+        ),
+        // Rate Us BLoC listener
+        BlocListener<RateUsBloc, RateUsState>(
+          listener: (context, state) {
+            if (state is RateUsShowDialog) {
+              // Capture context before async gap
+              final navigator = Navigator.of(context);
+              final rateUsBloc = context.read<RateUsBloc>();
+
+              // Small delay to ensure UI is ready
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  HapticFeedback.lightImpact();
+                  showDialog(
+                    context: navigator.context,
+                    barrierDismissible: false,
+                    builder: (dialogContext) => RateUsDialog(
+                      onNotNow: () {
+                        rateUsBloc.add(RateUsNotNowEvent());
+                      },
+                      onContinue: () {
+                        rateUsBloc.add(RateUsContinueEvent());
+                      },
+                    ),
+                  );
+                }
+              });
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: _buildAppBar(theme),
+        body: RefreshIndicator(
           onRefresh: () async {
-            _refreshResults();
+            HapticFeedback.mediumImpact();
+            context.read<HomeScreenResultsBloc>().add(RefreshLotteryResultsEvent());
           },
           child: SingleChildScrollView(
             controller: _scrollController,
@@ -582,16 +423,16 @@ class _HomeScreenState extends State<HomeScreen>
                   onLoadLotteryResults: _loadLotteryResults,
                   onShowDatePicker: _showDatePicker,
                   blinkAnimation: _blinkAnimation,
-                  formatDateForDisplay: _formatDateForDisplay,
+                  formatDateForDisplay: DateFormatter.formatDateForDisplay,
                 ),
                 SizedBox(height: AppResponsive.spacing(context, 100)),
               ],
             ),
           ),
         ),
+        floatingActionButton: _buildScanButton(theme),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      floatingActionButton: _buildScanButton(theme),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

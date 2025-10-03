@@ -29,23 +29,24 @@ class HomeScreenResultsRepository {
 
       // Cache-first strategy
       final cachedData = await _cacheRepository.getCachedHomeScreenResults();
-      final isCacheValid = await _cacheRepository.isCacheValid();
 
-      // If we have valid cached data and we're offline, return cached data
-      if (cachedData != null && isCacheValid && _connectivityService.isOffline) {
+      // If we have cached data and we're offline, return cached data (even if expired)
+      if (cachedData != null && _connectivityService.isOffline) {
         return cachedData;
       }
 
-      // If we have valid cached data and we're online, return cached data immediately
-      // but also fetch fresh data in the background
-      if (cachedData != null && isCacheValid && _connectivityService.isOnline) {
+      // ALWAYS trigger background refresh if online (regardless of cache validity)
+      // This ensures fresh data is fetched every time the app opens
+      if (_connectivityService.isOnline) {
         // Background refresh with callback
         _backgroundRefresh(onBackgroundRefreshComplete);
-        return cachedData;
-      }
 
-      // If we're online and don't have valid cached data, fetch from network
-      if (_connectivityService.isOnline) {
+        // If we have any cached data, return it immediately (cache-first)
+        if (cachedData != null) {
+          return cachedData;
+        }
+
+        // No cached data - fetch from network synchronously
         return await _fetchAndCacheFromNetwork();
       }
 
@@ -62,7 +63,7 @@ class HomeScreenResultsRepository {
       if (cachedData != null) {
         return cachedData;
       }
-      
+
       throw Exception('Failed to get home screen results: $e');
     }
   }

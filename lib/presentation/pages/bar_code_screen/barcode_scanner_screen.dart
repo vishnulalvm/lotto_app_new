@@ -17,7 +17,9 @@ class BarcodeScannerScreen extends StatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with WidgetsBindingObserver {
-  MobileScannerController cameraController = MobileScannerController();
+  MobileScannerController cameraController = MobileScannerController(
+    autoStart: false,
+  );
   bool isFlashOn = false;
   DateTime selectedDate = DateTime.now();
   String? lastScannedCode;
