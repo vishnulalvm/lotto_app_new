@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -35,42 +36,51 @@ class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return AppBar(
-      backgroundColor: theme.appBarTheme.backgroundColor,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: theme.appBarTheme.iconTheme?.color),
-        onPressed: () => context.go('/'),
-      ),
-      title: BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
-        builder: (context, state) {
-          if (state is LotteryResultDetailsLoaded) {
-            return Text(
-              state.data.result.lotteryName.toUpperCase(),
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            );
-          }
-          return Text(
-            'Lottery Result',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+    return PreferredSize(
+      preferredSize: preferredSize,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AppBar(
+            backgroundColor: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.2),
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: theme.appBarTheme.iconTheme?.color),
+              onPressed: () => context.go('/'),
             ),
-          );
-        },
+            title: BlocBuilder<LotteryResultDetailsBloc, LotteryResultDetailsState>(
+              builder: (context, state) {
+                if (state is LotteryResultDetailsLoaded) {
+                  return Text(
+                    state.data.result.lotteryName.toUpperCase(),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                }
+                return Text(
+                  'Lottery Result',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
+            ),
+            actions: [
+              // Filter dropdown menu
+              _buildFilterMenu(theme),
+              // Copy Button
+              _buildCopyButton(theme),
+              // More options menu (Share & Bookmark)
+              _buildMoreMenu(theme),
+            ],
+          ),
+        ),
       ),
-      actions: [
-        // Filter dropdown menu
-        _buildFilterMenu(theme),
-        // Copy Button
-        _buildCopyButton(theme),
-        // More options menu (Share & Bookmark)
-        _buildMoreMenu(theme),
-      ],
     );
   }
 

@@ -285,6 +285,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(theme, context),
       floatingActionButton: _buildFloatingActionButton(),
@@ -433,7 +434,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
 
                 if (isLive) {
                   return Positioned(
-                    top: 0,
+                    top: 100,
                     left: 0,
                     right: 0,
                     child: Container(
@@ -517,7 +518,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: EdgeInsets.only(
-            top: _isResultLive(result) ? 56.0 : 8.0,
+            top: _isResultLive(result) ? 136.0 : 108.0,
             bottom: 8.0,
             left: 8.0,
             right: 8.0,

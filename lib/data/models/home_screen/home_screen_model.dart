@@ -13,6 +13,8 @@ class LotteryLocalizationHelper {
     'STHREE SAKTHI': 'sthreeSakthi',
     'DHANALEKSHMI': 'dhanalekshmi',
     'MANSOON BUMPER': 'monsoonbumper',
+    'THIRUVONAM BUMPER': 'thiruvonamBumper',
+    'CHRISTMAS NEW YEAR BUMPER': 'christmasNewYearBumper',
   };
 
   static String getLotteryKey(String lotteryName) {

@@ -875,6 +875,7 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
       'T': 'THIRUVONAM BUMPER',  // T - THIRUVONAM BUMPER
       'V': 'VISHU BUMPER',       // V - VISHU BUMPER
       'X': 'CHRISTMAS NEW YEAR BUMPER', // X - CHRISTMAS NEW YEAR BUMPER
+      'C': 'CHRISTMAS NEW YEAR BUMPER', // C - CHRISTMAS NEW YEAR BUMPER (alternative)      // O - ONAM BUMPER
     };
 
     String cleanedBarcode = BarcodeValidator.cleanTicketNumber(barcode);
