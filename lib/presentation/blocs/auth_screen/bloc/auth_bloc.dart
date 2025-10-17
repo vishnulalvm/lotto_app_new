@@ -3,6 +3,7 @@ import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
 import 'package:lotto_app/data/services/firebase_messaging_service.dart';
+import 'dart:developer' as developer;
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
@@ -22,10 +23,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await repository.login(event.phoneNumber);
-      
+
       // Register FCM token after successful login
-      await FirebaseMessagingService.registerToken(notificationsEnabled: true);
-      
+      await _registerFcmToken('login');
+
       emit(AuthSuccess(
         phoneNumber: user.phoneNumber,
         name: user.name,
@@ -43,10 +44,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await repository.register(event.name, event.phoneNumber);
-      
+
       // Register FCM token after successful registration
-      await FirebaseMessagingService.registerToken(notificationsEnabled: true);
-      
+      await _registerFcmToken('register');
+
       emit(AuthSuccess(
         phoneNumber: user.phoneNumber,
         name: user.name,
@@ -54,6 +55,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ));
     } catch (e) {
       emit(AuthFailure(e.toString()));
+    }
+  }
+
+  /// Helper method to register FCM token with logging
+  Future<void> _registerFcmToken(String source) async {
+    try {
+      developer.log('Attempting FCM token registration from: $source',
+          name: 'AuthBloc');
+
+      final success = await FirebaseMessagingService.registerToken(
+        notificationsEnabled: true,
+      );
+
+      if (success) {
+        developer.log('FCM token registered successfully from: $source',
+            name: 'AuthBloc');
+      } else {
+        developer.log('FCM token registration failed from: $source',
+            name: 'AuthBloc');
+      }
+    } catch (e) {
+      developer.log('FCM token registration error from: $source - $e',
+          name: 'AuthBloc', error: e);
+      // Don't throw - allow authentication to succeed even if FCM registration fails
     }
   }
 
@@ -102,6 +127,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       // First try to register the user
       final user = await repository.register(event.name, event.phoneNumber);
+
+      // Register FCM token after successful registration
+      await _registerFcmToken('autoSignIn-register');
+
       emit(AuthSuccess(
         phoneNumber: user.phoneNumber,
         name: user.name,
@@ -116,6 +145,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // User exists, try to sign in instead
         try {
           final user = await repository.login(event.phoneNumber);
+
+          // Register FCM token after successful login
+          await _registerFcmToken('autoSignIn-login');
+
           emit(AuthSuccess(
             phoneNumber: user.phoneNumber,
             name: user.name,

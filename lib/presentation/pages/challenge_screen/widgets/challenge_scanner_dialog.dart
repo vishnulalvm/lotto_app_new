@@ -570,10 +570,6 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    // Store context values before async operation
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
-    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
@@ -592,16 +588,6 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
         isProcessing = false;
       });
 
-      // Show feedback to user
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('date_updated_scanner_ready'.tr()),
-            backgroundColor: theme.primaryColor,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
     }
   }
 
@@ -829,17 +815,6 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
       // Try to extract lottery name from barcode format (like RP for specific lottery types)
       String? lotteryName = _extractLotteryName(code);
 
-      // Show success message first
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('lottery_ticket_scanned_successfully'.tr()),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
 
       if (isAutoAddEnabled) {
         // Auto-add mode: add directly with default price and close scanner

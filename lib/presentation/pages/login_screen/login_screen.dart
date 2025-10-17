@@ -7,7 +7,6 @@ import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
-import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -172,13 +171,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 duration: const Duration(milliseconds: 300),
                 content: Text(state.message)),
           );
-          
-          // Enable notifications after successful sign-in
-          FirebaseMessagingService.updateNotificationSettings(true).then((success) {
-          }).catchError((error) {
-          });
-          
-          context.go('/'); // Navigate to home page
+
+          // Navigate to home page
+          // Note: FCM token registration is already handled in AuthBloc
+          context.go('/');
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('auth_error'.tr())),

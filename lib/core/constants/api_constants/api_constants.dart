@@ -18,4 +18,5 @@ class ApiConstants {
   static const String userPoints = '/results/user-points/';
   static const String lotteryPurchase = '/users/lottery-purchase/';
   static const String lotteryStatistics = '/users/lottery-statistics/';
+  static const String feedback = '/users/feedback/';
 }

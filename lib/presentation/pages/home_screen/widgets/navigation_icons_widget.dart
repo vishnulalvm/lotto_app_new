@@ -12,7 +12,6 @@ class NavigationIconsWidget extends StatefulWidget {
 }
 
 class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
-
   // Cached values for performance
   ThemeData? _cachedTheme;
   late bool _isDark;
@@ -32,7 +31,6 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
   // Cached navigation items
   late List<Map<String, dynamic>> _navItems;
 
-
   @override
   void initState() {
     super.initState();
@@ -49,16 +47,16 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
         'route': '/barcode_scanner_screen'
       },
       {'icon': Icons.live_tv, 'label': 'Live', 'route': '/live_videos'},
+      {'icon': Icons.games_outlined, 'label': 'Predict', 'route': '/predict'},
       {
-        'icon': Icons.games_outlined,
-        'label': 'Predict',
-        'route': '/predict'
+        'icon': Icons.bar_chart_outlined,
+        'label': 'Statistic',
+        'route': '/challenge_screen'
       },
-      {'icon': Icons.emoji_events, 'label': 'Challenge', 'route': '/challenge_screen'},
       {
-        'image': 'assets/icons/lotto_points.png',
-        'label': 'Points',
-        'route': '/lottoPoints'
+        'icon': Icons.feedback_outlined,
+        'label': 'Feedback',
+        'route': '/feedback'
       },
     ];
   }
@@ -74,7 +72,6 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
     _darkBackground = const Color(0xFF2D1518);
   }
 
-
   void _cacheResponsiveValues(BuildContext context) {
     _iconSize = AppResponsive.fontSize(context, 24);
     _imageSize = AppResponsive.fontSize(context, 24); // Smaller size for images
@@ -88,8 +85,6 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
     _blurRadius = AppResponsive.spacing(context, 8);
     _shadowOffset = Offset(0, AppResponsive.spacing(context, 2));
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -115,19 +110,11 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: _navItems.map((item) {
-          // Special handling for points button
-          if (item['label'] == 'Points') {
-            return _buildPointsButton(context, item, theme);
-          }
           return _buildOptimizedNavItem(context, item, theme);
         }).toList(),
       ),
     );
   }
-
-
-
-
 
   Widget _buildOptimizedNavItem(
       BuildContext context, Map<String, dynamic> item, ThemeData theme) {
@@ -156,52 +143,6 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
                     color: theme.iconTheme.color,
                     size: _iconSize,
                   ),
-          ),
-          SizedBox(height: _spacing),
-          SizedBox(
-            width: _textWidth,
-            child: Text(
-              item['label'],
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: AppResponsive.fontSize(context, 12),
-                fontWeight: FontWeight.bold,
-                color: theme.textTheme.bodyMedium?.color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Dedicated method for the Points button
-  Widget _buildPointsButton(
-      BuildContext context, Map<String, dynamic> item, ThemeData theme) {
-    return InkWell(
-      onTap: () => _handleRegularNavTap(item),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: _containerSize,
-            height: _containerSize,
-            decoration: BoxDecoration(
-              color: _isDark
-                  ? _darkBackground
-                  : _lightBackground, // Use same background as other buttons
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Image.asset(
-                'assets/icons/lotto_points.png',
-                width: _imageSize,
-                height: _imageSize,
-                color: theme
-                    .iconTheme.color, // Use theme icon color for both modes
-              ),
-            ),
           ),
           SizedBox(height: _spacing),
           SizedBox(

@@ -73,17 +73,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
           widget.onEntryAdded(lotteryNumber, price, _selectedDate, finalLotteryName);
           
           Navigator.of(context).pop();
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.response.message),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+        
         } else if (state is LotteryPurchaseError) {
           setState(() {
             _isLoading = false;

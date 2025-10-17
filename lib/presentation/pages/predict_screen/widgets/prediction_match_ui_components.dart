@@ -106,13 +106,12 @@ class PredictionMatchUIComponents {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.green[50]!, Colors.green[100]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: Colors.green[700]!,
+              width: .5,
+            ),
           ),
           child: Row(
             children: [
@@ -149,24 +148,17 @@ class PredictionMatchUIComponents {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue[400]!, Colors.blue[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            color: Colors.transparent,
+            border: Border.all(
+              color: Colors.blue[700]!,
+              width: .5,
             ),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withValues(alpha: 0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Text(
             '$prizeType Prize',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white,
+              color: Colors.blue[700],
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -178,7 +170,9 @@ class PredictionMatchUIComponents {
   /// Builds a grid showing only matched numbers with their prize types
   static Widget _buildMatchedNumbersGrid(ThemeData theme, Map<String, String> matchedNumbersWithPrizeType) {
     final entries = matchedNumbersWithPrizeType.entries.toList();
-    
+    final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+    final borderColor = Colors.green[700]!;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -193,22 +187,15 @@ class PredictionMatchUIComponents {
         final entry = entries[index];
         final number = entry.key;
         final prizeType = entry.value;
-        
+
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.green[400]!, Colors.green[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            color: Colors.transparent,
+            border: Border.all(
+              color: borderColor,
+              width: .5,
             ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.green.withValues(alpha: 0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -216,7 +203,7 @@ class PredictionMatchUIComponents {
               Text(
                 number,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+                  color: textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -225,7 +212,7 @@ class PredictionMatchUIComponents {
               Text(
                 prizeType,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
+                  color: borderColor,
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),

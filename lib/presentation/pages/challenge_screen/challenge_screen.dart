@@ -27,7 +27,6 @@ class ChallengeScreen extends StatefulWidget {
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _isStatisticsExpanded = false;
   final UserService _userService = UserService();
   List<LotteryEntry> _lotteryEntries = [];
   Timer? _adTimer;
@@ -119,13 +118,16 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     if (userId != null && mounted) {
       if (forceRefresh) {
         context.read<LotteryStatisticsBloc>().add(
-          RefreshLotteryStatistics(userId: userId),
-        );
+              RefreshLotteryStatistics(userId: userId),
+            );
       } else {
         context.read<LotteryStatisticsBloc>().add(
-          LoadLotteryStatistics(userId: userId),
-        );
+              LoadLotteryStatistics(userId: userId),
+            );
       }
+
+      // Wait a moment to allow the bloc to process
+      await Future.delayed(const Duration(milliseconds: 500));
     }
   }
 
@@ -137,12 +139,11 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       // Load more entries for infinite scroll
     }
   }
-
-
 
   LotteryEntry _convertToLotteryEntry(LotteryEntryModel model) {
     return LotteryEntry(
@@ -172,7 +173,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return MultiBlocListener(
       listeners: [
         BlocListener<LotteryStatisticsBloc, LotteryStatisticsState>(
@@ -201,18 +202,14 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             if (state is LotteryPurchaseDeleteSuccess) {
               // Hide loading snackbar
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              
-              // Show success message
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('entry_deleted_successfully'.tr())),
-              );
-              
+
+
               // Refresh data
               _loadLotteryStatistics(forceRefresh: true);
             } else if (state is LotteryPurchaseDeleteError) {
               // Hide loading snackbar
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              
+
               // Show error message
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -229,14 +226,24 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         appBar: _buildAppBar(theme),
         body: BlocBuilder<LotteryStatisticsBloc, LotteryStatisticsState>(
           builder: (context, state) {
-            return Column(
-              children: [
-                _buildMotivationalBanner(theme),
-                _buildStatisticsSection(theme, state),
-                Expanded(
-                  child: _buildCombinedTable(theme, state),
+            return RefreshIndicator(
+              onRefresh: () async {
+                HapticFeedback.mediumImpact();
+                await _loadLotteryStatistics(forceRefresh: true);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // _buildMotivationalBanner(theme),
+                    _buildStatisticsSection(theme, state),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: _buildCombinedTable(theme, state),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         ),
@@ -258,15 +265,25 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         },
       ),
       title: Text(
-        'Challenge',
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
+        'STATISTICS',
+     style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
       ),
       actions: [
+        IconButton(
+          icon: Icon(Icons.refresh, color: theme.appBarTheme.iconTheme?.color),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _loadLotteryStatistics(forceRefresh: true);
+
+          },
+          tooltip: 'refresh'.tr(),
+        ),
         PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: theme.appBarTheme.iconTheme?.color),
+          icon:
+              Icon(Icons.more_vert, color: theme.appBarTheme.iconTheme?.color),
           onSelected: (value) {
             if (value == 'manual_entry') {
               _showManualEntryDialog();
@@ -289,61 +306,9 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
-  Widget _buildMotivationalBanner(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.primaryColor.withValues(alpha: theme.brightness == Brightness.dark ? 0.15 : 0.2),
-            theme.primaryColor.withValues(alpha: theme.brightness == Brightness.dark ? 0.08 : 0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.primaryColor.withValues(alpha: theme.brightness == Brightness.dark ? 0.25 : 0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.primaryColor.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Add Lottery and Start Challenge',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-              fontSize: 20,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Track your wins, losses, and see your progress!',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-              fontSize: 15,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildStatisticsSection(ThemeData theme, LotteryStatisticsState state) {
+  Widget _buildStatisticsSection(
+      ThemeData theme, LotteryStatisticsState state) {
     double totalExpense = 0.0;
     double totalWinnings = 0.0;
     int totalTickets = 0;
@@ -359,11 +324,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       winRate = stats.winRate;
     } else {
       // Fallback to calculate from local data if API data not available
-      totalExpense = _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.price);
-      totalWinnings = _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.winningAmount);
+      totalExpense =
+          _lotteryEntries.fold<double>(0.0, (sum, entry) => sum + entry.price);
+      totalWinnings = _lotteryEntries.fold<double>(
+          0.0, (sum, entry) => sum + entry.winningAmount);
       totalTickets = _lotteryEntries.length;
       netProfitLoss = totalWinnings - totalExpense;
-      winRate = totalTickets > 0 ? (_lotteryEntries.where((e) => e.status == LotteryStatus.won).length / totalTickets) * 100 : 0.0;
+      winRate = totalTickets > 0
+          ? (_lotteryEntries
+                      .where((e) => e.status == LotteryStatus.won)
+                      .length /
+                  totalTickets) *
+              100
+          : 0.0;
     }
 
     return Container(
@@ -386,187 +359,131 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       ),
       child: Column(
         children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isStatisticsExpanded = !_isStatisticsExpanded;
-              });
-              HapticFeedback.lightImpact();
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'challenge_statistics'.tr(),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                      fontSize: 20,
-                    ),
-                  ),
-                ),
-                Icon(
-                  _isStatisticsExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: theme.primaryColor,
-                  size: 28,
-                ),
-              ],
-            ),
-          ),
-          // Motivational message for new users
-          if (totalTickets == 0) ...[
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.primaryColor.withValues(alpha: 0.15),
-                    theme.primaryColor.withValues(alpha: 0.08),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: theme.primaryColor.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Start Your Challenge!',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                      fontSize: 20,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Add your lottery tickets and track your wins! Use the + button to scan or manually enter your lottery entries.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.textTheme.bodySmall?.color,
-                      fontSize: 16,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
-          // Expandable statistics content
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 300),
-            crossFadeState: _isStatisticsExpanded 
-                ? CrossFadeState.showSecond 
-                : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Column(
-                children: [
-                  Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'total_expense'.tr(),
-                  '�${totalExpense.toStringAsFixed(0)}',
-                  Icons.trending_down,
-                  Colors.red,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'total_winnings'.tr(),
-                  '�${totalWinnings.toStringAsFixed(0)}',
-                  Icons.trending_up,
-                  Colors.green,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          // Static title (no longer clickable)
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'total_tickets'.tr(),
-                  totalTickets.toString(),
-                  Icons.confirmation_number,
-                  Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'win_rate'.tr(),
-                  '${winRate.toStringAsFixed(1)}%',
-                  Icons.percent,
-                  Colors.purple,
+                child: Text(
+                  'challenge_statistics'.tr(),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 20,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: netProfitLoss >= 0 ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: netProfitLoss >= 0 ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  netProfitLoss >= 0 ? Icons.trending_up : Icons.trending_down,
-                  color: netProfitLoss >= 0 ? Colors.green : Colors.red,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'net_result'.tr(),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: netProfitLoss >= 0 ? Colors.green : Colors.red,
+          const SizedBox(height: 16),
+
+          // Statistics content (always visible)
+          Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          theme,
+                          'total_expense'.tr(),
+                          totalExpense.toStringAsFixed(0),
+                          Icons.trending_down,
+                          Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          theme,
+                          'total_winnings'.tr(),
+                          totalWinnings.toStringAsFixed(0),
+                          Icons.trending_up,
+                          Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '�${netProfitLoss.abs().toStringAsFixed(0)}',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: netProfitLoss >= 0 ? Colors.green : Colors.red,
-                    fontSize: 18,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          theme,
+                          'total_tickets'.tr(),
+                          totalTickets.toString(),
+                          Icons.confirmation_number,
+                          Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          theme,
+                          'win_rate'.tr(),
+                          '${winRate.toStringAsFixed(1)}%',
+                          Icons.percent,
+                          Colors.purple,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: netProfitLoss >= 0
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: netProfitLoss >= 0
+                            ? Colors.green.withValues(alpha: 0.3)
+                            : Colors.red.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          netProfitLoss >= 0
+                              ? Icons.trending_up
+                              : Icons.trending_down,
+                          color: netProfitLoss >= 0 ? Colors.green : Colors.red,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'net_result'.tr(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          netProfitLoss.abs().toStringAsFixed(0),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(ThemeData theme, String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      ThemeData theme, String title, String value, IconData icon, Color color) {
+    // Use theme-aware text color instead of the accent color for better readability
+    final textColor = theme.colorScheme.onSurface;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -582,7 +499,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             title,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: color,
+              color: textColor,
               fontWeight: FontWeight.w500,
               fontSize: 14,
             ),
@@ -594,7 +511,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: color,
+              color: textColor,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -641,11 +558,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           ),
           headingTextStyle: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: theme.primaryColor,
+            color: theme.colorScheme.onSurface,
             fontSize: 16,
           ),
           dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
             fontSize: 16,
+            color: theme.colorScheme.onSurface,
           ),
           columns: [
             DataColumn(
@@ -741,6 +659,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -755,6 +674,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -784,6 +704,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -797,6 +718,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -806,11 +728,15 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   SizedBox(
                     width: 70,
                     child: Text(
-                      entry.winningAmount > 0 ? '₹${entry.winningAmount.toStringAsFixed(0)}' : '-',
+                      entry.winningAmount > 0
+                          ? '₹${entry.winningAmount.toStringAsFixed(0)}'
+                          : '-',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: entry.winningAmount > 0 ? Colors.green : null,
+                        color: entry.winningAmount > 0
+                            ? Colors.green
+                            : theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -820,9 +746,11 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   SizedBox(
                     width: 60,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(entry.status).withValues(alpha: 0.2),
+                        color: _getStatusColor(entry.status)
+                            .withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -838,13 +766,16 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     width: 80,
                     child: _shouldShowViewResultButton(entry.status)
                         ? ElevatedButton(
-                            onPressed: () => _navigateToResultDetails(entry.lotteryUniqueId, entry.lotteryNumber),
+                            onPressed: () => _navigateToResultDetails(
+                                entry.lotteryUniqueId, entry.lotteryNumber),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: theme.primaryColor,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               minimumSize: const Size(60, 28),
-                              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                              textStyle: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w500),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(6),
                               ),
@@ -881,7 +812,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
-
   Widget _buildLoadingState(ThemeData theme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -904,7 +834,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             'Loading lottery statistics...',
             style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -945,7 +875,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             errorMessage,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
+              color: theme.colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
@@ -990,7 +920,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             'no_lottery_entries'.tr(),
             style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -998,7 +928,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           Text(
             'tap_add_button_to_start'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
+              color: theme.colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1041,12 +971,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     }
   }
 
-
   void _showManualEntryDialog() {
     showDialog(
       context: context,
       builder: (context) => ManualEntryDialog(
-        onEntryAdded: (String lotteryNumber, double price, DateTime date, String lotteryName) {
+        onEntryAdded: (String lotteryNumber, double price, DateTime date,
+            String lotteryName) {
           _addNewEntry(lotteryNumber, price, date, lotteryName);
         },
       ),
@@ -1058,7 +988,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ChallengeScannerDialog(
-          onScanResult: (String lotteryNumber, double? price, DateTime date, String? lotteryName) {
+          onScanResult: (String lotteryNumber, double? price, DateTime date,
+              String? lotteryName) {
             Navigator.pop(context, {
               'lotteryNumber': lotteryNumber,
               'price': price ?? 0.0,
@@ -1069,7 +1000,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         ),
       ),
     );
-    
+
     if (result != null && result is Map<String, dynamic>) {
       _addNewEntry(
         result['lotteryNumber'] as String,
@@ -1080,7 +1011,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     }
   }
 
-  void _addNewEntry(String lotteryNumber, double price, DateTime date, [String? lotteryName]) {
+  void _addNewEntry(String lotteryNumber, double price, DateTime date,
+      [String? lotteryName]) {
     // Optimistic update - add entry to UI immediately
     setState(() {
       // Remove dummy data when first real entry is added
@@ -1100,7 +1032,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         status: LotteryStatus.pending,
         lotteryUniqueId: null, // Will be updated when API returns the data
       );
-      _lotteryEntries.insert(0, newEntry); // Add to the beginning for newest first
+      _lotteryEntries.insert(
+          0, newEntry); // Add to the beginning for newest first
     });
 
     // Refresh statistics from API in background to get updated data
@@ -1153,30 +1086,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       // Convert string ID to integer for API call
       final id = int.parse(entryId);
 
-      // Show loading indicator
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              const SizedBox(width: 12),
-              Text('deleting_entry'.tr()),
-            ],
-          ),
-          duration: const Duration(seconds: 30),
-        ),
-      );
 
       // Call delete API
       if (!mounted) return;
       context.read<LotteryPurchaseBloc>().add(
-        DeleteLotteryPurchase(userId: userId, id: id),
-      );
+            DeleteLotteryPurchase(userId: userId, id: id),
+          );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();

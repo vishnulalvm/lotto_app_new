@@ -80,10 +80,15 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: theme.cardTheme.elevation,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+   color:theme.cardColor,
+        border: Border.all(
+          color: theme.primaryColor,
+          width: .5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(

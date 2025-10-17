@@ -53,24 +53,17 @@ class AdMobService {
   // INTERSTITIAL AD UNIT IDs
   static const String interstitialResultsPredict = 'ca-app-pub-1386225714525775/8656073343';
   static const String interstitialResultsSeemore = 'ca-app-pub-1386225714525775/4716828336';
-  static const String interstitialLottoPoints = 'ca-app-pub-1386225714525775/1255199620';
   static const String interstitialScratchCard = 'ca-app-pub-1386225714525775/6288123744';
   static const String interstitialChallenge = 'ca-app-pub-1386225714525775/7335325539';
-  
+
   // Test ad unit IDs (use for debugging NO_FILL issues)
   static const String testInterstitial = 'ca-app-pub-3940256099942544/1033173712';
-  
+
   // Debug mode flag - set to true to use test ads
   static const bool useTestAds = false; // Production mode - using real ad units
-  
+
   // NATIVE AD UNIT IDs
   static const String nativeLiveVideo = 'ca-app-pub-1386225714525775/5079790413';
-  static const String nativeLottoPoints = 'ca-app-pub-1386225714525775/5247311376';
-  static const String nativeNewsFeed = 'ca-app-pub-1386225714525775/6560393048';
-  
-  // REWARDED AD UNIT IDs
-  static const String rewardedCashbackClaim = 'ca-app-pub-1386225714525775/9155813941';
-  static const String rewardedLottoPoints = 'ca-app-pub-1386225714525775/9572986036';
   
 
   // Consolidated ad state management
@@ -281,33 +274,21 @@ class AdMobService {
   }
 
   // Convenience methods for specific ad types
-  
+
   Future<void> loadPredictInterstitialAd() => loadAd('predict_interstitial');
-  
-  Future<void> loadCashbackClaimRewardedAd() => loadAd('cashback_claim_rewarded');
-  
-  Future<void> loadLottoPointsRewardedAd() => loadAd('lotto_points_rewarded');
-  
-  Future<void> loadLottoPointsInterstitialAd() => loadAd('lotto_points_interstitial');
-  
+
   Future<void> loadScratchCardInterstitialAd() => loadAd('scratch_card_interstitial');
-  
+
   Future<void> loadChallengeInterstitialAd() => loadAd('challenge_interstitial');
-  
-  
+
+
   InterstitialAd? getPredictInterstitialAd() => getAd<InterstitialAd>('predict_interstitial');
-  InterstitialAd? getLottoPointsInterstitialAd() => getAd<InterstitialAd>('lotto_points_interstitial');
   InterstitialAd? getScratchCardInterstitialAd() => getAd<InterstitialAd>('scratch_card_interstitial');
   InterstitialAd? getChallengeInterstitialAd() => getAd<InterstitialAd>('challenge_interstitial');
-  RewardedAd? getCashbackClaimRewardedAd() => getAd<RewardedAd>('cashback_claim_rewarded');
-  RewardedAd? getLottoPointsRewardedAd() => getAd<RewardedAd>('lotto_points_rewarded');
-  
+
   bool get isPredictInterstitialAdLoaded => isAdLoaded('predict_interstitial');
-  bool get isLottoPointsInterstitialAdLoaded => isAdLoaded('lotto_points_interstitial');
   bool get isScratchCardInterstitialAdLoaded => isAdLoaded('scratch_card_interstitial');
   bool get isChallengeInterstitialAdLoaded => isAdLoaded('challenge_interstitial');
-  bool get isCashbackClaimRewardedAdLoaded => isAdLoaded('cashback_claim_rewarded');
-  bool get isLottoPointsRewardedAdLoaded => isAdLoaded('lotto_points_rewarded');
 
   // Get shared ad for multiple widget usage (doesn't increment usage count)
   T? getSharedAd<T>(String adType) {
@@ -682,18 +663,16 @@ class AdMobService {
 
   // Type checking helpers
   bool _isNativeAdType(String adType) {
-    return ['live_video', 'lotto_points', 'news_feed'].contains(adType);
+    return ['live_video'].contains(adType);
   }
 
   bool _isInterstitialAdType(String adType) {
-    return ['predict_interstitial', 'seemore_interstitial', 'lotto_points_interstitial', 'scratch_card_interstitial', 'challenge_interstitial'].contains(adType);
+    return ['predict_interstitial', 'seemore_interstitial', 'scratch_card_interstitial', 'challenge_interstitial'].contains(adType);
   }
 
   String? _getNativeAdUnitId(String adType) {
     switch (adType) {
       case 'live_video': return nativeLiveVideo;
-      case 'lotto_points': return nativeLottoPoints;
-      case 'news_feed': return nativeNewsFeed;
       default: return null;
     }
   }
@@ -702,7 +681,6 @@ class AdMobService {
     switch (adType) {
       case 'predict_interstitial': return useTestAds ? testInterstitial : interstitialResultsPredict;
       case 'seemore_interstitial': return useTestAds ? testInterstitial : interstitialResultsSeemore;
-      case 'lotto_points_interstitial': return useTestAds ? testInterstitial : interstitialLottoPoints;
       case 'scratch_card_interstitial': return useTestAds ? testInterstitial : interstitialScratchCard;
       case 'challenge_interstitial': return useTestAds ? testInterstitial : interstitialChallenge;
       default: return null;
@@ -710,7 +688,7 @@ class AdMobService {
   }
 
   bool _isRewardedAdType(String adType) {
-    return ['cashback_claim_rewarded', 'lotto_points_rewarded'].contains(adType);
+    return false; // No rewarded ads currently in use
   }
 
   bool _isRewardedInterstitialAdType(String adType) {
@@ -718,11 +696,8 @@ class AdMobService {
   }
 
   String? _getRewardedAdUnitId(String adType) {
-    switch (adType) {
-      case 'cashback_claim_rewarded': return rewardedCashbackClaim;
-      case 'lotto_points_rewarded': return rewardedLottoPoints;
-      default: return null;
-    }
+    // No rewarded ads currently in use
+    return null;
   }
 
   String? _getRewardedInterstitialAdUnitId(String adType) {
@@ -848,25 +823,11 @@ class AdMobService {
   // Additional legacy methods for other ad types
 
   @Deprecated('Use loadAd() instead')
-  Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) => 
+  Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) =>
       loadAd('live_video', isDarkTheme: isDarkTheme);
-
-  @Deprecated('Use loadAd() instead')
-  Future<void> preloadLottoPointsAd({bool isDarkTheme = false}) => 
-      loadAd('lotto_points', isDarkTheme: isDarkTheme);
-
-  @Deprecated('Use loadAd() instead')
-  Future<void> preloadNewsFeedAd({bool isDarkTheme = false}) => 
-      loadAd('news_feed', isDarkTheme: isDarkTheme);
 
   @Deprecated('Use getAd() instead')
   NativeAd? getCachedLiveVideoAd() => getAd<NativeAd>('live_video');
-
-  @Deprecated('Use getAd() instead')
-  NativeAd? getCachedLottoPointsAd() => getAd<NativeAd>('lotto_points');
-
-  @Deprecated('Use getAd() instead')
-  NativeAd? getCachedNewsFeedAd() => getAd<NativeAd>('news_feed');
 
   @Deprecated('Use _createNativeAd() or loadAd() instead')
   NativeAd createNewsStyleNativeLiveVideoAd({
@@ -875,32 +836,6 @@ class AdMobService {
   }) {
     return _createNativeAd(
       adUnitId: nativeLiveVideo,
-      isDarkTheme: isDarkTheme,
-      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
-      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
-    );
-  }
-
-  @Deprecated('Use _createNativeAd() or loadAd() instead')
-  NativeAd createNewsStyleNativeLottoPointsAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNativeAd(
-      adUnitId: nativeLottoPoints,
-      isDarkTheme: isDarkTheme,
-      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
-      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
-    );
-  }
-
-  @Deprecated('Use _createNativeAd() or loadAd() instead')
-  NativeAd createNewsStyleNativeNewsFeedAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNativeAd(
-      adUnitId: nativeNewsFeed,
       isDarkTheme: isDarkTheme,
       onLoaded: (ad) => listener.onAdLoaded?.call(ad),
       onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),

@@ -19,7 +19,7 @@ class PatternStatisticsCard extends StatefulWidget {
   State<PatternStatisticsCard> createState() => _PatternStatisticsCardState();
 }
 
-class _PatternStatisticsCardState extends State<PatternStatisticsCard> 
+class _PatternStatisticsCardState extends State<PatternStatisticsCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -34,7 +34,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -42,7 +42,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
@@ -64,12 +64,14 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
   void _loadPatternData() {
     if (widget.forceEmptyState) {
       _patterns = [];
-    } else if (widget.historicalResults != null && widget.historicalResults!.isNotEmpty) {
-      _patterns = PatternAnalysisService.getTopPatterns(widget.historicalResults!);
+    } else if (widget.historicalResults != null &&
+        widget.historicalResults!.isNotEmpty) {
+      _patterns =
+          PatternAnalysisService.getTopPatterns(widget.historicalResults!);
     } else if (widget.showMockData) {
       _patterns = PatternAnalysisService.getMockPatternData();
     }
-    
+
     if (mounted) {
       setState(() {});
     }
@@ -86,10 +88,15 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
-            child: Card(
-              color: theme.cardTheme.color,
-              elevation: theme.cardTheme.elevation,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              decoration: BoxDecoration(
+            color:theme.cardColor,
+                border: Border.all(
+                  color: theme.primaryColor,
+                  width: .5,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
@@ -124,16 +131,16 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.purple[400]!, Colors.purple[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            color: Colors.transparent,
+            border: Border.all(
+              color: Colors.purple[700]!,
+              width: .5,
             ),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.analytics_outlined,
-            color: Colors.white,
+            color: Colors.purple[700]!,
             size: 20,
           ),
         ),
@@ -169,7 +176,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
 
   Widget _buildTopPatterns(ThemeData theme) {
     final topThree = _patterns.take(3).toList();
-    
+
     return Column(
       children: topThree.asMap().entries.map((entry) {
         final index = entry.key;
@@ -184,9 +191,9 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
 
   Widget _buildAllPatterns(ThemeData theme) {
     final remainingPatterns = _patterns.skip(3).toList();
-    
+
     if (remainingPatterns.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       children: remainingPatterns.asMap().entries.map((entry) {
         final index = entry.key;
@@ -199,31 +206,30 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
     );
   }
 
-  Widget _buildHorizontalPatternCard(ThemeData theme, PatternStatistic pattern, int index) {
-    final colors = _getPatternColors(index);
+  Widget _buildHorizontalPatternCard(
+      ThemeData theme, PatternStatistic pattern, int index) {
+    _getPatternColors(index);
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Calculate responsive dimensions based on screen size
-    double cardHeight = 120;
-    double iconSize = 20;
+    double cardHeight = 130;
     double titleFontSize = 16;
     double descriptionFontSize = 12;
     double countFontSize = 16;
     double exampleFontSize = 13;
-    
+
     if (screenHeight < 600) {
       // Small screens (older phones)
       cardHeight = 100;
-      iconSize = 18;
       titleFontSize = 14;
       descriptionFontSize = 11;
       countFontSize = 14;
       exampleFontSize = 12;
     } else if (screenHeight > 800) {
       // Large screens (tablets, large phones)
-      cardHeight = 140;
-      iconSize = 24;
+      cardHeight = 130;
+ 
       titleFontSize = 18;
       descriptionFontSize = 14;
       countFontSize = 18;
@@ -231,31 +237,28 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
     } else if (screenWidth > 400) {
       // Wide screens
       cardHeight = 130;
-      iconSize = 22;
+  
       titleFontSize = 17;
       descriptionFontSize = 13;
       countFontSize = 17;
       exampleFontSize = 14;
     }
-    
+
+    // Determine border color based on rank
+    final borderColor = _getBorderColorForRank(index);
+    final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+
     return Container(
       height: cardHeight,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colors[0], colors[1]],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Colors.transparent,
+        border: Border.all(
+          color: borderColor,
+          width: .5,
         ),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: colors[0].withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,16 +266,11 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
           // Top: Pattern name, icon and rank badge
           Row(
             children: [
-              Text(
-                pattern.icon,
-                style: TextStyle(fontSize: iconSize),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   pattern.patternType,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+                    color: textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: titleFontSize,
                   ),
@@ -280,33 +278,38 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              _buildRankBadge(index + 1),
+              _buildRankBadge(index + 1, borderColor),
             ],
           ),
-          
+
           const SizedBox(height: 4),
-          
+
           // Description
           Text(
             pattern.description,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: theme.textTheme.bodyMedium?.color,
               fontSize: descriptionFontSize,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          
-          const SizedBox(height: 8),
-          
+
+          const SizedBox(height: 12),
+
           // Count and Examples in a row
           Row(
             children: [
               // Count
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: Colors.transparent,
+                  border: Border.all(
+                    color: borderColor,
+                    width: .5,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: RichText(
@@ -315,7 +318,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                       TextSpan(
                         text: '${pattern.count} ',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
+                          color: borderColor,
                           fontWeight: FontWeight.bold,
                           fontSize: countFontSize,
                         ),
@@ -323,7 +326,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                       TextSpan(
                         text: 'times'.tr(),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: borderColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -332,9 +335,9 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Example Numbers
               if (pattern.examples.isNotEmpty) ...[
                 Expanded(
@@ -344,15 +347,20 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                       children: pattern.examples.take(4).map((example) {
                         return Container(
                           margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.transparent,
+                            border: Border.all(
+                              color: borderColor,
+                              width: .5,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             example,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
+                              color: borderColor,
                               fontSize: exampleFontSize,
                               fontWeight: FontWeight.w600,
                               fontFamily: 'monospace',
@@ -371,17 +379,21 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
     );
   }
 
-  Widget _buildRankBadge(int rank) {
+  Widget _buildRankBadge(int rank, Color borderColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.3),
+        color: Colors.transparent,
+        border: Border.all(
+          color: borderColor,
+          width: .5,
+        ),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         '#$rank',
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: borderColor,
           fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
@@ -391,7 +403,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
 
   Widget _buildExpandButton(ThemeData theme) {
     if (_patterns.length <= 3) return const SizedBox.shrink();
-    
+
     return Center(
       child: InkWell(
         onTap: () {
@@ -401,13 +413,13 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 4),
           decoration: BoxDecoration(
             color: Colors.purple.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Colors.purple.withValues(alpha: 0.3),
-              width: 1,
+              width: .5,
             ),
           ),
           child: Row(
@@ -517,14 +529,27 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
 
   List<Color> _getPatternColors(int index) {
     final colorSchemes = [
-      [Colors.purple[400]!, Colors.purple[600]!],     // Rank 1
-      [Colors.blue[400]!, Colors.blue[600]!],         // Rank 2
-      [Colors.green[400]!, Colors.green[600]!],       // Rank 3
-      [Colors.orange[400]!, Colors.orange[600]!],     // Rank 4
-      [Colors.teal[400]!, Colors.teal[600]!],         // Rank 5
-      [Colors.indigo[400]!, Colors.indigo[600]!],     // Rank 6+
+      [Colors.purple[400]!, Colors.purple[600]!], // Rank 1
+      [Colors.blue[400]!, Colors.blue[600]!], // Rank 2
+      [Colors.green[400]!, Colors.green[600]!], // Rank 3
+      [Colors.orange[400]!, Colors.orange[600]!], // Rank 4
+      [Colors.teal[400]!, Colors.teal[600]!], // Rank 5
+      [Colors.indigo[400]!, Colors.indigo[600]!], // Rank 6+
     ];
-    
+
     return colorSchemes[index.clamp(0, colorSchemes.length - 1)];
+  }
+
+  Color _getBorderColorForRank(int index) {
+    final borderColors = [
+      Colors.purple[600]!, // Rank 1
+      Colors.blue[700]!, // Rank 2
+      Colors.green[700]!, // Rank 3
+      Colors.orange[700]!, // Rank 4
+      Colors.teal[700]!, // Rank 5
+      const Color.fromARGB(255, 73, 93, 222), // Rank 6+
+    ];
+
+    return borderColors[index.clamp(0, borderColors.length - 1)];
   }
 }

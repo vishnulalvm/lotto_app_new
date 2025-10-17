@@ -246,7 +246,7 @@ class LotteryResultsSection extends StatelessWidget {
           )
         : const LinearGradient(
             colors: [
-              Color(0xFFFB0000),
+              Color.fromARGB(255, 200, 12, 12),
               Color(0xFFE75353),
             ],
             begin: Alignment.topLeft,
@@ -263,7 +263,6 @@ class LotteryResultsSection extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
-
           ),
           child: InkWell(
             onTap: () {
@@ -280,7 +279,8 @@ class LotteryResultsSection extends StatelessWidget {
 
               context.go('/result-details', extra: {
                 'uniqueId': result.uniqueId,
-                'lotteryNumber': null, // No lottery number available from home screen results
+                'lotteryNumber':
+                    null, // No lottery number available from home screen results
                 'isNew': result.isNew,
               });
             },
@@ -319,7 +319,6 @@ class LotteryResultsSection extends StatelessWidget {
                         ),
                         textAlign: TextAlign.center,
                       ),
-
 
                       // Prize Amount and Date Column
                       Column(
@@ -383,7 +382,8 @@ class LotteryResultsSection extends StatelessWidget {
                           ),
                           SizedBox(width: AppResponsive.spacing(context, 4)),
                           Text(
-                            result.firstPrize.place, // You might need to add location to your model
+                            result.firstPrize
+                                .place, // You might need to add location to your model
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 18),
                               fontWeight: FontWeight.w600,
@@ -406,8 +406,10 @@ class LotteryResultsSection extends StatelessWidget {
                         ? Colors.white
                         : Colors.grey[900],
                     borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(AppResponsive.spacing(context, 12)),
-                      bottomRight: Radius.circular(AppResponsive.spacing(context, 12)),
+                      bottomLeft:
+                          Radius.circular(AppResponsive.spacing(context, 12)),
+                      bottomRight:
+                          Radius.circular(AppResponsive.spacing(context, 12)),
                     ),
                   ),
                   child: Column(
@@ -458,7 +460,7 @@ class LotteryResultsSection extends StatelessWidget {
                                   colors: isBumper
                                       ? [Colors.purple, Colors.deepPurple]
                                       : const [
-                                          Color(0xFFFB0000),
+                                          Color.fromARGB(255, 200, 12, 12),
                                           Color(0xFFE75353),
                                         ],
                                   begin: Alignment.topLeft,
@@ -472,7 +474,8 @@ class LotteryResultsSection extends StatelessWidget {
                                   // Track see more button analytics
                                   AnalyticsService.trackLotteryEvent(
                                     eventType: 'see_more_pressed',
-                                    lotteryName: result.getFormattedTitle(context),
+                                    lotteryName:
+                                        result.getFormattedTitle(context),
                                     resultDate: result.formattedDate,
                                     additionalParams: {
                                       'unique_id': result.uniqueId,
@@ -498,19 +501,23 @@ class LotteryResultsSection extends StatelessWidget {
                                         AppResponsive.spacing(context, 7)),
                                   ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'see_more'.tr(),
+                                      'See More',
                                       style: TextStyle(
-                                        fontSize: AppResponsive.fontSize(context, 12),
+                                        fontSize:
+                                            AppResponsive.fontSize(context, 12),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    SizedBox(width: AppResponsive.spacing(context, 3)),
+                                    SizedBox(
+                                        width:
+                                            AppResponsive.spacing(context, 3)),
                                     Icon(
                                       Icons.arrow_forward_ios,
                                       size: AppResponsive.fontSize(context, 10),
@@ -552,29 +559,32 @@ class LotteryResultsSection extends StatelessWidget {
                 : result.isLive
                     ? AnimatedBuilder(
                         animation: blinkAnimation,
-                        child: Transform.rotate(
-                          angle: 0.785398, // 45 degrees for consistency
-                          child: Container(
-                            padding: AppResponsive.padding(context,
-                                horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
+                        child: Container(
+                          padding: AppResponsive.padding(context,
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(
+                                      AppResponsive.spacing(context, 10)),
+                              topRight: Radius.circular(
+                                  AppResponsive.spacing(context, 8)),
                             ),
-                            child: Text(
-                              'live_badge'.tr(),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: AppResponsive.fontSize(context, 9),
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
+                            color: Colors.red,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
                               ),
+                            ],
+                          ),
+                          child: Text(
+                            'live_badge'.tr(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: AppResponsive.fontSize(context, 9),
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
                             ),
                           ),
                         ),
@@ -840,6 +850,8 @@ class LotteryResultsSection extends StatelessWidget {
         gradient: gradient,
         color: backgroundColor,
         borderRadius: BorderRadius.only(
+          bottomLeft:
+              Radius.circular(AppResponsive.spacing(context, 12)),
           topRight: Radius.circular(AppResponsive.spacing(context, 8)),
         ),
         boxShadow: [

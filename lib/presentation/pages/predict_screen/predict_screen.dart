@@ -14,6 +14,8 @@ import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
 import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/ai_prediction_service.dart';
+import 'package:lotto_app/data/services/lottery_info_service.dart';
 import 'dart:async';
 
 class PredictScreen extends StatefulWidget {
@@ -27,9 +29,12 @@ class _PredictScreenState extends State<PredictScreen>
     with TickerProviderStateMixin {
   late AnimationController _typewriterController;
   bool _isDisclaimerExpanded = false;
-  Timer? _adTimer;
   int _selectedPrizeType = 5; // Shared state for synchronizing components
   final _predictionMatchCardKey = GlobalKey<PredictionMatchCardState>();
+
+  // Interstitial ad cooldown tracking (stored in memory, resets on app restart)
+  static DateTime? _lastAdShowTime;
+  static const Duration _adCooldownDuration = Duration(seconds: 30);
 
   @override
   void initState() {
@@ -56,20 +61,19 @@ class _PredictScreenState extends State<PredictScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PredictBloc>().add(const GetPredictionDataEvent());
       _checkAndShowLuckyNumberDialog();
-      _preloadAndScheduleInterstitialAd();
+      _loadAndShowInterstitialAd();
     });
   }
 
   @override
   void dispose() {
     _typewriterController.dispose();
-    _adTimer?.cancel();
     super.dispose();
   }
 
   String _getLotteryNameForToday() {
     final now = DateTime.now();
-    
+
     // If it's before 3 PM, show today's lottery
     // If it's after 3 PM, show tomorrow's lottery
     final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
@@ -138,6 +142,24 @@ class _PredictScreenState extends State<PredictScreen>
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
+      actions: [
+        BlocBuilder<PredictBloc, PredictState>(
+          builder: (context, state) {
+            // Only show copy button when data is loaded
+            if (state is PredictDataLoaded ||
+                state is PredictDataWithUserPrediction ||
+                state is PredictLoaded) {
+              return IconButton(
+                icon:
+                    Icon(Icons.copy, color: theme.appBarTheme.iconTheme?.color),
+                onPressed: () => _copyPredictionNumbers(state),
+                tooltip: 'Copy Numbers',
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
     );
   }
 
@@ -172,13 +194,15 @@ class _PredictScreenState extends State<PredictScreen>
                   Text(
                     'failed_to_load_prediction_data'.tr(),
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.grey[600],
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () {
-                      context.read<PredictBloc>().add(const GetPredictionDataEvent());
+                      context
+                          .read<PredictBloc>()
+                          .add(const GetPredictionDataEvent());
                     },
                     child: Text('retry'.tr()),
                   ),
@@ -249,30 +273,34 @@ class _PredictScreenState extends State<PredictScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildMotivationalBanner(theme),
-                  const SizedBox(height: 10),
-                  _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
-                  const SizedBox(height: 5),
-                  _buildMostRepeatedLast7DaysCard(theme, data.repeatedSingleDigits),
-                  const SizedBox(height: 5),
-                  _buildMostRepeatedLast2DigitsCard(theme, data.repeatedTwoDigits),
-                  const SizedBox(height: 5),
-                  _buildMostRepeatedCard(theme, data.repeatedNumbers),
-                  const SizedBox(height: 5),
-                  const PatternStatisticsCard(
-                    showMockData: true,
-                    // forceEmptyState: true, // Uncomment to test empty state
-                  ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 12),
                   AiPredictionCard(
                     initialPrizeType: _selectedPrizeType,
                     onPrizeTypeChanged: (newPrizeType) {
                       // Update shared state but don't rebuild entire widget tree
                       _selectedPrizeType = newPrizeType;
                       // Notify PredictionMatchCard of the change
-                      _predictionMatchCardKey.currentState?.updatePrizeType(newPrizeType);
+                      _predictionMatchCardKey.currentState
+                          ?.updatePrizeType(newPrizeType);
                     },
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 12),
+                  _buildMostRepeatedCard(theme, data.repeatedNumbers),
+                  const SizedBox(height: 12),
+                  const PatternStatisticsCard(
+                    showMockData: true,
+                    // forceEmptyState: true, // Uncomment to test empty state
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
+                  const SizedBox(height: 12),
+                  _buildMostRepeatedLast7DaysCard(
+                      theme, data.repeatedSingleDigits),
+                  const SizedBox(height: 12),
+                  _buildMostRepeatedLast2DigitsCard(
+                      theme, data.repeatedTwoDigits),
+                  // const SizedBox(height: 5),
+                  const SizedBox(height: 12),
                   PredictionMatchCard(
                     key: _predictionMatchCardKey,
                     selectedPrizeType: _selectedPrizeType,
@@ -318,7 +346,8 @@ class _PredictScreenState extends State<PredictScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'your_lucky_number'.tr(namedArgs: {'number': state.selectedNumber}),
+                  'your_lucky_number'
+                      .tr(namedArgs: {'number': state.selectedNumber}),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -349,14 +378,8 @@ class _PredictScreenState extends State<PredictScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.primaryColor.withValues(alpha: 0.2),
-            theme.primaryColor.withValues(alpha: 0.1),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        color: theme.cardColor,
+
         border: Border.all(
           color: theme.primaryColor.withValues(alpha: 0.3),
           width: 1,
@@ -370,7 +393,7 @@ class _PredictScreenState extends State<PredictScreen>
             'Use App Daily for More Accurate Predictions',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
+              color: theme.colorScheme.onSurface,
               fontSize: 18,
             ),
             textAlign: TextAlign.center,
@@ -379,7 +402,7 @@ class _PredictScreenState extends State<PredictScreen>
           Text(
             'Regular usage helps our AI learn your preferences and improve prediction accuracy',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
@@ -392,10 +415,15 @@ class _PredictScreenState extends State<PredictScreen>
   // Last 7 days most repeated numbers
   Widget _buildMostRepeatedLast7DaysCard(
       ThemeData theme, List<RepeatedSingleDigit> data) {
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: theme.cardTheme.elevation,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+           color:theme.cardColor,
+        border: Border.all(
+          color: theme.primaryColor,
+          width: .5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -442,10 +470,15 @@ class _PredictScreenState extends State<PredictScreen>
       return const SizedBox.shrink();
     }
 
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: theme.cardTheme.elevation,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+         color:theme.cardColor,
+        border: Border.all(
+          color: theme.primaryColor,
+          width: .5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -474,7 +507,9 @@ class _PredictScreenState extends State<PredictScreen>
             const SizedBox(height: 20),
             _buildTwoDigitsRow(
                 theme,
-                data.map((e) => {'number': e.digits, 'count': e.count}).toList()),
+                data
+                    .map((e) => {'number': e.digits, 'count': e.count})
+                    .toList()),
           ],
         ),
       ),
@@ -482,7 +517,11 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   // Helper method to build two digits in a responsive grid with purple theme
-  Widget _buildTwoDigitsRow(ThemeData theme, List<Map<String, dynamic>> numberData) {
+  Widget _buildTwoDigitsRow(
+      ThemeData theme, List<Map<String, dynamic>> numberData) {
+    final borderColor = Colors.purple[700]!;
+    final textColor = theme.colorScheme.onSurface;
+
     return Column(
       children: [
         // Use GridView for better responsiveness
@@ -500,19 +539,12 @@ class _PredictScreenState extends State<PredictScreen>
             final data = numberData[index];
             return Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple[800]!, Colors.purple[900]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                color: Colors.transparent,
+                border: Border.all(
+                  color: borderColor,
+                  width: .5,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -522,9 +554,9 @@ class _PredictScreenState extends State<PredictScreen>
                     child: Text(
                       data['number'],
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
+                        color: textColor,
+                      
+                        fontSize: 16,
                       ),
                     ),
                   ),
@@ -534,15 +566,20 @@ class _PredictScreenState extends State<PredictScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: borderColor,
+                          width: .5,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'count_times'.tr(namedArgs: {'count': data['count'].toString()}),
+                          'count_times'.tr(
+                              namedArgs: {'count': data['count'].toString()}),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
+                            color: borderColor,
                             fontWeight: FontWeight.w600,
                             fontSize: 10,
                           ),
@@ -557,17 +594,22 @@ class _PredictScreenState extends State<PredictScreen>
             );
           },
         ),
-        const SizedBox(height: 12),
+        // const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.purple.withValues(alpha: 0.1),
+            color: Colors.transparent,
+            border: Border.all(
+              color: borderColor,
+              width: .5,
+            ),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            'two_digits_found'.tr(namedArgs: {'count': numberData.length.toString()}),
+            'two_digits_found'
+                .tr(namedArgs: {'count': numberData.length.toString()}),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.purple[600],
+              color: borderColor,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -579,10 +621,15 @@ class _PredictScreenState extends State<PredictScreen>
   // People predictions section
   Widget _buildPeoplePredictionsCard(
       ThemeData theme, List<PeoplesPrediction> data) {
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: theme.cardTheme.elevation,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        color:theme.cardColor,
+        border: Border.all(
+          color: theme.primaryColor,
+          width: .5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -600,7 +647,7 @@ class _PredictScreenState extends State<PredictScreen>
                   child: Text(
                     'people_predictions'.tr(),
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      // fontWeight: FontWeight.w600,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -624,6 +671,16 @@ class _PredictScreenState extends State<PredictScreen>
   Widget _buildSingleDigitsRow(ThemeData theme,
       List<Map<String, dynamic>> numberData, MaterialColor? color,
       [bool isDarkGreen = false, bool isDarkBlue = false]) {
+    // Determine border color based on the type
+    final borderColor = isDarkGreen
+        ? Colors.green[700]!
+        : isDarkBlue
+            ? Colors.blue[700]!
+            : color![700]!;
+
+    // Determine text color based on theme
+    final textColor = theme.colorScheme.onSurface;
+
     return Column(
       children: [
         Row(
@@ -633,28 +690,12 @@ class _PredictScreenState extends State<PredictScreen>
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDarkGreen
-                        ? [Colors.green[800]!, Colors.green[900]!]
-                        : isDarkBlue
-                            ? [Colors.blue[800]!, Colors.blue[900]!]
-                            : [
-                                color!.withValues(alpha: 0.8),
-                                color,
-                              ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  color: Colors.transparent,
+                  border: Border.all(
+                    color: borderColor,
+                    width: .5,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDarkGreen || isDarkBlue
-                          ? Colors.black.withValues(alpha: 0.3)
-                          : color!.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -663,9 +704,9 @@ class _PredictScreenState extends State<PredictScreen>
                     Text(
                       data['number'],
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
+                        color: textColor,
                         fontWeight: FontWeight.bold,
-                        fontSize: 24,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -674,13 +715,18 @@ class _PredictScreenState extends State<PredictScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: Colors.transparent,
+                          border: Border.all(
+                            color: borderColor,
+                            width: .5,
+                          ),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          'count_times'.tr(namedArgs: {'count': data['count'].toString()}),
+                          'count_times'.tr(
+                              namedArgs: {'count': data['count'].toString()}),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
+                            color: borderColor,
                             fontWeight: FontWeight.w600,
                             fontSize: 10,
                           ),
@@ -698,21 +744,18 @@ class _PredictScreenState extends State<PredictScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isDarkGreen
-                ? Colors.green.withValues(alpha: 0.1)
-                : isDarkBlue
-                    ? Colors.blue.withValues(alpha: 0.1)
-                    : color!.withValues(alpha: 0.1),
+            color: Colors.transparent,
+            border: Border.all(
+              color: borderColor,
+              width: .5,
+            ),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            'digits_found'.tr(namedArgs: {'count': numberData.length.toString()}),
+            'digits_found'
+                .tr(namedArgs: {'count': numberData.length.toString()}),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: isDarkGreen
-                  ? Colors.green[600]
-                  : isDarkBlue
-                      ? Colors.blue[600]
-                      : color![600],
+              color: borderColor,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -724,6 +767,9 @@ class _PredictScreenState extends State<PredictScreen>
   // Helper method to build numbers with count grid
   Widget _buildNumbersWithCountGrid(ThemeData theme,
       List<Map<String, dynamic>> numberData, MaterialColor color) {
+    final borderColor = Colors.orange[700]!;
+    final textColor = theme.colorScheme.onSurface;
+
     return Column(
       children: [
         GridView.builder(
@@ -740,50 +786,45 @@ class _PredictScreenState extends State<PredictScreen>
             final data = numberData[index];
             return Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.orange[800]!,
-                    Colors.orange[900]!,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                color: Colors.transparent,
+                border: Border.all(
+                  color: borderColor,
+                  width: .5,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(6.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       data['number'],
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        color: textColor,
+               
+                        fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                          horizontal: 10, vertical: 0),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: borderColor,
+                          width: .2,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'count_x'.tr(namedArgs: {'count': data['count'].toString()}),
+                        'count_x'
+                            .tr(namedArgs: {'count': data['count'].toString()}),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
+                          color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.w500,
-                          fontSize: 12,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -793,17 +834,21 @@ class _PredictScreenState extends State<PredictScreen>
             );
           },
         ),
-        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: Colors.transparent,
+            border: Border.all(
+              color: borderColor,
+              width: .5,
+            ),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            'patterns_found'.tr(namedArgs: {'count': numberData.length.toString()}),
+            'patterns_found'
+                .tr(namedArgs: {'count': numberData.length.toString()}),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: color[600],
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -813,10 +858,15 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   Widget _buildMostRepeatedCard(ThemeData theme, List<RepeatedNumber> data) {
-    return Card(
-      color: theme.cardTheme.color,
-      elevation: theme.cardTheme.elevation,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        color:theme.cardColor,
+        border: Border.all(
+          color: theme.primaryColor,
+          width: .5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -832,7 +882,7 @@ class _PredictScreenState extends State<PredictScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'most_repeated_last_4_digits_30_days'.tr(),
+                    'most_winning_numbers_30_days'.tr(),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -931,7 +981,7 @@ class _PredictScreenState extends State<PredictScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: theme.cardColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.amber.withValues(alpha: 0.3),
@@ -1005,7 +1055,7 @@ class _PredictScreenState extends State<PredictScreen>
                 TextSpan(
                   text: description,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[700],
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -1022,10 +1072,10 @@ class _PredictScreenState extends State<PredictScreen>
     final now = DateTime.now();
     final todayString = '${now.year}-${now.month}-${now.day}';
     final lastShownDate = prefs.getString('lucky_number_dialog_last_shown');
-    
+
     // Check if it's after 3 PM (15:00)
     final isAfter3PM = now.hour >= 15;
-    
+
     // Only show if it's after 3 PM and we haven't shown it today after 3 PM
     if (isAfter3PM && lastShownDate != todayString) {
       // Show dialog after a small delay to ensure screen is loaded
@@ -1048,19 +1098,125 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
-  void _preloadAndScheduleInterstitialAd() {
-    AdMobService.instance.loadPredictInterstitialAd();
+  /// Check if cooldown period has passed
+  bool _canShowAd() {
+    if (_lastAdShowTime == null) {
+      return true; // Never shown, can show
+    }
 
-    _adTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        _showInterstitialAd();
-      }
-    });
+    final timeSinceLastAd = DateTime.now().difference(_lastAdShowTime!);
+    return timeSinceLastAd >= _adCooldownDuration;
   }
 
-  void _showInterstitialAd() async {
-    if (AdMobService.instance.isPredictInterstitialAdLoaded) {
-      await AdMobService.instance.showInterstitialAd('predict_interstitial');
+  /// Update cooldown timestamp
+  void _updateCooldownTimestamp() {
+    _lastAdShowTime = DateTime.now();
+  }
+
+  /// Load and show ad immediately with cooldown check
+  Future<void> _loadAndShowInterstitialAd() async {
+    // Check cooldown first
+    if (!_canShowAd()) {
+      return;
+    }
+
+    // Load ad immediately
+    AdMobService.instance.loadPredictInterstitialAd();
+
+    // Show ad as soon as it's loaded (no delay)
+    await Future.delayed(const Duration(milliseconds: 100)); // Small delay to allow ad to start loading
+
+    if (!mounted) return;
+
+    try {
+      await AdMobService.instance.showInterstitialAd(
+        'predict_interstitial',
+        onDismissed: () {
+          // Update cooldown timestamp when ad is dismissed
+          _updateCooldownTimestamp();
+        },
+      );
+    } catch (e) {
+      // Ad failed to show, but still update cooldown to prevent rapid retry attempts
+      _updateCooldownTimestamp();
+    }
+  }
+
+  Future<void> _copyPredictionNumbers(PredictState state) async {
+    try {
+      // Get the data from the state
+      final data = switch (state) {
+        PredictDataLoaded() => state.displayData,
+        PredictDataWithUserPrediction() => state.displayData,
+        PredictLoaded() => state.prediction,
+        _ => null,
+      };
+
+      if (data == null) return;
+
+      // Fetch AI prediction numbers for current prize type
+      final aiPrediction = await AiPredictionService.getTodaysPrediction(_selectedPrizeType);
+
+      StringBuffer copyText = StringBuffer();
+
+      // Add AI Predicted Numbers section
+      if (aiPrediction != null && aiPrediction.predictedNumbers.isNotEmpty) {
+        copyText.writeln('AI Predicted Numbers (${LotteryInfoService.getPrizeTypeFormatted(_selectedPrizeType)}):');
+        copyText.writeln(aiPrediction.predictedNumbers.join(', '));
+        copyText.writeln();
+      }
+
+      // Add Most Repeated Numbers section (last 4 digits from last 30 days)
+      if (data.repeatedNumbers.isNotEmpty) {
+        copyText.writeln('Most Winning Numbers (Last 30 Days):');
+        final repeatedNumbersList = data.repeatedNumbers
+            .map((e) => '${e.number} (${e.count}x)')
+            .join(', ');
+        copyText.writeln(repeatedNumbersList);
+      }
+
+      // Copy to clipboard
+      if (copyText.isNotEmpty) {
+        await Clipboard.setData(ClipboardData(text: copyText.toString()));
+
+        // Show confirmation snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Numbers copied to clipboard!'),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green[700],
+            ),
+          );
+        }
+
+        // Track analytics
+        AnalyticsService.trackUserEngagement(
+          action: 'copy_numbers',
+          category: 'predict_screen',
+          label: 'copy_prediction_numbers',
+          parameters: {
+            'prize_type': _selectedPrizeType,
+            'has_ai_numbers': aiPrediction != null,
+            'repeated_numbers_count': data.repeatedNumbers.length,
+          },
+        );
+
+        HapticFeedback.mediumImpact();
+      }
+    } catch (e) {
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy numbers: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
     }
   }
 }

@@ -50,9 +50,9 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
   final Map<String, GlobalKey> _ticketGlobalKeys = {};
   bool _isAutoScrolling = false;
 
-  // Interstitial ad state (UI-only)
-  bool _hasShownInterstitialAd = false;
-  Timer? _adTimer;
+  // Interstitial ad cooldown tracking (per-screen instance, stored in memory)
+  static final Map<String, DateTime> _adCooldownTimestamps = {};
+  static const Duration _adCooldownDuration = Duration(seconds: 30);
 
   // Minimum search length constant
   static const int _minSearchLength = 4;
@@ -110,8 +110,8 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
           );
     }
 
-    // Schedule interstitial ad
-    _scheduleInterstitialAd();
+    // Load and show interstitial ad immediately with cooldown check
+    _loadAndShowInterstitialAd();
   }
 
   Future<void> _initializeSavedResultsService() async {
@@ -127,41 +127,56 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
     _scrollController.dispose();
     _blinkAnimationController.dispose();
     _highlightedTicketNotifier.dispose();
-    _adTimer?.cancel();
     super.dispose();
   }
 
-  // Interstitial Ad Methods (UI-only, not business logic)
-  void _scheduleInterstitialAd() {
-    AdMobService.instance.loadAd('seemore_interstitial');
+  // Interstitial Ad Methods with 30-second cooldown (UI-only, not business logic)
 
-    _adTimer = Timer(const Duration(seconds: 8), () {
-      if (mounted && !_hasShownInterstitialAd) {
-        _showInterstitialAd();
-      }
-    });
+  /// Check if cooldown period has passed for this screen
+  bool _canShowAd() {
+    final screenKey = widget.uniqueId ?? 'default';
+    final lastShownTime = _adCooldownTimestamps[screenKey];
+
+    if (lastShownTime == null) {
+      return true; // Never shown, can show
+    }
+
+    final timeSinceLastAd = DateTime.now().difference(lastShownTime);
+    return timeSinceLastAd >= _adCooldownDuration;
   }
 
-  Future<void> _showInterstitialAd() async {
-    if (_hasShownInterstitialAd) return;
+  /// Update cooldown timestamp for this screen
+  void _updateCooldownTimestamp() {
+    final screenKey = widget.uniqueId ?? 'default';
+    _adCooldownTimestamps[screenKey] = DateTime.now();
+  }
+
+  /// Load and show ad immediately with cooldown check
+  Future<void> _loadAndShowInterstitialAd() async {
+    // Check cooldown first
+    if (!_canShowAd()) {
+      return;
+    }
+
+    // Load ad immediately
+    AdMobService.instance.loadAd('seemore_interstitial');
+
+    // Show ad as soon as it's loaded (no delay)
+    await Future.delayed(const Duration(milliseconds: 100)); // Small delay to allow ad to start loading
+
+    if (!mounted) return;
 
     try {
       await AdMobService.instance.showInterstitialAd(
         'seemore_interstitial',
         onDismissed: () {
-          if (mounted) {
-            setState(() {
-              _hasShownInterstitialAd = true;
-            });
-          }
+          // Update cooldown timestamp when ad is dismissed
+          _updateCooldownTimestamp();
         },
       );
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _hasShownInterstitialAd = true;
-        });
-      }
+      // Ad failed to show, but still update cooldown to prevent rapid retry attempts
+      _updateCooldownTimestamp();
     }
   }
 

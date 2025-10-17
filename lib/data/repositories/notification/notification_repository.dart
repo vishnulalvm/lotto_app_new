@@ -38,6 +38,7 @@ class NotificationRepositoryImpl implements NotificationRepository {
     }
   }
 
+
   @override
   Future<bool> isNotificationEnabled() async {
     try {

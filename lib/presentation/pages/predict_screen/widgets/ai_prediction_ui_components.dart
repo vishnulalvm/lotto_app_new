@@ -6,11 +6,10 @@ import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_predictio
 
 /// Reusable UI components for AI Prediction Card
 class AIPredictionUIComponents {
-
   /// Builds the header with lottery name and AI icon
   static Widget buildHeader(ThemeData theme) {
     final lotteryName = LotteryInfoService.getLotteryNameForToday();
-    
+
     return Row(
       children: [
         AIIconContainer(),
@@ -39,13 +38,16 @@ class AIPredictionUIComponents {
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Colors.red[700]!,
+          width: .5,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: selectedPrizeType,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.amber),
+          icon: Icon(Icons.keyboard_arrow_down, color: Colors.red[700]!),
           items: LotteryInfoService.getAvailablePrizeTypes().map((prizeType) {
             return DropdownMenuItem<int>(
               value: prizeType,
@@ -92,7 +94,8 @@ class AIPredictionUIComponents {
   }
 
   /// Builds the numbers grid with typewriter animation
-  static Widget buildNumbersGrid(ThemeData theme, List<String> numbers, {bool triggerAnimation = true}) {
+  static Widget buildNumbersGrid(ThemeData theme, List<String> numbers,
+      {bool triggerAnimation = true}) {
     return TypewriterNumbersGrid(
       numbers: numbers,
       theme: theme,
@@ -105,21 +108,21 @@ class AIPredictionUIComponents {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.red[50]!, Colors.red[100]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: Colors.red[700]!,
+          width: .5,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'predictions_generated'.tr(namedArgs: {'count': predictionCount.toString()}),
+            'predictions_generated'
+                .tr(namedArgs: {'count': predictionCount.toString()}),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.red[700],
+              color: theme.textTheme.bodySmall?.color,
               fontWeight: FontWeight.w500,
               fontSize: 12,
             ),
@@ -142,8 +145,9 @@ class AIPredictionUIComponents {
       AIPredictionError(:final message) => buildErrorState(theme, message),
       AIPredictionLoaded(:final prediction, :final predictionCount) => Column(
           children: [
-            buildNumbersGrid(theme, prediction.predictedNumbers, triggerAnimation: true),
-            const SizedBox(height: 16),
+            buildNumbersGrid(theme, prediction.predictedNumbers,
+                triggerAnimation: true),
+            // const SizedBox(height: 16),
             buildFooter(theme, predictionCount),
           ],
         ),
@@ -158,21 +162,10 @@ class AIIconContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.red[400]!, Colors.red[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Icon(
-        Icons.auto_awesome,
-        color: Colors.white,
-        size: 16,
-      ),
+    return Icon(
+      Icons.auto_awesome,
+      color: Colors.red[700]!,
+      size: 16,
     );
   }
 }
@@ -189,8 +182,9 @@ class PrizeTypeDropdownItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formattedPrizeType = LotteryInfoService.getPrizeTypeFormatted(prizeType);
-    
+    final formattedPrizeType =
+        LotteryInfoService.getPrizeTypeFormatted(prizeType);
+
     return Row(
       children: [
         const Icon(
@@ -318,21 +312,16 @@ class PredictionNumberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.red[400]!, Colors.red[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Colors.transparent,
+        border: Border.all(
+          color: Colors.red[700]!,
+          width: .5,
         ),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Center(
         child: showAnimation
@@ -340,7 +329,7 @@ class PredictionNumberTile extends StatelessWidget {
                 number,
                 duration: const Duration(milliseconds: 50),
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+                  color: textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
