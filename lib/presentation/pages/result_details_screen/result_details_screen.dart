@@ -14,7 +14,6 @@ import 'package:lotto_app/presentation/pages/result_details_screen/widgets/resul
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/search_instruction_info.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/result_header_section.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/widgets/contact_section.dart';
-import 'package:lotto_app/core/widgets/in_app_review_widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
@@ -550,10 +549,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 repeatedNumbers: state.repeatedNumbers,
                 repeatedHighlightColor: Colors.blue,
               ),
-              const InAppReviewWidget(
-                viewThreshold: 3,
-                daysAfterInstall: 7,
-              ),
+
               const SizedBox(height: 6),
               const ContactSection(),
               const SizedBox(height: 150),

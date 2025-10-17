@@ -23,8 +23,6 @@ class TicketCheckResponseModel {
   final String status;
   final String resultStatus;
   final String message;
-  final int? points; // New field - nullable since it can be null in the response
-  final int? cashBack; // New field - nullable since it can be null in the response
   final TicketCheckData data;
 
   TicketCheckResponseModel({
@@ -32,8 +30,6 @@ class TicketCheckResponseModel {
     required this.status,
     required this.resultStatus,
     required this.message,
-    this.points, // Nullable parameter
-    this.cashBack, // Nullable parameter
     required this.data,
   });
 
@@ -43,8 +39,6 @@ class TicketCheckResponseModel {
       status: json['status'] ?? '',
       resultStatus: json['resultStatus'] ?? '',
       message: json['message'] ?? '',
-      points: json['points'], // Can be null, int, or any other type - will be cast to int?
-      cashBack: json['cashBack'], // Can be null, int, or any other type - will be cast to int?
       data: TicketCheckData.fromJson(json['data'] ?? {}),
     );
   }
@@ -124,15 +118,7 @@ class TicketCheckResponseModel {
     return previousResult.uniqueId;
   }
 
-  // Getter for points with safe handling
-  String get formattedPoints {
-    return points != null ? points.toString() : 'N/A';
-  }
 
-  // Getter for cashBack with safe handling
-  String get formattedCashBack {
-    return cashBack != null ? '₹${cashBack.toString()}' : '₹0';
-  }
 
   // Helper method to format numbers with commas
   String _formatNumber(double number) {

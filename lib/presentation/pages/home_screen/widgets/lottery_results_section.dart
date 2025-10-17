@@ -179,38 +179,47 @@ class LotteryResultsSection extends StatelessWidget {
   }
 
   Widget _buildDateDivider(String text, ThemeData theme, BuildContext context) {
+    // Define colors based on theme brightness
+    final dividerColor = theme.brightness == Brightness.dark
+        ? const Color(0xFF616161) // Medium-dark grey for dark mode
+        : Colors.grey[600]; // Darker grey for light mode
+
+    final textColor = theme.brightness == Brightness.dark
+        ? const Color(0xFFE0E0E0) // Light grey for dark mode
+        : Colors.black87; // Normal dark text for light mode
+
     return GestureDetector(
       onTap: onShowDatePicker,
       child: Container(
         color: Colors.transparent,
         child: Padding(
-          padding: AppResponsive.padding(context, horizontal: 24, vertical: 8),
+          padding: AppResponsive.padding(context, horizontal: 24, vertical: 6),
           child: Row(
             children: [
-              Expanded(child: Divider(color: theme.dividerTheme.color)),
-              Padding(
-                padding: AppResponsive.padding(context, horizontal: 16),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: AppResponsive.fontSize(context, 14),
-                      color: theme.colorScheme.primary,
-                    ),
-                    SizedBox(width: AppResponsive.spacing(context, 6)),
-                    Text(
-                      text,
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: AppResponsive.fontSize(context, 14),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+              Expanded(
+                child: Divider(
+                  color: dividerColor,
+                  thickness: 1.0, // Thicker divider for better visibility
                 ),
               ),
-              Expanded(child: Divider(color: theme.dividerTheme.color)),
+              Padding(
+                padding: AppResponsive.padding(context, horizontal: 16),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: AppResponsive.fontSize(context, 14),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: dividerColor,
+                  thickness: 1.0, // Thicker divider for better visibility
+                ),
+              ),
             ],
           ),
         ),
@@ -220,12 +229,12 @@ class LotteryResultsSection extends StatelessWidget {
 
   Widget _buildResultCard(
       HomeScreenResultModel result, ThemeData theme, BuildContext context) {
-    // Get first 6 consolation tickets for display
+    // Get first 5 consolation tickets for display
     List<String> consolationTickets =
-        result.consolationTicketsList.take(6).toList();
-    // Split into 2 rows of 3
+        result.consolationTicketsList.take(5).toList();
+    // Split into 2 rows: 3 in first row, 2 in second row
     List<String> firstRow = consolationTickets.take(3).toList();
-    List<String> secondRow = consolationTickets.skip(3).take(3).toList();
+    List<String> secondRow = consolationTickets.skip(3).take(2).toList();
 
     // Define colors based on bumper status
     final bool isBumper = result.isBumper;
@@ -251,16 +260,10 @@ class LotteryResultsSection extends StatelessWidget {
         Card(
           color: theme.cardTheme.color,
           margin: AppResponsive.margin(context, horizontal: 16, vertical: 10),
-          elevation: theme.brightness == Brightness.dark ? 4.0 : 2.0,
           shape: RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
-            side: BorderSide(
-              color: theme.brightness == Brightness.dark
-                  ? Colors.grey.withValues(alpha: 0.5)
-                  : Colors.grey.withValues(alpha: 0.3),
-              width: 2.0,
-            ),
+
           ),
           child: InkWell(
             onTap: () {
@@ -324,36 +327,13 @@ class LotteryResultsSection extends StatelessWidget {
                           // Prize Amount
                           Text(
                             result.firstPrize.amount >= 10000000
-                                ? '₹${result.firstPrize.amount.toInt()}/-  [${(result.firstPrize.amount / 10000000)} Crore]'
-                                : '₹${result.firstPrize.amount.toInt()}/-  [${(result.firstPrize.amount / 100000).toInt()} Lakh]',
+                                ? '₹${result.firstPrize.amount.toInt()}/-'
+                                : '₹${result.firstPrize.amount.toInt()}/-',
                             style: TextStyle(
                               fontSize: AppResponsive.fontSize(context, 18),
                               fontWeight: FontWeight.w700,
                               color: theme.textTheme.titleMedium?.color,
                             ),
-                          ),
-
-                          // Date with calendar icon
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: AppResponsive.fontSize(context, 13),
-                                color: theme.textTheme.bodyMedium?.color,
-                              ),
-                              SizedBox(
-                                  width: AppResponsive.spacing(context, 4)),
-                              Text(
-                                _formatDateToDDMMYYYY(result.date),
-                                style: TextStyle(
-                                  fontSize: AppResponsive.fontSize(context, 13),
-                                  fontWeight: FontWeight.w500,
-                                  color: theme.textTheme.bodyMedium?.color,
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
@@ -374,7 +354,7 @@ class LotteryResultsSection extends StatelessWidget {
                       Text(
                         'FIRST PRIZE',
                         style: TextStyle(
-                          fontSize: AppResponsive.fontSize(context, 14),
+                          fontSize: AppResponsive.fontSize(context, 16),
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           letterSpacing: 1.0,
@@ -398,7 +378,7 @@ class LotteryResultsSection extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.location_on,
-                            size: AppResponsive.fontSize(context, 18),
+                            size: AppResponsive.fontSize(context, 16),
                             color: Colors.white,
                           ),
                           SizedBox(width: AppResponsive.spacing(context, 4)),
@@ -458,88 +438,92 @@ class LotteryResultsSection extends StatelessWidget {
                       if (secondRow.isNotEmpty)
                         SizedBox(height: AppResponsive.spacing(context, 8)),
 
-                      // Second row of consolation prizes
+                      // Second row of consolation prizes with "See More" button
                       if (secondRow.isNotEmpty)
                         Row(
+                          // spacing: 18,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: secondRow
-                              .map((prize) =>
-                                  ConsolationPrizeContainer(prize: prize))
-                              .toList(),
+                          children: [
+                            // First prize in second row
+                            ConsolationPrizeContainer(prize: secondRow[0]),
+                            // Second prize in second row (if exists)
+                            if (secondRow.length > 1)
+                              ConsolationPrizeContainer(prize: secondRow[1])
+                            else
+                              const SizedBox.shrink(),
+                            // "See More" button as third item
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: isBumper
+                                      ? [Colors.purple, Colors.deepPurple]
+                                      : const [
+                                          Color(0xFFFB0000),
+                                          Color(0xFFE75353),
+                                        ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                    AppResponsive.spacing(context, 4)),
+                              ),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  // Track see more button analytics
+                                  AnalyticsService.trackLotteryEvent(
+                                    eventType: 'see_more_pressed',
+                                    lotteryName: result.getFormattedTitle(context),
+                                    resultDate: result.formattedDate,
+                                    additionalParams: {
+                                      'unique_id': result.uniqueId,
+                                      'source': 'see_more_button',
+                                    },
+                                  );
+
+                                  context.go('/result-details', extra: {
+                                    'uniqueId': result.uniqueId,
+                                    'lotteryNumber': null,
+                                    'isNew': result.isNew,
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  shadowColor: Colors.transparent,
+                                  padding: AppResponsive.padding(context,
+                                      horizontal: 13, vertical: 5),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        AppResponsive.spacing(context, 7)),
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'see_more'.tr(),
+                                      style: TextStyle(
+                                        fontSize: AppResponsive.fontSize(context, 12),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    SizedBox(width: AppResponsive.spacing(context, 3)),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: AppResponsive.fontSize(context, 10),
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
 
                       SizedBox(height: AppResponsive.spacing(context, 10)),
-
-                      // "See More" button
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isBumper
-                                  ? [Colors.purple, Colors.deepPurple]
-                                  : const [
-                                      Color(0xFFFB0000),
-                                      Color(0xFFE75353),
-                                    ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                                AppResponsive.spacing(context, 6)),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Track see more button analytics
-                              AnalyticsService.trackLotteryEvent(
-                                eventType: 'see_more_pressed',
-                                lotteryName: result.getFormattedTitle(context),
-                                resultDate: result.formattedDate,
-                                additionalParams: {
-                                  'unique_id': result.uniqueId,
-                                  'source': 'see_more_button',
-                                },
-                              );
-
-                              context.go('/result-details', extra: {
-                                'uniqueId': result.uniqueId,
-                                'lotteryNumber': null, // No lottery number available from home screen results
-                                'isNew': result.isNew,
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              foregroundColor: Colors.white,
-                              shadowColor: Colors.transparent,
-                              padding: AppResponsive.padding(context,
-                                  horizontal: 12, vertical: 6),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                    AppResponsive.spacing(context, 6)),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'see_more'.tr(),
-                                  style: TextStyle(
-                                    fontSize: AppResponsive.fontSize(context, 12),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(width: AppResponsive.spacing(context, 4)),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: AppResponsive.fontSize(context, 12),
-                                  color: Colors.white,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -568,32 +552,29 @@ class LotteryResultsSection extends StatelessWidget {
                 : result.isLive
                     ? AnimatedBuilder(
                         animation: blinkAnimation,
-                        child: Container(
-                          padding: AppResponsive.padding(context,
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(
-                                  AppResponsive.spacing(context, 8)),
-                              bottomRight: Radius.circular(
-                                  AppResponsive.spacing(context, 8)),
+                        child: Transform.rotate(
+                          angle: 0.785398, // 45 degrees for consistency
+                          child: Container(
+                            padding: AppResponsive.padding(context,
+                                horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                            child: Text(
+                              'live_badge'.tr(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: AppResponsive.fontSize(context, 9),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
                               ),
-                            ],
-                          ),
-                          child: Text(
-                            'live_badge'.tr(),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: AppResponsive.fontSize(context, 10),
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
@@ -844,7 +825,7 @@ class LotteryResultsSection extends StatelessWidget {
     return groupedResults;
   }
 
-  /// Build a badge with shimmer effect for bumper and new badges
+  /// Build a badge with shimmer effect for bumper and new badges - diagonal ribbon style
   Widget _buildShimmerBadge({
     required BuildContext context,
     Gradient? gradient,
@@ -859,8 +840,7 @@ class LotteryResultsSection extends StatelessWidget {
         gradient: gradient,
         color: backgroundColor,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(AppResponsive.spacing(context, 8)),
-          bottomRight: Radius.circular(AppResponsive.spacing(context, 8)),
+          topRight: Radius.circular(AppResponsive.spacing(context, 8)),
         ),
         boxShadow: [
           BoxShadow(
@@ -870,43 +850,16 @@ class LotteryResultsSection extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              color: Colors.white,
-              size: AppResponsive.fontSize(context, 12),
-            ),
-            SizedBox(width: AppResponsive.spacing(context, 4)),
-          ],
-          Text(
-            text,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: AppResponsive.fontSize(context, 10),
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: AppResponsive.fontSize(context, 10),
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
-  }
-
-  /// Helper method to format date from YYYY-MM-DD to DD-MM-YYYY
-  String _formatDateToDDMMYYYY(String dateString) {
-    try {
-      // Parse the date string (assuming it's in YYYY-MM-DD format)
-      final DateTime date = DateTime.parse(dateString);
-      
-      // Format to DD-MM-YYYY
-      return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-    } catch (e) {
-      // If parsing fails, return the original string
-      return dateString;
-    }
   }
 }
 

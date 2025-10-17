@@ -4,12 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:lotto_app/presentation/pages/home_screen/widgets/ai_probability_fab.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/costume_carousel.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/first_time_language_dialog.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/lottery_results_section.dart';
 import 'package:lotto_app/presentation/pages/home_screen/widgets/navigation_icons_widget.dart';
-import 'package:lotto_app/routes/app_routes.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/core/utils/date_formatter.dart';
 import 'package:lotto_app/core/services/url_launcher_service.dart';
@@ -38,8 +36,6 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _primaryAnimationController;
   late AnimationController _secondaryAnimationController;
 
-  // All animations driven by the two controllers
-  late Animation<double> _fabAnimation;
   late Animation<double> _blinkAnimation;
 
   bool _isFabVisible = true;
@@ -101,12 +97,6 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
     );
 
-    // FAB slide animation for show/hide
-    _fabAnimation = CurvedAnimation(
-      parent: _primaryAnimationController,
-      curve: Curves.easeInOutCubic,
-      reverseCurve: Curves.easeInOutCubic,
-    );
 
     // Blink animation (0-1 second in the cycle)
     _blinkAnimation = Tween<double>(
@@ -430,8 +420,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ),
-        floatingActionButton: _buildScanButton(theme),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
@@ -615,17 +603,5 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildScanButton(ThemeData theme) {
-    return AIProbabilityFAB(
-      onPressed: () {
-        // Add haptic feedback for FAB press
-        HapticFeedback.heavyImpact();
 
-        // Navigate to the scanner page
-        context.pushNamed(RouteNames.probabilityBarcodeScanner);
-      },
-      slideAnimation: _fabAnimation,
-      theme: theme,
-    );
-  }
 }

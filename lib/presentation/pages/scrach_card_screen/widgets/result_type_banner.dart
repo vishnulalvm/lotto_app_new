@@ -30,12 +30,14 @@ class ResultTypeBanner extends StatelessWidget {
 
     // Show scratch instruction for scratch cards before reveal
     if (shouldShowScratch && !autoRevealTriggered) {
-      bannerColor = isDark ? Colors.purple[900]!.withValues(alpha: 0.3) : Colors.purple[50]!;
+      bannerColor = isDark
+          ? Colors.purple[900]!.withValues(alpha: 0.3)
+          : Colors.purple[50]!;
       iconColor = isDark ? Colors.purple[400]! : Colors.purple[600]!;
       primaryIcon = Icons.touch_app;
       title = '✋ Scratch to Reveal Result';
       subtitle = 'Scratch the card below to see if you won';
-      
+
       return _buildBannerContainer(
         theme: theme,
         bannerColor: bannerColor,
@@ -53,33 +55,35 @@ class ResultTypeBanner extends StatelessWidget {
     switch (resultStatus.toLowerCase()) {
       case 'won price today':
         // Case 1: Current Winner
-        bannerColor = isDark ? Colors.green[900]!.withValues(alpha: 0.3) : Colors.green[50]!;
+        bannerColor = isDark
+            ? Colors.green[900]!.withValues(alpha: 0.3)
+            : Colors.green[50]!;
         iconColor = isDark ? Colors.green[400]! : Colors.green[600]!;
         primaryIcon = Icons.emoji_events;
         title = '🎉 Congratulations! You Won!';
-        subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : ticketData['date'])}';
+        subtitle =
+            'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : ticketData['date'])}';
         break;
 
       case 'no price today':
         // Case 2: Current Loser - Show points if available
-        if (result.points != null && result.points! > 0) {
-          bannerColor = isDark ? Colors.blue[900]!.withValues(alpha: 0.3) : Colors.blue[50]!;
-          iconColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
-          primaryIcon = Icons.card_giftcard;
-          title = '🎁 You Earned ${result.points} Points!';
-          subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : ticketData['date'])}';
-        } else {
-          bannerColor = isDark ? Colors.orange[900]!.withValues(alpha: 0.3) : Colors.orange[50]!;
-          iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
-          primaryIcon = Icons.info;
-          title = 'Better Luck Next Time';
-          subtitle = 'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : ticketData['date'])}';
-        }
+
+        bannerColor = isDark
+            ? Colors.orange[900]!.withValues(alpha: 0.3)
+            : Colors.orange[50]!;
+        iconColor = isDark ? Colors.orange[400]! : Colors.orange[600]!;
+        primaryIcon = Icons.info;
+        title = 'Better Luck Next Time';
+        subtitle =
+            'Checked on ${_formatDate(result.drawDate.isNotEmpty ? result.drawDate : ticketData['date'])}';
+
         break;
 
       case 'previous result':
         // Case 3: Previous Winner
-        bannerColor = isDark ? Colors.yellow[900]!.withValues(alpha: 0.3) : Colors.yellow[50]!;
+        bannerColor = isDark
+            ? Colors.yellow[900]!.withValues(alpha: 0.3)
+            : Colors.yellow[50]!;
         iconColor = isDark ? Colors.yellow[400]! : Colors.yellow[900]!;
         primaryIcon = Icons.emoji_events;
         title = 'Previous Lottery Winner!';
@@ -114,11 +118,6 @@ class ResultTypeBanner extends StatelessWidget {
         break;
     }
 
-    // Determine if we should show the points button
-    final bool shouldShowPointsButton = resultStatus.toLowerCase() == 'no price today' && 
-                                       result.points != null && 
-                                       result.points! > 0;
-
     return _buildBannerContainer(
       theme: theme,
       bannerColor: bannerColor,
@@ -126,7 +125,7 @@ class ResultTypeBanner extends StatelessWidget {
       primaryIcon: primaryIcon,
       title: title,
       subtitle: subtitle,
-      showPointsButton: shouldShowPointsButton,
+      showPointsButton: result.isWinner,
       context: context,
     );
   }
@@ -141,8 +140,9 @@ class ResultTypeBanner extends StatelessWidget {
     bool showPointsButton = false,
     BuildContext? context,
   }) {
-    final double screenWidth = context != null ? MediaQuery.of(context).size.width : 375.0;
-    
+    final double screenWidth =
+        context != null ? MediaQuery.of(context).size.width : 375.0;
+
     // Responsive values
     final double horizontalMargin = (screenWidth * 0.04).clamp(12.0, 20.0);
     final double borderRadius = (screenWidth * 0.04).clamp(12.0, 18.0);
@@ -151,7 +151,7 @@ class ResultTypeBanner extends StatelessWidget {
     final double iconContainerRadius = (screenWidth * 0.03).clamp(10.0, 14.0);
     final double iconSize = (screenWidth * 0.06).clamp(20.0, 28.0);
     final double spacing = (screenWidth * 0.03).clamp(10.0, 16.0);
-    
+
     return Container(
       width: double.infinity,
       margin: EdgeInsets.only(left: horizontalMargin, right: horizontalMargin),
@@ -250,7 +250,8 @@ class ResultTypeBanner extends StatelessWidget {
                       padding: EdgeInsets.all(iconContainerPadding * 0.75),
                       decoration: BoxDecoration(
                         color: iconColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(iconContainerRadius * 0.75),
+                        borderRadius:
+                            BorderRadius.circular(iconContainerRadius * 0.75),
                       ),
                       child: Icon(
                         Icons.close,

@@ -9,7 +9,6 @@ import 'package:lotto_app/data/datasource/api/home_screen/home_screen_api.dart';
 import 'package:lotto_app/data/datasource/api/results_screen/results_screen.dart';
 import 'package:lotto_app/data/datasource/api/scratch_card_screen/result_checker.dart';
 import 'package:lotto_app/data/datasource/api/predict_screen/predict_api_service.dart';
-import 'package:lotto_app/data/datasource/api/probability_screen/probability_api_service.dart';
 import 'package:lotto_app/data/datasource/api/live_video_screen/live_video_api_service.dart';
 import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
 import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
@@ -18,7 +17,6 @@ import 'package:lotto_app/data/repositories/cache/result_details_cache_repositor
 import 'package:lotto_app/data/repositories/results_screen/result_screen.dart';
 import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dart';
 import 'package:lotto_app/data/repositories/predict_screen/predict_repository.dart';
-import 'package:lotto_app/data/repositories/probability_screen/probability_repository.dart';
 import 'package:lotto_app/data/repositories/live_video_screen/live_video_repository.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/data/services/theme_service.dart';
@@ -30,7 +28,6 @@ import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
 import 'package:lotto_app/domain/usecases/predict_screen/predict_usecase.dart';
-import 'package:lotto_app/domain/usecases/probability_screen/probability_usecase.dart';
 import 'package:lotto_app/domain/usecases/live_video_screen/live_video_usecase.dart';
 import 'package:lotto_app/domain/usecases/lottery_purchase/lottery_purchase_usecase.dart';
 import 'package:lotto_app/domain/usecases/lottery_statistics/lottery_statistics_usecase.dart';
@@ -49,9 +46,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
-import 'package:lotto_app/presentation/blocs/probability_screen/probability_bloc.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
-import 'package:lotto_app/presentation/blocs/lotto_points_screen/user_points_bloc.dart';
 import 'package:lotto_app/presentation/blocs/rate_us/rate_us_bloc.dart';
 import 'package:lotto_app/data/repositories/rate_us/rate_us_repository.dart';
 import 'package:lotto_app/routes/route_names.dart';
@@ -195,20 +190,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        BlocProvider(
-          lazy: true,
-          create: (context) => ProbabilityBloc(
-            useCase: ProbabilityUseCase(
-              repository: ProbabilityRepositoryImpl(
-                apiService: ProbabilityApiService(),
-              ),
-            ),
-          ),
-        ),
-        BlocProvider(
-          lazy: true,
-          create: (context) => UserPointsBloc(),
-        ),
+
         BlocProvider(
           lazy: true,
           create: (context) => LotteryPurchaseBloc(
