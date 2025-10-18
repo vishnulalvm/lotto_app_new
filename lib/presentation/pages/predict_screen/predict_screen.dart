@@ -15,7 +15,6 @@ import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/ai_prediction_service.dart';
-import 'package:lotto_app/data/services/lottery_info_service.dart';
 import 'dart:async';
 
 class PredictScreen extends StatefulWidget {
@@ -379,7 +378,6 @@ class _PredictScreenState extends State<PredictScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardColor,
-
         border: Border.all(
           color: theme.primaryColor.withValues(alpha: 0.3),
           width: 1,
@@ -417,7 +415,7 @@ class _PredictScreenState extends State<PredictScreen>
       ThemeData theme, List<RepeatedSingleDigit> data) {
     return Container(
       decoration: BoxDecoration(
-           color:theme.cardColor,
+        color: theme.cardColor,
         border: Border.all(
           color: theme.primaryColor,
           width: .5,
@@ -472,7 +470,7 @@ class _PredictScreenState extends State<PredictScreen>
 
     return Container(
       decoration: BoxDecoration(
-         color:theme.cardColor,
+        color: theme.cardColor,
         border: Border.all(
           color: theme.primaryColor,
           width: .5,
@@ -555,7 +553,6 @@ class _PredictScreenState extends State<PredictScreen>
                       data['number'],
                       style: theme.textTheme.headlineMedium?.copyWith(
                         color: textColor,
-                      
                         fontSize: 16,
                       ),
                     ),
@@ -578,10 +575,10 @@ class _PredictScreenState extends State<PredictScreen>
                         child: Text(
                           'count_times'.tr(
                               namedArgs: {'count': data['count'].toString()}),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: borderColor,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
-                            fontSize: 10,
+                            fontSize: 12,
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -608,9 +605,10 @@ class _PredictScreenState extends State<PredictScreen>
           child: Text(
             'two_digits_found'
                 .tr(namedArgs: {'count': numberData.length.toString()}),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: borderColor,
-              fontWeight: FontWeight.w500,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
             ),
           ),
         ),
@@ -623,7 +621,7 @@ class _PredictScreenState extends State<PredictScreen>
       ThemeData theme, List<PeoplesPrediction> data) {
     return Container(
       decoration: BoxDecoration(
-        color:theme.cardColor,
+        color: theme.cardColor,
         border: Border.all(
           color: theme.primaryColor,
           width: .5,
@@ -646,9 +644,11 @@ class _PredictScreenState extends State<PredictScreen>
                 Expanded(
                   child: Text(
                     'people_predictions'.tr(),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      // fontWeight: FontWeight.w600,
-                    ),
+                                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -725,10 +725,10 @@ class _PredictScreenState extends State<PredictScreen>
                         child: Text(
                           'count_times'.tr(
                               namedArgs: {'count': data['count'].toString()}),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: borderColor,
+                                                  style: TextStyle(
+                            color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
-                            fontSize: 10,
+                            fontSize: 12,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -754,10 +754,11 @@ class _PredictScreenState extends State<PredictScreen>
           child: Text(
             'digits_found'
                 .tr(namedArgs: {'count': numberData.length.toString()}),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: borderColor,
-              fontWeight: FontWeight.w500,
-            ),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
           ),
         ),
       ],
@@ -802,7 +803,6 @@ class _PredictScreenState extends State<PredictScreen>
                       data['number'],
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: textColor,
-               
                         fontSize: 16,
                       ),
                     ),
@@ -860,7 +860,7 @@ class _PredictScreenState extends State<PredictScreen>
   Widget _buildMostRepeatedCard(ThemeData theme, List<RepeatedNumber> data) {
     return Container(
       decoration: BoxDecoration(
-        color:theme.cardColor,
+        color: theme.cardColor,
         border: Border.all(
           color: theme.primaryColor,
           width: .5,
@@ -1124,7 +1124,8 @@ class _PredictScreenState extends State<PredictScreen>
     AdMobService.instance.loadPredictInterstitialAd();
 
     // Show ad as soon as it's loaded (no delay)
-    await Future.delayed(const Duration(milliseconds: 100)); // Small delay to allow ad to start loading
+    await Future.delayed(const Duration(
+        milliseconds: 100)); // Small delay to allow ad to start loading
 
     if (!mounted) return;
 
@@ -1155,24 +1156,27 @@ class _PredictScreenState extends State<PredictScreen>
       if (data == null) return;
 
       // Fetch AI prediction numbers for current prize type
-      final aiPrediction = await AiPredictionService.getTodaysPrediction(_selectedPrizeType);
+      final aiPrediction =
+          await AiPredictionService.getTodaysPrediction(_selectedPrizeType);
 
       StringBuffer copyText = StringBuffer();
 
       // Add AI Predicted Numbers section
       if (aiPrediction != null && aiPrediction.predictedNumbers.isNotEmpty) {
-        copyText.writeln('AI Predicted Numbers (${LotteryInfoService.getPrizeTypeFormatted(_selectedPrizeType)}):');
-        copyText.writeln(aiPrediction.predictedNumbers.join(', '));
+        copyText.writeln('Today Guessing Number :');
+
+        copyText.writeln(aiPrediction.predictedNumbers.join('   '));
         copyText.writeln();
       }
 
       // Add Most Repeated Numbers section (last 4 digits from last 30 days)
       if (data.repeatedNumbers.isNotEmpty) {
-        copyText.writeln('Most Winning Numbers (Last 30 Days):');
-        final repeatedNumbersList = data.repeatedNumbers
-            .map((e) => '${e.number} (${e.count}x)')
-            .join(', ');
+        copyText.writeln('Most Winning Numbers (Last 30 Days) :');
+        final repeatedNumbersList =
+            data.repeatedNumbers.map((e) => e.number).join('   ');
         copyText.writeln(repeatedNumbersList);
+         copyText.writeln();
+         copyText.writeln('Download App : https://play.google.com/store/apps/details?id=app.solidapps.lotto');
       }
 
       // Copy to clipboard

@@ -317,19 +317,19 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                     children: [
                       TextSpan(
                         text: '${pattern.count} ',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: borderColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: countFontSize,
-                        ),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: countFontSize,
+                          ),
                       ),
                       TextSpan(
                         text: 'times'.tr(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: borderColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                         style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
                       ),
                     ],
                   ),
@@ -359,12 +359,11 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
                           ),
                           child: Text(
                             example,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: borderColor,
-                              fontSize: exampleFontSize,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'monospace',
-                            ),
+                            style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: exampleFontSize,
+                          ),
                           ),
                         );
                       }).toList(),
