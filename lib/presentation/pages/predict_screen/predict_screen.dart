@@ -834,6 +834,7 @@ class _PredictScreenState extends State<PredictScreen>
             );
           },
         ),
+        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -1120,25 +1121,32 @@ class _PredictScreenState extends State<PredictScreen>
       return;
     }
 
-    // Load ad immediately
-    AdMobService.instance.loadPredictInterstitialAd();
-
-    // Show ad as soon as it's loaded (no delay)
-    await Future.delayed(const Duration(
-        milliseconds: 100)); // Small delay to allow ad to start loading
-
-    if (!mounted) return;
-
     try {
-      await AdMobService.instance.showInterstitialAd(
-        'predict_interstitial',
-        onDismissed: () {
-          // Update cooldown timestamp when ad is dismissed
-          _updateCooldownTimestamp();
-        },
-      );
+      // Load ad and wait for it to complete loading
+      await AdMobService.instance.loadAd('predict_interstitial');
+
+      if (!mounted) return;
+
+      // Give user a brief moment to see the screen before showing ad
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Verify ad is actually loaded before attempting to show
+      if (AdMobService.instance.isAdLoaded('predict_interstitial')) {
+        await AdMobService.instance.showInterstitialAd(
+          'predict_interstitial',
+          onDismissed: () {
+            // Update cooldown timestamp when ad is dismissed
+            _updateCooldownTimestamp();
+          },
+        );
+      } else {
+        // Ad failed to load, update cooldown to prevent rapid retry attempts
+        _updateCooldownTimestamp();
+      }
     } catch (e) {
-      // Ad failed to show, but still update cooldown to prevent rapid retry attempts
+      // Ad loading/showing failed, update cooldown to prevent rapid retry attempts
       _updateCooldownTimestamp();
     }
   }

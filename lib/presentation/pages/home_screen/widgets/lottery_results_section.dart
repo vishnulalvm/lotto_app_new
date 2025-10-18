@@ -246,7 +246,7 @@ class LotteryResultsSection extends StatelessWidget {
           )
         : const LinearGradient(
             colors: [
-              Color.fromARGB(255, 200, 12, 12),
+              Color(0xFFFA5053), // #FA5053
               Color(0xFFE75353),
             ],
             begin: Alignment.topLeft,
@@ -460,7 +460,7 @@ class LotteryResultsSection extends StatelessWidget {
                                   colors: isBumper
                                       ? [Colors.purple, Colors.deepPurple]
                                       : const [
-                                          Color.fromARGB(255, 200, 12, 12),
+                                          Color(0xFFFA5053), // #FA5053
                                           Color(0xFFE75353),
                                         ],
                                   begin: Alignment.topLeft,

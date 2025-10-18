@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary color (same for both themes)
-  static const primary = Color.fromARGB(255, 200, 12, 12);
+  // Primary color - Custom Red (same for both themes)
+  static const primary = Color(0xFFFA5053); // #FA5053
 
   // Light theme colors
   static const lightBackground = Color(0xFFFFF1F2);

@@ -5,6 +5,7 @@ class LotteryLocalizationHelper {
   static final Map<String, String> _lotteryNameToKey = {
     'VISHU BUMPER': 'vishuBumper',
     'SUMMER BUMPER': 'summerBumper',
+    'POOJA BUMPER': 'poojaBumper',
     'KARUNYA PLUS': 'karunyaPlus',
     'SUVARNA KERALAM': 'suvarnaKeralam',
     'KARUNYA': 'karunya',

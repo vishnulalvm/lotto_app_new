@@ -293,7 +293,7 @@ class _ChallengeScannerDialogState extends State<ChallengeScannerDialog>
         // Instruction text
         if (!isProcessing)
           Positioned(
-            bottom: AppResponsive.spacing(context, 45),
+            bottom: AppResponsive.spacing(context, 10),
             child: Container(
               width: AppResponsive.width(context, 80),
               padding: AppResponsive.padding(context, 

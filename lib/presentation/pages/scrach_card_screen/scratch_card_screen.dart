@@ -44,10 +44,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   // Scratcher key for auto-reveal
   final GlobalKey<ScratcherState> _scratcherKey = GlobalKey<ScratcherState>();
-  
+
   // AdMob service for interstitial ads
   final AdMobService _adMobService = AdMobService.instance;
-  
+
+  // Interstitial ad cooldown tracking (static to persist across screen instances)
+  static DateTime? _lastAdShowTime;
+  static const Duration _adCooldownDuration = Duration(seconds: 30);
 
   @override
   void initState() {
@@ -157,25 +160,56 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   }
 
 
+  /// Check if cooldown period has passed
+  bool _canShowAd() {
+    if (_lastAdShowTime == null) {
+      return true; // Never shown, can show
+    }
+
+    final timeSinceLastAd = DateTime.now().difference(_lastAdShowTime!);
+    return timeSinceLastAd >= _adCooldownDuration;
+  }
+
+  /// Update cooldown timestamp
+  void _updateCooldownTimestamp() {
+    _lastAdShowTime = DateTime.now();
+  }
+
   // Show interstitial ad immediately when entering screen
-  void _showInterstitialAdOnEntry() {
-    // Small delay to allow screen to load properly
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
-        // First try to show if ad is already loaded, otherwise load and show
-        if (_adMobService.canShowScratchCardInterstitialAd()) {
-          _adMobService.showScratchCardInterstitialAd();
-        } else {
-          // Load ad first, then show it
-          _adMobService.loadScratchCardInterstitialAd().then((_) {
-            if (mounted && _adMobService.canShowScratchCardInterstitialAd()) {
-              _adMobService.showScratchCardInterstitialAd();
-            }
-          });
-        }
+  Future<void> _showInterstitialAdOnEntry() async {
+    // Check cooldown first
+    if (!_canShowAd()) {
+      return;
+    }
+
+    try {
+      // Load ad and wait for it to complete loading
+      await _adMobService.loadAd('scratch_card_interstitial');
+
+      if (!mounted) return;
+
+      // Give user a brief moment to see the screen before showing ad
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Verify ad is actually loaded before attempting to show
+      if (_adMobService.isAdLoaded('scratch_card_interstitial')) {
+        await _adMobService.showInterstitialAd(
+          'scratch_card_interstitial',
+          onDismissed: () {
+            // Update cooldown timestamp when ad is dismissed
+            _updateCooldownTimestamp();
+          },
+        );
       } else {
+        // Ad failed to load, update cooldown to prevent rapid retry attempts
+        _updateCooldownTimestamp();
       }
-    });
+    } catch (e) {
+      // Ad loading/showing failed, update cooldown to prevent rapid retry attempts
+      _updateCooldownTimestamp();
+    }
   }
 
   // Enhanced method to determine if we should show scratch card based on response type

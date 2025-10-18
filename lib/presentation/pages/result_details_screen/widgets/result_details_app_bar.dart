@@ -117,7 +117,7 @@ class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget
                 value: 'patterns',
                 label: 'Patterns',
                 icon: Icons.grid_view,
-                color: Colors.purple,
+                color: Colors.yellow.shade700,
                 theme: theme,
               ),
             ],

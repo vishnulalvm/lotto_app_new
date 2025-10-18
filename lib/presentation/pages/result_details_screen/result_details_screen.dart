@@ -158,24 +158,32 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       return;
     }
 
-    // Load ad immediately
-    AdMobService.instance.loadAd('seemore_interstitial');
-
-    // Show ad as soon as it's loaded (no delay)
-    await Future.delayed(const Duration(milliseconds: 100)); // Small delay to allow ad to start loading
-
-    if (!mounted) return;
-
     try {
-      await AdMobService.instance.showInterstitialAd(
-        'seemore_interstitial',
-        onDismissed: () {
-          // Update cooldown timestamp when ad is dismissed
-          _updateCooldownTimestamp();
-        },
-      );
+      // Load ad and wait for it to complete loading
+      await AdMobService.instance.loadAd('seemore_interstitial');
+
+      if (!mounted) return;
+
+      // Give user a brief moment to see the screen before showing ad
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Verify ad is actually loaded before attempting to show
+      if (AdMobService.instance.isAdLoaded('seemore_interstitial')) {
+        await AdMobService.instance.showInterstitialAd(
+          'seemore_interstitial',
+          onDismissed: () {
+            // Update cooldown timestamp when ad is dismissed
+            _updateCooldownTimestamp();
+          },
+        );
+      } else {
+        // Ad failed to load, update cooldown to prevent rapid retry attempts
+        _updateCooldownTimestamp();
+      }
     } catch (e) {
-      // Ad failed to show, but still update cooldown to prevent rapid retry attempts
+      // Ad loading/showing failed, update cooldown to prevent rapid retry attempts
       _updateCooldownTimestamp();
     }
   }
@@ -188,7 +196,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
       case 'repeated':
         return Colors.blue;
       case 'patterns':
-        return Colors.purple;
+        return Colors.yellow.shade700;
       default:
         return Colors.green;
     }
@@ -560,7 +568,7 @@ class _LotteryResultDetailsScreenState extends State<LotteryResultDetailsScreen>
                 matchedNumbers: state.matchedNumbers,
                 matchHighlightColor: Colors.green,
                 patternNumbers: state.patternNumbers,
-                patternHighlightColor: Colors.purple.shade200,
+                patternHighlightColor: Colors.yellow.shade700,
                 repeatedNumbers: state.repeatedNumbers,
                 repeatedHighlightColor: Colors.blue,
               ),

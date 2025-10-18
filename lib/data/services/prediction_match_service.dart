@@ -11,8 +11,8 @@ class PredictionMatchService {
   static final ResultDetailsCacheRepositoryImpl _detailsCacheRepo = ResultDetailsCacheRepositoryImpl();
 
   /// Fetches prediction for the appropriate date based on current time
-  /// Before 4:30 PM: gets yesterday's prediction
-  /// After 4:30 PM: gets today's prediction
+  /// Before 4:10 PM: gets yesterday's prediction
+  /// After 4:10 PM: gets today's prediction
   static Future<AiPredictionModel?> getTodaysPrediction(int prizeType) async {
     try {
       final targetDate = getTargetDateForPrediction();
@@ -234,16 +234,16 @@ class PredictionMatchService {
   }
 
   /// Gets the target date for both predictions and results based on current time
-  /// Before 4:30 PM: yesterday's date (compare yesterday's prediction vs yesterday's result)
-  /// After 4:30 PM: today's date (compare today's prediction vs today's result)
+  /// Before 4:10 PM: yesterday's date (compare yesterday's prediction vs yesterday's result)
+  /// After 4:10 PM: today's date (compare today's prediction vs today's result)
   /// This ensures predictions and results are always for the same date
   static String getTargetDateForPrediction() {
     final now = DateTime.now();
-    final isAfter430PM = now.hour > 16 || (now.hour == 16 && now.minute >= 30);
-    
-    final targetDate = isAfter430PM ? now : now.subtract(const Duration(days: 1));
+    final isAfter410PM = now.hour > 16 || (now.hour == 16 && now.minute >= 10);
+
+    final targetDate = isAfter410PM ? now : now.subtract(const Duration(days: 1));
     final dateString = '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
-    
+
     return dateString;
   }
 

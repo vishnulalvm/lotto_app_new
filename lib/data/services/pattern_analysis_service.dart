@@ -1,4 +1,5 @@
-import '../models/results_screen/results_screen.dart';
+
+import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 
 class PatternAnalysisService {
   static Map<String, int> analyzePatterns(List<LotteryResultModel> results) {
@@ -71,13 +72,12 @@ class PatternAnalysisService {
   }
   
   static bool _isDoublePair(List<int> digits) {
-    // AABB pattern: 6535 style or 9911
-    return (digits[0] == digits[1] && digits[2] == digits[3] && digits[0] != digits[2]) ||
-           (digits[0] == digits[3] && digits[1] == digits[2] && digits[0] != digits[1]);
+    // AABB pattern: 9911, 7744, 1122 (two pairs of consecutive same digits)
+    return digits[0] == digits[1] && digits[2] == digits[3] && digits[0] != digits[2];
   }
   
   static bool _isMirrorPattern(List<int> digits) {
-    // ABBA pattern: 7475, 2717
+    // ABBA pattern: 7447, 2552, 1331 (palindrome/mirror symmetry)
     return digits[0] == digits[3] && digits[1] == digits[2] && digits[0] != digits[1];
   }
   
@@ -170,7 +170,7 @@ class PatternAnalysisService {
       PatternStatistic(
         patternType: 'Mirror (ABBA)',
         count: 87,
-        examples: ['7475', '2717', '5365', '9119'],
+        examples: ['7447', '2552', '1331', '9119'],
         percentage: 13.1,
       ),
       PatternStatistic(

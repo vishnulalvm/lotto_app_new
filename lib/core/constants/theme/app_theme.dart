@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  // Custom Red color constant
+  static const Color crimsonRed = Color(0xFFFA5053); // #FA5053
+
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        primaryColor: const Color.fromARGB(255, 200, 12, 12),
+        primaryColor: crimsonRed,
         disabledColor: Colors.grey[300]!,
         scaffoldBackgroundColor: const Color(0xFFFFF1F2),
         dialogTheme: const DialogThemeData(
@@ -37,7 +40,7 @@ class AppTheme {
           actionsIconTheme: IconThemeData(color: Colors.black87),
           titleTextStyle: TextStyle(
             fontSize: 24,
-            color: Color.fromARGB(255, 200, 12, 12),
+            color: crimsonRed,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -49,9 +52,9 @@ class AppTheme {
           ),
         ),
         tabBarTheme: const TabBarThemeData(
-          labelColor: Color.fromARGB(255, 200, 12, 12),
+          labelColor: crimsonRed,
           unselectedLabelColor: Colors.black54,
-          indicatorColor: Color.fromARGB(255, 200, 12, 12),
+          indicatorColor: crimsonRed,
         ),
         dividerTheme: DividerThemeData(
           color: Colors.grey[400],
@@ -60,14 +63,14 @@ class AppTheme {
           color: Colors.black87,
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Color.fromARGB(255, 200, 12, 12),
+          backgroundColor: crimsonRed,
           foregroundColor: Colors.white,
         ),
         colorScheme: const ColorScheme.light(
-          primary: Color.fromARGB(255, 200, 12, 12),
-          secondary: Color.fromARGB(255, 200, 12, 12),
+          primary: crimsonRed,
+          secondary: crimsonRed,
           surface: Colors.white,
-          error: Colors.red,
+          error: crimsonRed,
           onPrimary: Colors.white,
           onSecondary: Colors.white,
           onSurface: Colors.black87,
@@ -78,7 +81,7 @@ class AppTheme {
   static ThemeData get darkTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        primaryColor: const Color.fromARGB(255, 200, 12, 12),
+        primaryColor: crimsonRed,
         disabledColor: const Color(0xFF424242),
         scaffoldBackgroundColor: const Color(0xFF121212),
         dialogTheme: const DialogThemeData(
@@ -115,7 +118,7 @@ class AppTheme {
           actionsIconTheme: IconThemeData(color: Colors.white),
           titleTextStyle: TextStyle(
             fontSize: 24,
-            color: Color.fromARGB(255, 200, 12, 12),
+            color: crimsonRed,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -127,9 +130,9 @@ class AppTheme {
           ),
         ),
         tabBarTheme: const TabBarThemeData(
-          labelColor: Color.fromARGB(255, 200, 12, 12),
+          labelColor: crimsonRed,
           unselectedLabelColor: Color(0xFFBDBDBD),
-          indicatorColor: Color.fromARGB(255, 200, 12, 12),
+          indicatorColor: crimsonRed,
         ),
         dividerTheme: const DividerThemeData(
           color: Color(0xFF424242),
@@ -138,18 +141,18 @@ class AppTheme {
           color: Color(0xFFE0E0E0),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Color.fromARGB(255, 200, 12, 12),
+          backgroundColor: crimsonRed,
           foregroundColor: Colors.white,
         ),
         colorScheme: const ColorScheme.dark(
-          primary: Color.fromARGB(255, 200, 12, 12),
-          secondary: Color.fromARGB(255, 200, 12, 12),
+          primary: crimsonRed,
+          secondary: crimsonRed,
           surface: Color(0xFF1E1E1E),
-          error: Color(0xFFCF6679),
+          error: crimsonRed,
           onPrimary: Colors.white,
           onSecondary: Colors.white,
           onSurface: Colors.white,
-          onError: Colors.black,
+          onError: Colors.white,
         ),
       );
 }

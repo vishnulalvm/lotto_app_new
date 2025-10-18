@@ -33,6 +33,10 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   bool _hasDummyData = false;
   static const String _firstVisitKey = 'challenge_screen_first_visit';
 
+  // Interstitial ad cooldown tracking (static to persist across screen instances)
+  static DateTime? _lastAdShowTime;
+  static const Duration _adCooldownDuration = Duration(seconds: 30);
+
   @override
   void initState() {
     super.initState();
@@ -1104,19 +1108,54 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     }
   }
 
-  void _preloadAndScheduleInterstitialAd() {
-    AdMobService.instance.loadChallengeInterstitialAd();
+  /// Check if cooldown period has passed
+  bool _canShowAd() {
+    if (_lastAdShowTime == null) {
+      return true; // Never shown, can show
+    }
 
-    _adTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        _showInterstitialAd();
-      }
-    });
+    final timeSinceLastAd = DateTime.now().difference(_lastAdShowTime!);
+    return timeSinceLastAd >= _adCooldownDuration;
   }
 
-  void _showInterstitialAd() async {
-    if (AdMobService.instance.isChallengeInterstitialAdLoaded) {
-      await AdMobService.instance.showInterstitialAd('challenge_interstitial');
+  /// Update cooldown timestamp
+  void _updateCooldownTimestamp() {
+    _lastAdShowTime = DateTime.now();
+  }
+
+  Future<void> _preloadAndScheduleInterstitialAd() async {
+    // Check cooldown first
+    if (!_canShowAd()) {
+      return;
+    }
+
+    try {
+      // Load ad and wait for it to complete loading
+      await AdMobService.instance.loadAd('challenge_interstitial');
+
+      if (!mounted) return;
+
+      // Give user a brief moment to see the screen before showing ad
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Verify ad is actually loaded before attempting to show
+      if (AdMobService.instance.isAdLoaded('challenge_interstitial')) {
+        await AdMobService.instance.showInterstitialAd(
+          'challenge_interstitial',
+          onDismissed: () {
+            // Update cooldown timestamp when ad is dismissed
+            _updateCooldownTimestamp();
+          },
+        );
+      } else {
+        // Ad failed to load, update cooldown to prevent rapid retry attempts
+        _updateCooldownTimestamp();
+      }
+    } catch (e) {
+      // Ad loading/showing failed, update cooldown to prevent rapid retry attempts
+      _updateCooldownTimestamp();
     }
   }
 

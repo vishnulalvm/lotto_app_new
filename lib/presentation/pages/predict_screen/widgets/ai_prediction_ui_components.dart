@@ -147,7 +147,7 @@ class AIPredictionUIComponents {
           children: [
             buildNumbersGrid(theme, prediction.predictedNumbers,
                 triggerAnimation: true),
-            // const SizedBox(height: 16),
+            const SizedBox(height: 12),
             buildFooter(theme, predictionCount),
           ],
         ),

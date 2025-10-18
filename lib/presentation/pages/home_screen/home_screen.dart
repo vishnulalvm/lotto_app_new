@@ -97,7 +97,6 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
     );
 
-
     // Blink animation (0-1 second in the cycle)
     _blinkAnimation = Tween<double>(
       begin: 0.3,
@@ -304,7 +303,6 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -367,7 +365,9 @@ class _HomeScreenState extends State<HomeScreen>
         body: RefreshIndicator(
           onRefresh: () async {
             HapticFeedback.mediumImpact();
-            context.read<HomeScreenResultsBloc>().add(RefreshLotteryResultsEvent());
+            context
+                .read<HomeScreenResultsBloc>()
+                .add(RefreshLotteryResultsEvent());
           },
           child: SingleChildScrollView(
             controller: _scrollController,
@@ -432,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen>
       leading: GestureDetector(
         onTap: _launchWhatsAppGroup,
         child: Padding(
-          padding: EdgeInsets.all(AppResponsive.spacing(context, 12)),
+          padding: EdgeInsets.all(AppResponsive.spacing(context, 14)),
           child: Image.asset(
             'assets/icons/whatsapp.png',
             fit: BoxFit.contain,
@@ -508,16 +508,16 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           itemBuilder: (BuildContext context) => [
             _buildPopupMenuItem(
-              'saved_value', // The actual value returned when selected
-              Icons.bookmark,
-              'saved', // This is the translation key
+              'settings_value', // The actual value returned when selected
+              Icons.settings,
+              'settings', // This is the translation key
               Theme.of(context),
               context, // Pass context
             ),
             _buildPopupMenuItem(
-              'settings_value', // The actual value returned when selected
-              Icons.settings,
-              'settings', // This is the translation key
+              'saved_value', // The actual value returned when selected
+              Icons.bookmark,
+              'saved', // This is the translation key
               Theme.of(context),
               context, // Pass context
             ),
@@ -602,6 +602,4 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
-
-
 }
