@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lotto_app/presentation/pages/probility_screen/probability_barcode_scanner.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/result_details_screen.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/scratch_card_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -147,6 +148,12 @@ class AppRouter {
                 name: RouteNames.feedbackScreen,
                 builder: (context, state) => const FeedbackScreen(),
               ),
+                GoRoute(
+                path: 'probability_barcode_scanner',
+                name: RouteNames.probabilityBarcodeScanner,
+                builder: (context, state) => const ProbabilityBarcodeScannerScreen(),
+              ),
+
             ],
           ),
         ],

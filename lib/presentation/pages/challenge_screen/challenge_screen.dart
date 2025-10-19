@@ -347,14 +347,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       margin: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.primaryColor.withValues(alpha: 0.1),
-            theme.primaryColor.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.primaryColor.withValues(alpha: 0.2),

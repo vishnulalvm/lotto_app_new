@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import 'package:lotto_app/presentation/pages/predict_screen/widgets/lucky_number
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_card.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/prediction_match_card.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/pattern_statistics_card.dart';
+import 'package:lotto_app/presentation/pages/probility_screen/widgets/ai_probability_fab.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_state.dart';
@@ -27,9 +29,11 @@ class PredictScreen extends StatefulWidget {
 class _PredictScreenState extends State<PredictScreen>
     with TickerProviderStateMixin {
   late AnimationController _typewriterController;
-  bool _isDisclaimerExpanded = false;
+  late AnimationController _fabAnimationController;
+  late ScrollController _scrollController;
   int _selectedPrizeType = 5; // Shared state for synchronizing components
   final _predictionMatchCardKey = GlobalKey<PredictionMatchCardState>();
+  bool _isFabVisible = true;
 
   // Interstitial ad cooldown tracking (stored in memory, resets on app restart)
   static DateTime? _lastAdShowTime;
@@ -42,8 +46,16 @@ class _PredictScreenState extends State<PredictScreen>
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
-    // Track screen view for analytics
+    _fabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
+    // Consolidated post-frame callback for all initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Track screen view for analytics
       Future.microtask(() {
         AnalyticsService.trackScreenView(
           screenName: 'predict_screen',
@@ -54,20 +66,46 @@ class _PredictScreenState extends State<PredictScreen>
           },
         );
       });
-    });
 
-    // Load prediction data and check if lucky number dialog should be shown
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Load prediction data and check if lucky number dialog should be shown
       context.read<PredictBloc>().add(const GetPredictionDataEvent());
       _checkAndShowLuckyNumberDialog();
       _loadAndShowInterstitialAd();
+
+      // Trigger FAB animation after a short delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _fabAnimationController.forward();
+        }
+      });
     });
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _typewriterController.dispose();
+    _fabAnimationController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    final scrollDirection = _scrollController.position.userScrollDirection;
+
+    if (scrollDirection == ScrollDirection.reverse) {
+      // Scrolling down - hide FAB
+      if (_isFabVisible) {
+        _isFabVisible = false;
+        _fabAnimationController.reverse();
+      }
+    } else if (scrollDirection == ScrollDirection.forward) {
+      // Scrolling up - show FAB
+      if (!_isFabVisible) {
+        _isFabVisible = true;
+        _fabAnimationController.forward();
+      }
+    }
   }
 
   String _getLotteryNameForToday() {
@@ -108,16 +146,15 @@ class _PredictScreenState extends State<PredictScreen>
       appBar: _buildAppBar(theme, todaysLottery),
       body: BlocBuilder<PredictBloc, PredictState>(
         builder: (context, state) {
-          return Column(
-            children: [
-              Expanded(
-                child: _buildBody(theme, state),
-              ),
-              _buildBottomDisclaimer(theme),
-            ],
-          );
+          return _buildBody(theme, state);
         },
       ),
+      floatingActionButton: AIProbabilityFAB(
+        onPressed: _navigateToProbabilityScanner,
+        slideAnimation: _fabAnimationController,
+        theme: theme,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -142,6 +179,11 @@ class _PredictScreenState extends State<PredictScreen>
         overflow: TextOverflow.ellipsis,
       ),
       actions: [
+        IconButton(
+          icon: Icon(Icons.info, color: theme.appBarTheme.iconTheme?.color),
+          onPressed: _showDisclaimerBottomSheet,
+          tooltip: 'Important Information',
+        ),
         BlocBuilder<PredictBloc, PredictState>(
           builder: (context, state) {
             // Only show copy button when data is loaded
@@ -261,6 +303,7 @@ class _PredictScreenState extends State<PredictScreen>
         await Future.delayed(const Duration(milliseconds: 800));
       },
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
@@ -906,128 +949,89 @@ class _PredictScreenState extends State<PredictScreen>
     );
   }
 
-  Widget _buildBottomDisclaimer(ThemeData theme) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color:
-            Colors.amber.withValues(alpha: _isDisclaimerExpanded ? 0.1 : 0.05),
-        border: Border(
-          top: BorderSide(
-            color: Colors.amber.withValues(alpha: 0.3),
-            width: 1,
+  void _showDisclaimerBottomSheet() {
+    HapticFeedback.lightImpact();
+
+    // Track analytics
+    AnalyticsService.trackUserEngagement(
+      action: 'view_disclaimer',
+      category: 'predict_screen',
+      label: 'open_disclaimer_bottom_sheet',
+      parameters: {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Minimal disclaimer bar
-            InkWell(
-              onTap: () {
-                // Provide haptic feedback when disclaimer is toggled
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _isDisclaimerExpanded = !_isDisclaimerExpanded;
-                });
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
+          padding: const EdgeInsets.all(24),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     Icon(
-                      Icons.info_outline,
+                      Icons.info,
                       color: Colors.amber[700],
-                      size: 16,
+                      size: 28,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'data_driven_predictions_tap_details'.tr(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.amber[700],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    AnimatedRotation(
-                      turns: _isDisclaimerExpanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 300),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Colors.amber[700],
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Expandable detailed content
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 300),
-              crossFadeState: _isDisclaimerExpanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              firstChild: const SizedBox.shrink(),
-              secondChild: Container(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.amber.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
                         'important_information'.tr(),
-                        style: theme.textTheme.titleSmall?.copyWith(
+                        style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.amber[800],
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _buildDisclaimerPoint(
-                        theme,
-                        '🎯',
-                        'pattern_based_analysis'.tr(),
-                        'real_data_pattern_analysis'.tr(),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDisclaimerPoint(
-                        theme,
-                        '📈',
-                        'historical_trends'.tr(),
-                        'analyze_previous_results_help_win'.tr(),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDisclaimerPoint(
-                        theme,
-                        '⚠️',
-                        'responsible_play'.tr(),
-                        'no_guaranteed_wins_play_responsibly'.tr(),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 20),
+                _buildDisclaimerPoint(
+                  theme,
+                  '🎯',
+                  'pattern_based_analysis'.tr(),
+                  'real_data_pattern_analysis'.tr(),
+                ),
+                const SizedBox(height: 16),
+                _buildDisclaimerPoint(
+                  theme,
+                  '📈',
+                  'historical_trends'.tr(),
+                  'analyze_previous_results_help_win'.tr(),
+                ),
+                const SizedBox(height: 16),
+                _buildDisclaimerPoint(
+                  theme,
+                  '⚠️',
+                  'responsible_play'.tr(),
+                  'no_guaranteed_wins_play_responsibly'.tr(),
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -1230,5 +1234,23 @@ class _PredictScreenState extends State<PredictScreen>
         );
       }
     }
+  }
+
+  void _navigateToProbabilityScanner() {
+    HapticFeedback.lightImpact();
+
+    // Track analytics
+    AnalyticsService.trackUserEngagement(
+      action: 'tap_ai_probability_fab',
+      category: 'predict_screen',
+      label: 'navigate_to_probability_scanner',
+      parameters: {
+        'source': 'predict_screen',
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+
+    // Navigate to probability barcode scanner
+    context.go('/probability_barcode_scanner');
   }
 }
