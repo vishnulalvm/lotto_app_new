@@ -24,10 +24,11 @@ class ScratchCardBottomSheet extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     // Responsive padding and spacing
     final double horizontalPadding = screenWidth * 0.05; // 5% of screen width
-    final double verticalPadding = screenHeight * 0.025; // 2.5% of screen height
+    final double verticalPadding =
+        screenHeight * 0.025; // 2.5% of screen height
     final double spacing = screenHeight * 0.02; // 2% for general spacing
 // 1.5% for small spacing
 
@@ -40,7 +41,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
         color: theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: isDark 
+            color: isDark
                 ? Colors.grey.withValues(alpha: 0.3)
                 : Colors.black.withValues(alpha: 0.05),
             blurRadius: 2,
@@ -73,24 +74,17 @@ class ScratchCardBottomSheet extends StatelessWidget {
 
           // Action buttons based on response type
           _buildActionButtons(context, theme, screenWidth, screenHeight),
-
-          // Divider
-          Divider(
-            color: isDark ? Colors.grey[600] : Colors.grey[300],
-          ),
-
-          // Kerala Lottery Logo and text
-          _buildFooter(context, theme, screenWidth),
         ],
       ),
     );
   }
 
-  Widget _buildTicketDetails(ThemeData theme, double screenWidth, double screenHeight) {
+  Widget _buildTicketDetails(
+      ThemeData theme, double screenWidth, double screenHeight) {
     final isDark = theme.brightness == Brightness.dark;
     final double padding = screenWidth * 0.03; // 3% of screen width
     final double borderRadius = screenWidth * 0.02; // 2% of screen width
-    
+
     return Container(
       padding: EdgeInsets.all(padding.clamp(8.0, 16.0)),
       decoration: BoxDecoration(
@@ -203,12 +197,13 @@ class ScratchCardBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, ThemeData theme, double screenWidth, double screenHeight) {
+  Widget _buildActionButtons(BuildContext context, ThemeData theme,
+      double screenWidth, double screenHeight) {
     final isDark = theme.brightness == Brightness.dark;
     final double buttonHeight = (screenHeight * 0.06).clamp(44.0, 56.0);
     final double buttonSpacing = (screenHeight * 0.015).clamp(8.0, 16.0);
     final double borderRadius = (screenWidth * 0.02).clamp(6.0, 12.0);
-    
+
     switch (result.responseType) {
       case ResponseType.currentWinner:
         return Column(
@@ -514,29 +509,6 @@ class ScratchCardBottomSheet extends StatelessWidget {
     }
   }
 
-  Widget _buildFooter(BuildContext context, ThemeData theme, double screenWidth) {
-    return GestureDetector(
-      onTap: () => _launchKeralaLotteryWebsite(context),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.verified,
-            size: (screenWidth * 0.045).clamp(16.0, 20.0),
-            color: theme.primaryColor,
-          ),
-          SizedBox(width: screenWidth * 0.02),
-          Text(
-            'kerala_state_lotteries'.tr(),
-            style: TextStyle(
-              color: theme.textTheme.bodyMedium?.color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _navigateToResultDetails(
       BuildContext context, TicketCheckResponseModel result) {
@@ -545,7 +517,8 @@ class ScratchCardBottomSheet extends StatelessWidget {
     if (uniqueId.isNotEmpty) {
       context.go('/result-details', extra: {
         'uniqueId': uniqueId,
-        'lotteryNumber': null, // No lottery number available from scratch card screen
+        'lotteryNumber':
+            null, // No lottery number available from scratch card screen
         'isNew': false,
       });
     } else {
@@ -588,7 +561,7 @@ class ScratchCardBottomSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark 
+                      color: isDark
                           ? Colors.blue[900]!.withValues(alpha: 0.3)
                           : Colors.blue[50],
                       borderRadius: BorderRadius.circular(6),

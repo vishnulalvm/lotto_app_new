@@ -1,6 +1,9 @@
 // lib/data/services/user_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
 
 class UserService {
   static const String _userIdKey = 'user_id';
@@ -124,5 +127,33 @@ class UserService {
     await prefs.remove(_isLoggedInKey);
     await prefs.remove(_appInstallationIdKey);
     await prefs.remove(_appVersionKey);
+  }
+
+  // Track user activity
+  Future<bool> trackActivity() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final uniqueId = prefs.getString(_appInstallationIdKey);
+      final phoneNumber = prefs.getString(_phoneNumberKey);
+
+      // Only track if we have the required data
+      if (uniqueId == null) {
+        return false;
+      }
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.baseUrl + ApiConstants.trackActivity),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'unique_id': uniqueId,
+          'phone_number': phoneNumber ?? '',
+          'app_name': 'lotto',
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      // Silently fail - tracking is not critical
+      return false;
+    }
   }
 }

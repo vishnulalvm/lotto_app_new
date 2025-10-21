@@ -108,7 +108,7 @@ class AIPredictionUIComponents {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Colors.red[700]!,
@@ -316,7 +316,7 @@ class PredictionNumberTile extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: theme.scaffoldBackgroundColor,
         border: Border.all(
           color: Colors.red[700]!,
           width: .5,

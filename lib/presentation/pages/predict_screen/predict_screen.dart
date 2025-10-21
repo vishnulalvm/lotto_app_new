@@ -1075,14 +1075,22 @@ class _PredictScreenState extends State<PredictScreen>
   Future<void> _checkAndShowLuckyNumberDialog() async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
-    final todayString = '${now.year}-${now.month}-${now.day}';
-    final lastShownDate = prefs.getString('lucky_number_dialog_last_shown');
 
     // Check if it's after 3 PM (15:00)
     final isAfter3PM = now.hour >= 15;
 
-    // Only show if it's after 3 PM and we haven't shown it today after 3 PM
-    if (isAfter3PM && lastShownDate != todayString) {
+    // Calculate the current 3 PM cycle date
+    // If before 3 PM, use yesterday's 3 PM cycle
+    // If after 3 PM, use today's 3 PM cycle
+    final cycleDate = isAfter3PM
+        ? DateTime(now.year, now.month, now.day)
+        : DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+
+    final cycleDateString = '${cycleDate.year}-${cycleDate.month}-${cycleDate.day}';
+    final lastShownCycleDate = prefs.getString('lucky_number_dialog_last_shown');
+
+    // Only show if it's after 3 PM and we haven't shown it in this 3 PM cycle
+    if (isAfter3PM && lastShownCycleDate != cycleDateString) {
       // Show dialog after a small delay to ensure screen is loaded
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {

@@ -81,7 +81,9 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
     final theme = Theme.of(context);
 
     return Container(
+
       decoration: BoxDecoration(
+
    color:theme.cardColor,
         border: Border.all(
           color: theme.primaryColor,

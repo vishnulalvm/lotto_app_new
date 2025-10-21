@@ -272,8 +272,15 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
 
   Future<void> _saveLuckyNumberDialogDate() async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayString = '${today.year}-${today.month}-${today.day}';
-    await prefs.setString('lucky_number_dialog_last_shown', todayString);
+    final now = DateTime.now();
+
+    // Save the current 3 PM cycle date
+    // This ensures the dialog won't show again until after 3 PM tomorrow
+    final cycleDate = now.hour >= 15
+        ? DateTime(now.year, now.month, now.day)
+        : DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+
+    final cycleDateString = '${cycleDate.year}-${cycleDate.month}-${cycleDate.day}';
+    await prefs.setString('lucky_number_dialog_last_shown', cycleDateString);
   }
 }

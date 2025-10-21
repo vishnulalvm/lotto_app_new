@@ -104,6 +104,14 @@ class _SplashScreenState extends State<SplashScreen> {
           // Ignore cache manager init errors
         }
       }));
+
+      // Phase 5: Track user activity (non-blocking, least critical)
+      unawaited(Future.delayed(const Duration(milliseconds: 500), () {
+        UserService().trackActivity().catchError((e) {
+          // Ignore tracking errors
+          return false;
+        });
+      }));
     } catch (e) {
       // Ignore background services initialization errors
     }
