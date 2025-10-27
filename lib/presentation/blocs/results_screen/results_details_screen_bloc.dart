@@ -649,32 +649,22 @@ class LotteryResultDetailsBloc
   }
 
   /// Analyze patterns in the current lottery result
+  /// Returns only FANCY patterns that users find interesting
   Set<String> _analyzePatterns(LotteryResultModel result) {
     try {
-      // Analyze patterns in the current result
-      final patternCounts = PatternAnalysisService.analyzePatterns([result]);
+      // Get only fancy pattern numbers (ABAB, AABB, ABBA, Triple, Round, Leading-Zero)
+      // Excludes technical patterns like sequential (1234, 4321) that don't feel special
+      final fancyNumbers = PatternAnalysisService.getFancyNumbersOnly([result]);
 
-      // Get pattern examples (all numbers belonging to each pattern)
-      final patternExamples = PatternAnalysisService.getPatternExamples([result]);
-
-      // Find the most common pattern types (excluding "Regular Numbers")
-      final sortedPatterns = patternCounts.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-
-      // Collect all numbers from the top patterns (excluding "Regular Numbers")
-      final Set<String> numbersWithPatterns = {};
-      for (final entry in sortedPatterns) {
-        if (entry.key != 'Regular Numbers' && entry.value > 0) {
-          // Add all examples for this pattern type
-          final examples = patternExamples[entry.key];
-          if (examples != null) {
-            numbersWithPatterns.addAll(examples);
-          }
-        }
+      // Debug: Print pattern numbers found
+      print('🔍 [PATTERN DEBUG] Total pattern numbers found: ${fancyNumbers.length}');
+      if (fancyNumbers.isNotEmpty) {
+        print('🔍 [PATTERN DEBUG] Pattern numbers: $fancyNumbers');
       }
 
-      return numbersWithPatterns;
+      return fancyNumbers;
     } catch (e) {
+      print('❌ [PATTERN DEBUG] Error analyzing patterns: $e');
       return {};
     }
   }

@@ -62,11 +62,17 @@ class ContactSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Filter Guide (from predict features)',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          children: [
+            Icon(Icons.gamepad_outlined, size: 20,),
+            const SizedBox(width: 8),
+            Text(
+              'Filter Guide (from guessing features)',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         Column(
@@ -75,21 +81,21 @@ class ContactSection extends StatelessWidget {
             _buildFilterLegendItem(
               icon: Icons.check_circle_outline,
               color: Colors.green,
-              label: 'Matched Numbers',
+              label: 'Matched Numbers from guessing',
               theme: theme,
             ),
             const SizedBox(height: 8),
             _buildFilterLegendItem(
               icon: Icons.repeat,
               color: Colors.blue,
-              label: 'Repeated Numbers',
+              label: 'Repeated Numbers from Last Draw',
               theme: theme,
             ),
             const SizedBox(height: 8),
             _buildFilterLegendItem(
               icon: Icons.grid_view,
-              color: Colors.purple,
-              label: 'Pattern Numbers',
+              color: Colors.yellow.shade700,
+              label: 'Pattern Numbers Found',
               theme: theme,
             ),
           ],

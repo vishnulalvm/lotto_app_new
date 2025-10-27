@@ -124,28 +124,31 @@ class AiPredictionService {
   }
 
   static String _generateFancyNumber() {
-    // Define fancy number patterns based on analysis
-    final List<String Function()> fancyPatterns = [
-      // Repeating digit patterns (like 3454, 2244, 2525, 4455, 7007, 0770)
+    // Define all pattern types matching PatternAnalysisService
+    // 100% pattern-based generation - no random numbers
+    final List<String Function()> patternGenerators = [
+      // Repeating digit patterns
       () => _generateRepeatingPattern(),
-      // Round numbers with trailing zeros (like 3001, 1000)
+
+      // Round number patterns
       () => _generateRoundNumber(),
-      // Sequential or pattern numbers (like 1210, 3530)
+
+      // Sequential patterns
       () => _generateSequentialPattern(),
-      // Numbers with leading zeros (like 0007, 0770)
+
+      // Leading zero patterns
       () => _generateLeadingZeroPattern(),
-      // Double digit patterns (like 1122, 3344, 5566)
-      () => _generateDoubleDigitPattern(),
+
+      // Sandwich pattern (NEW)
+      () => _generateSandwichPattern(),
+
+      // Ending zero style (NEW)
+      () => _generateEndingZeroStyle(),
     ];
-    
-    // Randomly select a pattern type (70% fancy patterns, 30% regular random)
-    if (_random.nextDouble() < 0.7) {
-      final patternGenerator = fancyPatterns[_random.nextInt(fancyPatterns.length)];
-      return patternGenerator();
-    } else {
-      // 30% chance for regular random numbers
-      return _generateRegularNumber();
-    }
+
+    // 100% pattern-based: randomly select a pattern type
+    final patternGenerator = patternGenerators[_random.nextInt(patternGenerators.length)];
+    return patternGenerator();
   }
 
   static String _generateRepeatingPattern() {
@@ -205,62 +208,104 @@ class AiPredictionService {
 
   static String _generateSequentialPattern() {
     final patterns = [
-      // Sequential ascending (like 1234, 2345)
+      // Ascending Sequential (like 1234, 2345, 3456)
       () {
-        final start = _random.nextInt(7);
+        final start = _random.nextInt(7); // 0-6, so max is 6789
         return '$start${start + 1}${start + 2}${start + 3}';
       },
-      // Sequential descending (like 4321, 5432)
+      // Descending Sequential (like 4321, 5432, 6543)
       () {
-        final start = 3 + _random.nextInt(7);
+        final start = 3 + _random.nextInt(7); // 3-9, so min is 3210, max is 9876
         return '$start${start - 1}${start - 2}${start - 3}';
       },
-      // Mixed pattern (like 1210, 3530)
+      // Near Sequential - close progression with small gaps
       () {
-        final a = _random.nextInt(10);
-        final b = _random.nextInt(10);
-        return '$a$b${(a + 1) % 10}$a';
+        final start = _random.nextInt(8);
+        final second = start + 1 + _random.nextInt(2); // +1 or +2
+        final third = second + 1 + _random.nextInt(2); // +1 or +2
+        final fourth = third + (_random.nextBool() ? -1 : 1); // fluctuate
+        return '$start$second${third % 10}${fourth % 10}';
       },
     ];
-    
+
     return patterns[_random.nextInt(patterns.length)]();
   }
 
   static String _generateLeadingZeroPattern() {
     final patterns = [
-      // 000X pattern (like 0007, 0009)
+      // Leading Zero (000X) - like 0007, 0009, 0005
       () {
-        final last = 1 + _random.nextInt(9);
+        final last = 1 + _random.nextInt(9); // 1-9
         return '000$last';
       },
-      // 00XY pattern (like 0012, 0034, 0077)
+      // Leading Zero (00XY) - like 0012, 0034, 0077
       () {
         final third = _random.nextInt(10);
         final fourth = _random.nextInt(10);
         return '00$third$fourth';
       },
-      // 0XXX pattern with specific patterns (like 0770)
+      // Leading Zero (0XXX) - like 0770, 0334, 0556
       () {
         final second = _random.nextInt(10);
-        final third = second; // Same digit
+        final third = _random.nextInt(10); // Any digit, not forced to match
         final fourth = _random.nextInt(10);
         return '0$second$third$fourth';
       },
     ];
-    
+
     return patterns[_random.nextInt(patterns.length)]();
   }
 
-  static String _generateDoubleDigitPattern() {
-    // Generate numbers like 1122, 3344, 5566, 7788
-    final first = 1 + _random.nextInt(9);
-    final second = 1 + _random.nextInt(9);
-    return '$first$first$second$second';
+  static String _generateSandwichPattern() {
+    final patterns = [
+      // ACBA pattern - positions 0 and 2 match (like 1716)
+      () {
+        final a = _random.nextInt(10);
+        final c = _random.nextInt(10);
+        final b = _random.nextInt(10);
+        // Ensure it's not ABAB (which would be caught as repeating pair)
+        if (a == c || b == a) {
+          // Try again with different values
+          final newC = (c + 1) % 10;
+          return '$a$newC$a$b';
+        }
+        return '$a$c$a$b';
+      },
+      // ABCB pattern - positions 1 and 3 match (like 7464, 2717, 6535)
+      () {
+        final a = _random.nextInt(10);
+        final b = _random.nextInt(10);
+        final c = _random.nextInt(10);
+        // Ensure it's not mirror (ABBA) or other patterns
+        if (a == c || a == b || c == b) {
+          final newC = (c + 1) % 10;
+          return '$a$b$newC$b';
+        }
+        return '$a$b$c$b';
+      },
+    ];
+
+    return patterns[_random.nextInt(patterns.length)]();
   }
 
-  static String _generateRegularNumber() {
-    final number = 1000 + _random.nextInt(9000);
-    return number.toString().padLeft(4, '0');
+  static String _generateEndingZeroStyle() {
+    final patterns = [
+      // X0Y0 pattern (like 1030, 5070, 9040)
+      () {
+        final first = 1 + _random.nextInt(9); // 1-9
+        final third = 1 + _random.nextInt(9); // 1-9
+        return '${first}0${third}0';
+      },
+      // XY0Z pattern with zero in third position (like 9040, 2105)
+      () {
+        final first = _random.nextInt(10);
+        final second = _random.nextInt(10);
+        final fourth = _random.nextInt(10);
+        return '$first${second}0$fourth';
+      },
+    ];
+
+    return patterns[_random.nextInt(patterns.length)]();
   }
 
   static String _getTodayDateString() {

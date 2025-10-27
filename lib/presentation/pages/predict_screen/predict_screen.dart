@@ -18,6 +18,7 @@ import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/ai_prediction_service.dart';
 import 'dart:async';
+import 'dart:math';
 
 class PredictScreen extends StatefulWidget {
   const PredictScreen({super.key});
@@ -580,7 +581,7 @@ class _PredictScreenState extends State<PredictScreen>
             final data = numberData[index];
             return Container(
               decoration: BoxDecoration(
-                color: Colors.transparent,
+                color: theme.scaffoldBackgroundColor,
                 border: Border.all(
                   color: borderColor,
                   width: .5,
@@ -687,11 +688,11 @@ class _PredictScreenState extends State<PredictScreen>
                 Expanded(
                   child: Text(
                     'people_predictions'.tr(),
-                                          style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -733,7 +734,7 @@ class _PredictScreenState extends State<PredictScreen>
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.transparent,
+                  color: theme.scaffoldBackgroundColor,
                   border: Border.all(
                     color: borderColor,
                     width: .5,
@@ -768,7 +769,7 @@ class _PredictScreenState extends State<PredictScreen>
                         child: Text(
                           'count_times'.tr(
                               namedArgs: {'count': data['count'].toString()}),
-                                                  style: TextStyle(
+                          style: TextStyle(
                             color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
@@ -797,11 +798,11 @@ class _PredictScreenState extends State<PredictScreen>
           child: Text(
             'digits_found'
                 .tr(namedArgs: {'count': numberData.length.toString()}),
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
         ),
       ],
@@ -830,7 +831,7 @@ class _PredictScreenState extends State<PredictScreen>
             final data = numberData[index];
             return Container(
               decoration: BoxDecoration(
-                color: Colors.transparent,
+                color: theme.scaffoldBackgroundColor,
                 border: Border.all(
                   color: borderColor,
                   width: .5,
@@ -852,9 +853,9 @@ class _PredictScreenState extends State<PredictScreen>
                     const SizedBox(height: 2),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 0),
+                          horizontal: 10, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.transparent,
+                        color: theme.scaffoldBackgroundColor,
                         border: Border.all(
                           color: borderColor,
                           width: .2,
@@ -862,7 +863,7 @@ class _PredictScreenState extends State<PredictScreen>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'count_x'
+                        'count_times'
                             .tr(namedArgs: {'count': data['count'].toString()}),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface,
@@ -1084,10 +1085,13 @@ class _PredictScreenState extends State<PredictScreen>
     // If after 3 PM, use today's 3 PM cycle
     final cycleDate = isAfter3PM
         ? DateTime(now.year, now.month, now.day)
-        : DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+        : DateTime(now.year, now.month, now.day)
+            .subtract(const Duration(days: 1));
 
-    final cycleDateString = '${cycleDate.year}-${cycleDate.month}-${cycleDate.day}';
-    final lastShownCycleDate = prefs.getString('lucky_number_dialog_last_shown');
+    final cycleDateString =
+        '${cycleDate.year}-${cycleDate.month}-${cycleDate.day}';
+    final lastShownCycleDate =
+        prefs.getString('lucky_number_dialog_last_shown');
 
     // Only show if it's after 3 PM and we haven't shown it in this 3 PM cycle
     if (isAfter3PM && lastShownCycleDate != cycleDateString) {
@@ -1163,8 +1167,29 @@ class _PredictScreenState extends State<PredictScreen>
     }
   }
 
+  /// Generates a list of unique random 2-digit numbers (10-99)
+  List<int> _generateRandomTwoDigitNumbers(int count) {
+    final random = Random();
+    final Set<int> numbers = {};
+
+    while (numbers.length < count) {
+      numbers.add(random.nextInt(90) + 10); // Generate 10-99
+    }
+
+    return numbers.toList();
+  }
+
+  /// Generates a random prediction line with the given prefix and 6 unique numbers
+  String _generateRandomPredictionLine(String prefix) {
+    final numbers = _generateRandomTwoDigitNumbers(6);
+    final numbersStr =
+        numbers.map((n) => n.toString().padLeft(2, '0')).join('  ');
+    return '$prefix - $numbersStr';
+  }
+
   Future<void> _copyPredictionNumbers(PredictState state) async {
     try {
+      final todaysLottery = _getLotteryNameForToday();
       // Get the data from the state
       final data = switch (state) {
         PredictDataLoaded() => state.displayData,
@@ -1183,6 +1208,8 @@ class _PredictScreenState extends State<PredictScreen>
 
       // Add AI Predicted Numbers section
       if (aiPrediction != null && aiPrediction.predictedNumbers.isNotEmpty) {
+        copyText.writeln('KERALA LOTTERY $todaysLottery');
+        copyText.writeln();
         copyText.writeln('Today Guessing Number :');
 
         copyText.writeln(aiPrediction.predictedNumbers.join('   '));
@@ -1192,12 +1219,30 @@ class _PredictScreenState extends State<PredictScreen>
       // Add Most Repeated Numbers section (last 4 digits from last 30 days)
       if (data.repeatedNumbers.isNotEmpty) {
         copyText.writeln('Most Winning Numbers (Last 30 Days) :');
-        final repeatedNumbersList =
-            data.repeatedNumbers.map((e) => e.number).join('   ');
-        copyText.writeln(repeatedNumbersList);
-         copyText.writeln();
-         copyText.writeln('Download App : https://play.google.com/store/apps/details?id=app.solidapps.lotto');
+        for (var item in data.repeatedNumbers) {
+          copyText.writeln('${item.number} - ${item.count} times');
+        }
+        copyText.writeln();
       }
+
+      // Add Top 6 Last 2 Digits section
+      if (data.repeatedTwoDigits.isNotEmpty) {
+        copyText.writeln('Top 6 Last 2 Digits :');
+        for (var item in data.repeatedTwoDigits) {
+          copyText.writeln('${item.digits} - ${item.count} times');
+        }
+        copyText.writeln();
+      }
+
+      // Add Random Prediction Series (AB, BC, AC)
+      copyText.writeln(_generateRandomPredictionLine('AB Series'));
+      copyText.writeln(_generateRandomPredictionLine('BC Series'));
+      copyText.writeln(_generateRandomPredictionLine('AC Series'));
+      copyText.writeln();
+
+      // Add download link at the end
+      copyText.writeln(
+          'Download App : https://play.google.com/store/apps/details?id=app.solidapps.lotto');
 
       // Copy to clipboard
       if (copyText.isNotEmpty) {
@@ -1224,6 +1269,7 @@ class _PredictScreenState extends State<PredictScreen>
             'prize_type': _selectedPrizeType,
             'has_ai_numbers': aiPrediction != null,
             'repeated_numbers_count': data.repeatedNumbers.length,
+            'two_digits_count': data.repeatedTwoDigits.length,
           },
         );
 

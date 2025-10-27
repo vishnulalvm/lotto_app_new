@@ -61,14 +61,19 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
     super.dispose();
   }
 
-  void _loadPatternData() {
+  Future<void> _loadPatternData() async {
     if (widget.forceEmptyState) {
       _patterns = [];
     } else if (widget.historicalResults != null &&
         widget.historicalResults!.isNotEmpty) {
+      // Use provided historical results for real pattern analysis
       _patterns =
           PatternAnalysisService.getTopPatterns(widget.historicalResults!);
     } else if (widget.showMockData) {
+      // Use grouped mock data as fallback
+      // Note: HomeScreenModel has different structure than LotteryResultModel
+      // For now, we use mock data when no historical results are provided
+      // TODO: Fetch and convert HomeScreen cache data to LotteryResultModel
       _patterns = PatternAnalysisService.getMockPatternData();
     }
 
@@ -253,7 +258,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: theme.scaffoldBackgroundColor,
         border: Border.all(
           color: borderColor,
           width: .5,

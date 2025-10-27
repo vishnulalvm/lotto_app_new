@@ -46,7 +46,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
         'label': 'Scanner',
         'route': '/barcode_scanner_screen'
       },
-      {'icon': Icons.live_tv, 'label': 'Live', 'route': '/live_videos'},
+      {'icon': Icons.live_tv, 'label': 'Videos', 'route': '/live_videos'},
       {'icon': Icons.games_outlined, 'label': 'Guessing', 'route': '/predict'},
       {
         'icon': Icons.bar_chart_outlined,

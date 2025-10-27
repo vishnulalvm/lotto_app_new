@@ -41,6 +41,29 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
   String _cachedSearchQuery = '';
   bool _isInitialized = false;
 
+  /// Extract last 4 digits from ticket number for pattern matching
+  String _getLastFourDigits(String ticketNumber) {
+    final digitsOnly = ticketNumber.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.length >= 4) {
+      return digitsOnly.substring(digitsOnly.length - 4);
+    }
+    return digitsOnly;
+  }
+
+  /// Check if ticket's last 4 digits match any pattern number
+  bool _isPatternMatch(String ticketNumber) {
+    if (widget.patternNumbers.isEmpty) return false;
+    final lastFour = _getLastFourDigits(ticketNumber);
+    return widget.patternNumbers.contains(lastFour);
+  }
+
+  /// Check if ticket's last 4 digits match any repeated number
+  bool _isRepeatedMatch(String ticketNumber) {
+    if (widget.repeatedNumbers.isEmpty) return false;
+    final lastFour = _getLastFourDigits(ticketNumber);
+    return widget.repeatedNumbers.contains(lastFour);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -48,6 +71,13 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     // Initialize cache on first build when Theme is available
     if (!_isInitialized) {
       _isInitialized = true;
+
+      // Debug: Print pattern numbers received by widget
+      print('🎨 [UI DEBUG] DynamicPrizeSectionsWidget received pattern numbers: ${widget.patternNumbers.length}');
+      if (widget.patternNumbers.isNotEmpty) {
+        print('🎨 [UI DEBUG] Pattern numbers set: ${widget.patternNumbers}');
+      }
+
       _cachedSearchQuery = widget.highlightedTicketNotifier.value;
       _cachedSections = _buildDynamicPrizeSections(
         Theme.of(context),
@@ -187,6 +217,17 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 ...prize.ticketsWithLocation.map((ticket) {
                   final keyId = '${prize.prizeTypeFormatted}_${ticket.ticketNumber}';
                   final globalKey = widget.ticketGlobalKeys[keyId];
+
+                  // Check pattern and repeated matching using last 4 digits
+                  final lastFour = _getLastFourDigits(ticket.ticketNumber);
+                  final isPatternMatch = _isPatternMatch(ticket.ticketNumber);
+                  final isRepeatedMatch = _isRepeatedMatch(ticket.ticketNumber);
+
+                  // Debug
+                  if (widget.patternNumbers.isNotEmpty || widget.repeatedNumbers.isNotEmpty) {
+                    print('🎯 [MATCH] "${ticket.ticketNumber}" -> Last4: "$lastFour" | Pattern: $isPatternMatch | Repeated: $isRepeatedMatch');
+                  }
+
                   return _HighlightedTicketWidget(
                     key: globalKey ?? ValueKey('${prize.prizeType}_${ticket.ticketNumber}'),
                     ticketNumber: ticket.ticketNumber,
@@ -198,9 +239,9 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                     isHighlighted: _isTicketHighlighted(ticket.ticketNumber, searchQuery),
                     isMatched: widget.matchedNumbers.contains(ticket.ticketNumber),
                     matchHighlightColor: widget.matchHighlightColor,
-                    isPattern: widget.patternNumbers.contains(ticket.ticketNumber),
+                    isPattern: isPatternMatch,
                     patternHighlightColor: widget.patternHighlightColor,
-                    isRepeated: widget.repeatedNumbers.contains(ticket.ticketNumber),
+                    isRepeated: isRepeatedMatch,
                     repeatedHighlightColor: widget.repeatedHighlightColor,
                   );
                 }),
@@ -236,6 +277,17 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                   () {
                     final keyId = '${prize.prizeTypeFormatted}_${ticketNumbers.first}';
                     final globalKey = widget.ticketGlobalKeys[keyId];
+
+                    // Check pattern and repeated matching using last 4 digits
+                    final lastFour = _getLastFourDigits(ticketNumbers.first);
+                    final isPatternMatch = _isPatternMatch(ticketNumbers.first);
+                    final isRepeatedMatch = _isRepeatedMatch(ticketNumbers.first);
+
+                    // Debug
+                    if (widget.patternNumbers.isNotEmpty || widget.repeatedNumbers.isNotEmpty) {
+                      print('🎯 [MATCH] Single "${ticketNumbers.first}" -> Last4: "$lastFour" | Pattern: $isPatternMatch | Repeated: $isRepeatedMatch');
+                    }
+
                       return _HighlightedTicketWidget(
                       key: globalKey ?? ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
                       ticketNumber: ticketNumbers.first,
@@ -246,9 +298,9 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                       isHighlighted: _isTicketHighlighted(ticketNumbers.first, searchQuery),
                       isMatched: widget.matchedNumbers.contains(ticketNumbers.first),
                       matchHighlightColor: widget.matchHighlightColor,
-                      isPattern: widget.patternNumbers.contains(ticketNumbers.first),
+                      isPattern: isPatternMatch,
                       patternHighlightColor: widget.patternHighlightColor,
-                      isRepeated: widget.repeatedNumbers.contains(ticketNumbers.first),
+                      isRepeated: isRepeatedMatch,
                       repeatedHighlightColor: widget.repeatedHighlightColor,
                     );
                   }(),
@@ -273,6 +325,17 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
           children: ticketNumbers.map((ticketNumber) {
             final keyId = '${category}_$ticketNumber';
             final globalKey = widget.ticketGlobalKeys[keyId];
+
+            // Check pattern and repeated matching using last 4 digits
+            final lastFour = _getLastFourDigits(ticketNumber);
+            final isPatternMatch = _isPatternMatch(ticketNumber);
+            final isRepeatedMatch = _isRepeatedMatch(ticketNumber);
+
+            // Debug
+            if (widget.patternNumbers.isNotEmpty || widget.repeatedNumbers.isNotEmpty) {
+              print('🎯 [MATCH] 2-col "$ticketNumber" -> Last4: "$lastFour" | Pattern: $isPatternMatch | Repeated: $isRepeatedMatch');
+            }
+
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
@@ -285,9 +348,9 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 isHighlighted: _isTicketHighlighted(ticketNumber, searchQuery),
                 isMatched: widget.matchedNumbers.contains(ticketNumber),
                 matchHighlightColor: widget.matchHighlightColor,
-                isPattern: widget.patternNumbers.contains(ticketNumber),
+                isPattern: isPatternMatch,
                 patternHighlightColor: widget.patternHighlightColor,
-                isRepeated: widget.repeatedNumbers.contains(ticketNumber),
+                isRepeated: isRepeatedMatch,
                 repeatedHighlightColor: widget.repeatedHighlightColor,
               ),
             );
@@ -342,6 +405,11 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
           children: numbers.map((number) {
             final keyId = '${category}_$number';
             final globalKey = widget.ticketGlobalKeys[keyId];
+
+            // Check pattern and repeated matching using last 4 digits
+            final isPatternMatch = _isPatternMatch(number);
+            final isRepeatedMatch = _isRepeatedMatch(number);
+
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
@@ -354,9 +422,9 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 isHighlighted: _isTicketHighlighted(number, searchQuery),
                 isMatched: widget.matchedNumbers.contains(number),
                 matchHighlightColor: widget.matchHighlightColor,
-                isPattern: widget.patternNumbers.contains(number),
+                isPattern: isPatternMatch,
                 patternHighlightColor: widget.patternHighlightColor,
-                isRepeated: widget.repeatedNumbers.contains(number),
+                isRepeated: isRepeatedMatch,
                 repeatedHighlightColor: widget.repeatedHighlightColor,
               ),
             );
@@ -379,6 +447,11 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
           children: numbers.map((number) {
             final keyId = '${category}_$number';
             final globalKey = widget.ticketGlobalKeys[keyId];
+
+            // Check pattern and repeated matching using last 4 digits
+            final isPatternMatch = _isPatternMatch(number);
+            final isRepeatedMatch = _isRepeatedMatch(number);
+
             return SizedBox(
               width: cellWidth,
               child: _HighlightedTicketWidget(
@@ -391,9 +464,9 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 isHighlighted: _isTicketHighlighted(number, searchQuery),
                 isMatched: widget.matchedNumbers.contains(number),
                 matchHighlightColor: widget.matchHighlightColor,
-                isPattern: widget.patternNumbers.contains(number),
+                isPattern: isPatternMatch,
                 patternHighlightColor: widget.patternHighlightColor,
-                isRepeated: widget.repeatedNumbers.contains(number),
+                isRepeated: isRepeatedMatch,
                 repeatedHighlightColor: widget.repeatedHighlightColor,
               ),
             );
