@@ -542,6 +542,13 @@ class _HomeScreenState extends State<HomeScreen>
               Theme.of(context),
               context, // Pass context
             ),
+            _buildPopupMenuItem(
+              'how_to_use_value', // The actual value returned when selected
+              Icons.video_library,
+              'how_to_use', // This is the translation key
+              Theme.of(context),
+              context, // Pass context
+            ),
           ],
           onSelected: (value) {
             // Add haptic feedback for menu selection
@@ -562,6 +569,9 @@ class _HomeScreenState extends State<HomeScreen>
                 break;
               case 'rate_us_value': // Match the actual returned value
                 _showRateUsDialog(context);
+                break;
+              case 'how_to_use_value': // Match the actual returned value
+                context.push('/how-to-use');
                 break;
             }
           },

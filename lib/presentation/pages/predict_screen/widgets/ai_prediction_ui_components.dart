@@ -108,7 +108,7 @@ class AIPredictionUIComponents {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Colors.red[700]!,

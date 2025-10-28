@@ -16,6 +16,7 @@ import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
 class ChallengeScreen extends StatefulWidget {
@@ -291,6 +292,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           onSelected: (value) {
             if (value == 'manual_entry') {
               _showManualEntryDialog();
+            } else if (value == 'how_to_use') {
+              _launchHowToUseVideo();
             }
           },
           itemBuilder: (context) => [
@@ -301,6 +304,16 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   const Icon(Icons.edit),
                   const SizedBox(width: 12),
                   Text('manual_entry'.tr()),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'how_to_use',
+              child: Row(
+                children: [
+                  Icon(Icons.help_outline, color: theme.iconTheme.color),
+                  const SizedBox(width: 12),
+                  Text('how_to_use'.tr()),
                 ],
               ),
             ),
@@ -1167,6 +1180,32 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('lottery_unique_id_not_available'.tr())),
       );
+    }
+  }
+
+  void _launchHowToUseVideo() async {
+    const videoUrl = 'https://youtube.com/shorts/kssNz_54RQI?feature=share';
+    try {
+      final uri = Uri.parse(videoUrl);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('could_not_open_video'.tr()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('error_opening_video'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

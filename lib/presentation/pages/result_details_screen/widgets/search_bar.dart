@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
+import 'package:lotto_app/core/helpers/feedback_helper.dart';
 
 class FloatingSearchBar extends StatefulWidget {
   final String? hintText;
@@ -151,9 +151,9 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
                     fontSize: AppResponsive.fontSize(context, 16),
                   ),
                   onChanged: (value) {
-                    // Provide light haptic feedback when user starts typing
+                    // Provide light feedback when user starts typing
                     if (value.isNotEmpty && _controller.text.isEmpty) {
-                      HapticFeedback.lightImpact();
+                      FeedbackHelper.lightClick();
                     }
                     _onSearchChanged(value);
                   },
@@ -216,8 +216,8 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
   }
 
   void _expandSearchBar() {
-    // Provide medium haptic feedback when search bar expands
-    HapticFeedback.mediumImpact();
+    // Provide medium feedback when search bar expands
+    FeedbackHelper.mediumClick();
     setState(() {
       _isExpanded = true;
     });
@@ -228,8 +228,8 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
   }
 
   void _collapseSearchBar() {
-    // Provide light haptic feedback when search bar collapses
-    HapticFeedback.lightImpact();
+    // Provide light feedback when search bar collapses
+    FeedbackHelper.lightClick();
 
     // Cancel any pending debounced calls
     _debounceTimer?.cancel();

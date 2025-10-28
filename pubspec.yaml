@@ -2,7 +2,7 @@ name: lotto_app
 description: "A Lottery Result App"
 publish_to: "none"
 
-version: 2.1.06+64
+version: 2.1.07+65
 
 environment:
   sdk: ^3.6.0
@@ -30,6 +30,7 @@ dependencies:
   http: ^1.4.0
   image_picker: ^1.1.2
   in_app_update: ^4.2.3
+  just_audio: ^0.9.39
   mobile_scanner: ^7.0.1
   package_info_plus: ^9.0.0
   path_provider: ^2.1.4
@@ -66,6 +67,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/translations/
+    - assets/audios/
     # - assets/fonts/
 # fonts:
 #   - family: NotoSans

@@ -15,6 +15,7 @@ import 'package:lotto_app/presentation/pages/settings_screen/setting_screen.dart
 import 'package:lotto_app/presentation/pages/splash_screen/splash_screen.dart';
 import 'package:lotto_app/presentation/pages/live_video_screen/live_video_screen.dart';
 import 'package:lotto_app/presentation/pages/feedback_screen/feedback_screen.dart';
+import 'package:lotto_app/presentation/pages/how_to_use_screen/how_to_use_screen.dart';
 import 'package:lotto_app/routes/app_routes.dart';
 
 class AppRouter {
@@ -147,6 +148,11 @@ class AppRouter {
                 path: 'feedback',
                 name: RouteNames.feedbackScreen,
                 builder: (context, state) => const FeedbackScreen(),
+              ),
+              GoRoute(
+                path: 'how-to-use',
+                name: RouteNames.howToUseScreen,
+                builder: (context, state) => const HowToUseScreen(),
               ),
                 GoRoute(
                 path: 'probability_barcode_scanner',

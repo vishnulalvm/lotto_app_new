@@ -9,6 +9,7 @@ import 'package:lotto_app/presentation/pages/predict_screen/widgets/lucky_number
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/ai_prediction_card.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/prediction_match_card.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/pattern_statistics_card.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/weekly_fancy_number_card.dart';
 import 'package:lotto_app/presentation/pages/probility_screen/widgets/ai_probability_fab.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/predict_screen/predict_event.dart';
@@ -17,6 +18,8 @@ import 'package:lotto_app/data/models/predict_screen/predict_response_model.dart
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/ai_prediction_service.dart';
+import 'package:lotto_app/core/helpers/feedback_helper.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -330,6 +333,8 @@ class _PredictScreenState extends State<PredictScreen>
                   const SizedBox(height: 12),
                   _buildMostRepeatedCard(theme, data.repeatedNumbers),
                   const SizedBox(height: 12),
+                  const WeeklyFancyNumberCard(),
+                  const SizedBox(height: 12),
                   const PatternStatisticsCard(
                     showMockData: true,
                     // forceEmptyState: true, // Uncomment to test empty state
@@ -442,16 +447,61 @@ class _PredictScreenState extends State<PredictScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Regular usage helps our AI learn your preferences and improve prediction accuracy',
+            'Regular usage helps our AI learn your preferences',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () => _launchHowToUseVideo(context),
+            icon: const Icon(Icons.play_circle_outline, size: 20),
+            label: Text('how_to_use'.tr()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  void _launchHowToUseVideo(BuildContext context) async {
+    // Add click feedback
+    FeedbackHelper.lightClick();
+
+    final url = Uri.parse('https://youtu.be/Odc0kvjWCSs');
+    try {
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('could_not_open_video'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('error_opening_video'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   // Last 7 days most repeated numbers

@@ -16,6 +16,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/audio_service.dart';
+import 'package:lotto_app/core/helpers/feedback_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,11 +28,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
+  bool _soundEffectsEnabled = true;
+  final AudioService _audioService = AudioService();
   
   @override
   void initState() {
     super.initState();
     _loadNotificationSettings();
+    _loadSoundSettings();
     
     // Track screen view for analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,6 +60,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       // Handle error silently, use default value
     }
+  }
+
+  Future<void> _loadSoundSettings() async {
+    setState(() {
+      _soundEffectsEnabled = _audioService.isSoundEnabled;
+    });
   }
 
   Future<void> _toggleNotifications(bool value) async {
@@ -85,12 +96,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Update notification settings with Firebase
       bool success = await FirebaseMessagingService.updateNotificationSettings(value);
-      
+
       if (success) {
         setState(() {
           _notificationsEnabled = value;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -124,6 +135,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     }
+  }
+
+  Future<void> _toggleSoundEffects(bool value) async {
+    // Play feedback when toggling (only if enabling)
+    if (value) {
+      FeedbackHelper.lightClick();
+    }
+
+    await _audioService.setSoundEnabled(value);
+    setState(() {
+      _soundEffectsEnabled = value;
+    });
   }
 
   void _launchUrl(String url) async {
@@ -360,6 +383,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         showArrow: false,
                         onTap: () => _toggleNotifications(!_notificationsEnabled),
                       ),
+                      _buildListTile(
+                        'sound_effects'.tr(),
+                        Icons.volume_up_outlined,
+                        trailing: Switch(
+                          value: _soundEffectsEnabled,
+                          onChanged: _toggleSoundEffects,
+                          activeThumbColor: theme.primaryColor,
+                        ),
+                        showArrow: false,
+                        onTap: () => _toggleSoundEffects(!_soundEffectsEnabled),
+                      ),
                     ],
                     theme,
                   ),
@@ -377,6 +411,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSection(
                     'support'.tr(),
                     [
+                      _buildListTile(
+                        'how_to_use'.tr(),
+                        Icons.help_outline,
+                        onTap: () => context.go('/how-to-use'),
+                      ),
                       _buildListTile(
                         'contact_us'.tr(),
                         Icons.contact_support_outlined,
@@ -505,6 +544,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: Text(themeName),
       trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
       onTap: () {
+        FeedbackHelper.lightClick();
         context.read<ThemeBloc>().add(ThemeChanged(themeMode));
         // Optional: Close dialog after selection
         // Navigator.of(dialogContext).pop();
@@ -652,6 +692,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: Text(languageName),
       trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
       onTap: () {
+        FeedbackHelper.lightClick();
         context.setLocale(locale);
         Navigator.of(dialogContext).pop();
       },
@@ -700,7 +741,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: trailing ??
           (showArrow ? const Icon(Icons.arrow_forward_ios, size: 16) : null),
-      onTap: onTap ?? () {},
+      onTap: onTap != null
+          ? () {
+              FeedbackHelper.lightClick();
+              onTap();
+            }
+          : null,
     );
   }
 
@@ -734,7 +780,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title,
           style: TextStyle(color: isDestructive ? Colors.red : null),
         ),
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                FeedbackHelper.lightClick();
+                onTap();
+              }
+            : null,
         enabled: onTap != null,
       ),
     );

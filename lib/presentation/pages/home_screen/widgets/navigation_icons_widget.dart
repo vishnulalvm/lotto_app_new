@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/core/helpers/feedback_helper.dart';
 
 class NavigationIconsWidget extends StatefulWidget {
   const NavigationIconsWidget({super.key});
@@ -164,7 +164,7 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
 
   // Helper method to handle regular navigation taps
   void _handleRegularNavTap(Map<String, dynamic> item) {
-    HapticFeedback.lightImpact(); // Add haptic feedback
+    FeedbackHelper.lightClick(); // Add haptic and sound feedback
 
     if (item['route'] != null) {
       AnalyticsService.trackUserEngagement(

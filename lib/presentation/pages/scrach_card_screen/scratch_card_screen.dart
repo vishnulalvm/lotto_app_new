@@ -12,6 +12,7 @@ import 'package:lotto_app/presentation/pages/scrach_card_screen/widgets/result_c
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/data/services/audio_service.dart';
 import 'package:scratcher/widgets.dart';
 import 'package:confetti/confetti.dart';
 
@@ -47,6 +48,9 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   // AdMob service for interstitial ads
   final AdMobService _adMobService = AdMobService.instance;
+
+  // Audio service for celebration sound
+  final AudioService _audioService = AudioService();
 
   // Interstitial ad cooldown tracking (static to persist across screen instances)
   static DateTime? _lastAdShowTime;
@@ -154,6 +158,8 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
         if (_ticketResult!.isWinner) {
           _confettiController.play();
           _showConfetti = true;
+          // Play celebration sound for winners
+          _audioService.playCelebrationSound();
         }
       });
     });

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_state.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String selectedFilter;
@@ -196,7 +198,7 @@ class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget
               color: theme.appBarTheme.actionsIconTheme?.color,
             ),
             tooltip: 'More options',
-            onSelected: (value) {
+            onSelected: (value) async {
               switch (value) {
                 case 'share':
                   if (!isGeneratingPdf) {
@@ -205,6 +207,9 @@ class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget
                   break;
                 case 'save':
                   onToggleSave(state.data.result);
+                  break;
+                case 'how_to_use':
+                  _launchHowToUseVideo(context);
                   break;
               }
             },
@@ -260,6 +265,25 @@ class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget
                   ],
                 ),
               ),
+              PopupMenuItem<String>(
+                value: 'how_to_use',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.help_outline,
+                      color: theme.iconTheme.color,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'how_to_use'.tr(),
+                      style: TextStyle(
+                        color: theme.textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           );
         }
@@ -273,5 +297,31 @@ class ResultDetailsAppBar extends StatelessWidget implements PreferredSizeWidget
         );
       },
     );
+  }
+
+  void _launchHowToUseVideo(BuildContext context) async {
+    const videoUrl = 'https://youtube.com/shorts/-C-Ov-fYrME?feature=share';
+    try {
+      final uri = Uri.parse(videoUrl);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('could_not_open_video'.tr()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('error_opening_video'.tr()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
