@@ -46,6 +46,7 @@ class ResultTypeBanner extends StatelessWidget {
         title: title,
         subtitle: subtitle,
       );
+      
     }
 
     // Use resultStatus from API response for better accuracy after reveal
@@ -125,7 +126,6 @@ class ResultTypeBanner extends StatelessWidget {
       primaryIcon: primaryIcon,
       title: title,
       subtitle: subtitle,
-      showPointsButton: result.isWinner,
       context: context,
     );
   }
@@ -137,7 +137,6 @@ class ResultTypeBanner extends StatelessWidget {
     required IconData primaryIcon,
     required String title,
     required String subtitle,
-    bool showPointsButton = false,
     BuildContext? context,
   }) {
     final double screenWidth =
@@ -212,35 +211,6 @@ class ResultTypeBanner extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Navigation button for points earned
-                if (showPointsButton && context != null) ...[
-                  SizedBox(width: spacing * 0.67),
-                  ElevatedButton(
-                    onPressed: () => context.go('/lottoPoints'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: iconColor,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: (screenWidth * 0.04).clamp(12.0, 18.0),
-                        vertical: (screenWidth * 0.02).clamp(6.0, 10.0),
-                      ),
-                      minimumSize: Size(
-                        (screenWidth * 0.15).clamp(50.0, 70.0),
-                        (screenWidth * 0.08).clamp(28.0, 36.0),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(borderRadius * 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      'View ',
-                      style: TextStyle(
-                        fontSize: (screenWidth * 0.035).clamp(12.0, 16.0),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
                 // Close button - always show if context is available
                 if (context != null) ...[
                   SizedBox(width: spacing * 0.5),

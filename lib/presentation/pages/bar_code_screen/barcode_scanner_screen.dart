@@ -574,18 +574,18 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         _isNavigatingAway = true;
       });
       await _stopCameraSafely();
-      
+
       if (mounted) {
         await context.push('/result/scratch', extra: ticketData);
       }
-      
+
       // Reset navigation flag and restart camera when returning
       if (mounted) {
         setState(() {
           _isNavigatingAway = false;
           isProcessing = false;
         });
-        
+
         if (_cameraPermissionStatus == PermissionStatus.granted) {
           _startOrRestartCamera();
         }

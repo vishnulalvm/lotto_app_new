@@ -112,6 +112,11 @@ class AdMobService {
 
   // Unified ad loading method
   Future<void> loadAd(String adType, {bool isDarkTheme = false}) async {
+    // Skip loading if ad is already loaded
+    if (isAdLoaded(adType)) {
+      return;
+    }
+
     if (!_canLoad()) return;
 
     _activeLoads++;
@@ -338,13 +343,15 @@ class AdMobService {
   // Show interstitial ad with callback
   Future<void> showInterstitialAd(String adType, {VoidCallback? onDismissed}) async {
     final wrapper = _interstitialAds[adType];
-    if (wrapper?.isLoaded != true) return;
+    if (wrapper?.isLoaded != true) {
+      return;
+    }
 
     final ad = wrapper!.ad!;
-    
+
     // Update state before showing
     _updateInterstitialAdState(adType, wrapper.copyWith(state: AdState.disposed));
-    
+
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
@@ -358,16 +365,19 @@ class AdMobService {
         if (errorMessage.contains('MediaCodec') || errorMessage.contains('VP9')) {
           // Don't retry immediately for codec errors
           _updateInterstitialAdState(adType, AdWrapper(
-            state: AdState.failed, 
+            state: AdState.failed,
             error: 'Video codec not supported on this device',
           ));
         } else {
           _updateInterstitialAdState(adType, AdWrapper(
-            state: AdState.failed, 
+            state: AdState.failed,
             error: error.toString(),
           ));
           _scheduleReload(adType);
         }
+      },
+      onAdShowedFullScreenContent: (ad) {
+        // Ad displayed successfully
       },
     );
 

@@ -336,8 +336,7 @@ class _PredictScreenState extends State<PredictScreen>
                   const WeeklyFancyNumberCard(),
                   const SizedBox(height: 12),
                   const PatternStatisticsCard(
-                    showMockData: true,
-                    // forceEmptyState: true, // Uncomment to test empty state
+                    showMockData: false, // Use real data from API
                   ),
                   const SizedBox(height: 12),
                   _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
@@ -685,7 +684,7 @@ class _PredictScreenState extends State<PredictScreen>
             );
           },
         ),
-        // const SizedBox(height: 12),
+        const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(

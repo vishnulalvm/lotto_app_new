@@ -40,6 +40,27 @@ class PredictionMatchUIComponents {
 
   /// Builds the no match widget (no winning numbers matched)
   static Widget buildNoMatchWidget(ThemeData theme, PredictionMatchModel matchResult) {
+    // Calculate if the result is from yesterday
+    final now = DateTime.now();
+    final resultDate = matchResult.checkedAt;
+    final isYesterday = now.year == resultDate.year &&
+        now.month == resultDate.month &&
+        now.day - resultDate.day == 1;
+
+    final isToday = now.year == resultDate.year &&
+        now.month == resultDate.month &&
+        now.day == resultDate.day;
+
+    // Format date
+    String dateLabel;
+    if (isToday) {
+      dateLabel = 'today'.tr();
+    } else if (isYesterday) {
+      dateLabel = 'yesterday'.tr();
+    } else {
+      dateLabel = DateFormat('MMM dd, yyyy').format(resultDate);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -51,6 +72,39 @@ class PredictionMatchUIComponents {
           }),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Date badge showing when this result is from
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isYesterday ? Colors.orange[50] : Colors.blue[50],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isYesterday ? Colors.orange[200]! : Colors.blue[200]!,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: isYesterday ? Colors.orange[700] : Colors.blue[700],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                dateLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isYesterday ? Colors.orange[700] : Colors.blue[700],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
@@ -83,6 +137,27 @@ class PredictionMatchUIComponents {
 
   /// Builds the match found widget (some numbers matched)
   static Widget buildMatchFoundWidget(ThemeData theme, PredictionMatchModel matchResult) {
+    // Calculate if the result is from yesterday
+    final now = DateTime.now();
+    final resultDate = matchResult.checkedAt;
+    final isYesterday = now.year == resultDate.year &&
+        now.month == resultDate.month &&
+        now.day - resultDate.day == 1;
+
+    final isToday = now.year == resultDate.year &&
+        now.month == resultDate.month &&
+        now.day == resultDate.day;
+
+    // Format date
+    String dateLabel;
+    if (isToday) {
+      dateLabel = 'today'.tr();
+    } else if (isYesterday) {
+      dateLabel = 'yesterday'.tr();
+    } else {
+      dateLabel = DateFormat('MMM dd, yyyy').format(resultDate);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -94,6 +169,39 @@ class PredictionMatchUIComponents {
           }),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Date badge showing when this result is from
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isYesterday ? Colors.orange[50] : Colors.blue[50],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isYesterday ? Colors.orange[200]! : Colors.blue[200]!,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: isYesterday ? Colors.orange[700] : Colors.blue[700],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                dateLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isYesterday ? Colors.orange[700] : Colors.blue[700],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart'; // For ValueNotifier and debugPrint
-import 'package:just_audio/just_audio.dart';
+import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for managing audio playback in the app
-/// Handles click sounds and sound settings persistence
+/// Handles click sounds and sound settings persistence using FlameAudio AudioPool
 class AudioService {
   static final AudioService _instance = AudioService._internal();
   factory AudioService() => _instance;
@@ -12,10 +12,14 @@ class AudioService {
 
   static const String _soundEnabledKey = 'sound_effects_enabled';
 
-  // Use multiple click players for rapid-fire playback without interruption
-  final List<AudioPlayer> _clickPlayers = [];
-  int _currentClickPlayerIndex = 0;
-  AudioPlayer? _celebrationPlayer;
+  // Audio file names (audioplayers AssetSource expects path relative to assets/)
+  // Using WAV format for better Android compatibility (no codec issues)
+  static const String _clickSoundFile = 'audios/updatedtap.wav';
+  static const String _celebrationSoundFile = 'audios/celebration.wav';
+
+  // AudioPool instances for pre-loaded sounds
+  AudioPool? _clickSoundPool;
+  AudioPool? _celebrationSoundPool;
 
   // Use ValueNotifier to expose the sound state for Flutter widgets
   final ValueNotifier<bool> _isSoundEnabledNotifier = ValueNotifier<bool>(true);
@@ -58,109 +62,91 @@ class AudioService {
       final enabled = prefs.getBool(_soundEnabledKey) ?? true;
       _isSoundEnabledNotifier.value = enabled;
 
-      // 2. Dispose of existing players if any (handles hot reload scenarios)
-      for (var player in _clickPlayers) {
-        await player.dispose();
-      }
-      _clickPlayers.clear();
-      _currentClickPlayerIndex = 0;
-      await _celebrationPlayer?.dispose();
-      _celebrationPlayer = null;
+      // 2. Configure FlameAudio to use the assets directory
+      FlameAudio.audioCache.prefix = 'assets/';
 
-      // 3. Initialize audio players (3 click players for rapid-fire playback)
-      for (int i = 0; i < 3; i++) {
-        final player = AudioPlayer();
-        await player.setAsset('assets/audios/updatedtap.mp3');
-        await player.setVolume(0.9);
-        await player.setLoopMode(LoopMode.off);
-        _clickPlayers.add(player);
+      // 3. First, try to load files into cache (simpler approach)
+      try {
+        await FlameAudio.audioCache.load(_clickSoundFile);
+      } catch (e) {
+        rethrow;
       }
 
-      _celebrationPlayer = AudioPlayer();
+      try {
+        await FlameAudio.audioCache.load(_celebrationSoundFile);
+      } catch (e) {
+        rethrow;
+      }
 
-      // 4. Pre-load celebration sound
-      await _celebrationPlayer!.setAsset('assets/audios/celebration.mp3');
+      // 4. Create AudioPool for click sound (allows multiple simultaneous plays)
+      try {
+        _clickSoundPool = await FlameAudio.createPool(
+          _clickSoundFile,
+          maxPlayers: 3,
+        );
+      } catch (e) {
+        rethrow;
+      }
 
-      // 5. Set celebration volume and loop mode
-      await _celebrationPlayer!.setVolume(0.8);
-      await _celebrationPlayer!.setLoopMode(LoopMode.off);
+      // 5. Create AudioPool for celebration sound
+      try {
+        _celebrationSoundPool = await FlameAudio.createPool(
+          _celebrationSoundFile,
+          maxPlayers: 1,
+        );
+      } catch (e) {
+        rethrow;
+      }
 
-      // 7. Mark initialization as successful
+      // 6. Mark initialization as successful
       _isInitialized = true;
       _isInitializing = false;
 
       if (!_initCompleter.isCompleted) {
         _initCompleter.complete();
       }
-
-      debugPrint('AudioService initialized successfully.');
     } catch (e, stack) {
-      // If initialization fails, log the error and reset state
-      debugPrint('AudioService Initialization Failed: $e');
-      debugPrint('Stack trace: $stack');
-
+      // If initialization fails, reset state
       _isInitialized = false;
       _isInitializing = false;
 
       if (!_initCompleter.isCompleted) {
         _initCompleter.completeError(e, stack);
       }
-
-      // Clean up on failure
-      for (var player in _clickPlayers) {
-        await player.dispose();
-      }
-      _clickPlayers.clear();
-      await _celebrationPlayer?.dispose();
-      _celebrationPlayer = null;
     }
   }
 
   /// Play the click sound effect
   /// Returns immediately without waiting for sound to finish
-  /// Uses player pool for rapid-fire playback without interruption
-  Future<void> playClickSound() async {
+  /// Uses AudioPool for instant playback with pre-loaded sounds
+  void playClickSound() {
     // Only play if initialized and sounds are enabled
-    if (!_isInitialized || !isSoundEnabled || _clickPlayers.isEmpty) {
+    if (!_isInitialized || !isSoundEnabled || _clickSoundPool == null) {
       return;
     }
 
     try {
-      // Get current player from pool
-      final player = _clickPlayers[_currentClickPlayerIndex];
-
-      // Cycle to next player for next click
-      _currentClickPlayerIndex = (_currentClickPlayerIndex + 1) % _clickPlayers.length;
-
-      // Play from beginning (using seek ensures restart if somehow still playing)
-      unawaited(player.seek(Duration.zero));
-      unawaited(player.play());
+      // Start playing from the pool - instant playback
+      // The pool handles multiple simultaneous plays automatically
+      _clickSoundPool!.start(volume: 0.9);
     } catch (e) {
-      debugPrint('Error playing click sound: $e');
+      // Silently fail
     }
   }
 
   /// Play the celebration sound effect
   /// Used for winning lottery scratch cards
-  Future<void> playCelebrationSound() async {
+  void playCelebrationSound() {
     // Only play if initialized and sounds are enabled
-    if (!_isInitialized || !isSoundEnabled || _celebrationPlayer == null) {
+    if (!_isInitialized || !isSoundEnabled || _celebrationSoundPool == null) {
       return;
     }
 
     try {
-      // Always seek to beginning and play (celebration plays once per win)
-      await _celebrationPlayer!.seek(Duration.zero);
-      await _celebrationPlayer!.play();
+      // Start playing from the pool
+      _celebrationSoundPool!.start(volume: 0.8);
     } catch (e) {
-      // If error occurs, try to recover by reloading the asset
-      debugPrint('Error playing celebration sound: $e');
-      try {
-        await _celebrationPlayer!.setAsset('assets/audios/celebration.mp3');
-        await _celebrationPlayer!.play();
-      } catch (e2) {
-        debugPrint('Failed to recover celebration player: $e2');
-      }
+      // Silently fail
     }
   }
 
@@ -181,15 +167,13 @@ class AudioService {
   /// Dispose of audio resources
   /// Call this when the app is terminating
   Future<void> dispose() async {
-    for (var player in _clickPlayers) {
-      await player.dispose();
-    }
-    _clickPlayers.clear();
-    await _celebrationPlayer?.dispose();
-    _celebrationPlayer = null;
+    // Clear all audio resources
+    FlameAudio.audioCache.clearAll();
+    _clickSoundPool = null;
+    _celebrationSoundPool = null;
+
     _isSoundEnabledNotifier.dispose();
     _isInitialized = false;
     _isInitializing = false;
   }
 }
-

@@ -189,17 +189,12 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
     }
 
     try {
-      // Load ad and wait for it to complete loading
+      // Always wait for ad to load completely (whether preloaded or not)
       await _adMobService.loadAd('scratch_card_interstitial');
 
       if (!mounted) return;
 
-      // Give user a brief moment to see the screen before showing ad
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-
-      // Verify ad is actually loaded before attempting to show
+      // Verify ad is loaded and show it
       if (_adMobService.isAdLoaded('scratch_card_interstitial')) {
         await _adMobService.showInterstitialAd(
           'scratch_card_interstitial',

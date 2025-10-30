@@ -656,15 +656,8 @@ class LotteryResultDetailsBloc
       // Excludes technical patterns like sequential (1234, 4321) that don't feel special
       final fancyNumbers = PatternAnalysisService.getFancyNumbersOnly([result]);
 
-      // Debug: Print pattern numbers found
-      print('🔍 [PATTERN DEBUG] Total pattern numbers found: ${fancyNumbers.length}');
-      if (fancyNumbers.isNotEmpty) {
-        print('🔍 [PATTERN DEBUG] Pattern numbers: $fancyNumbers');
-      }
-
       return fancyNumbers;
     } catch (e) {
-      print('❌ [PATTERN DEBUG] Error analyzing patterns: $e');
       return {};
     }
   }

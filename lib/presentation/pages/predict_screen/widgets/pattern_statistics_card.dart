@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../data/services/pattern_analysis_service.dart';
+import '../../../../data/services/historical_results_service.dart';
 import '../../../../data/models/results_screen/results_screen.dart';
 
 class PatternStatisticsCard extends StatefulWidget {
@@ -69,12 +70,39 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
       // Use provided historical results for real pattern analysis
       _patterns =
           PatternAnalysisService.getTopPatterns(widget.historicalResults!);
-    } else if (widget.showMockData) {
-      // Use grouped mock data as fallback
-      // Note: HomeScreenModel has different structure than LotteryResultModel
-      // For now, we use mock data when no historical results are provided
-      // TODO: Fetch and convert HomeScreen cache data to LotteryResultModel
-      _patterns = PatternAnalysisService.getMockPatternData();
+
+      // Debug: Print the actual counts to verify they're updating
+      debugPrint('🔍 Pattern Analysis: Found ${_patterns.length} pattern types from provided data');
+      for (var pattern in _patterns.take(3)) {
+        debugPrint('   ${pattern.patternType}: ${pattern.count} times');
+      }
+    } else {
+      // Fetch historical results from API for pattern analysis
+      debugPrint('📡 Pattern Analysis: Fetching historical lottery results...');
+      try {
+        final historicalResults = await HistoricalResultsService.getHistoricalResults(limit: 50);
+
+        if (historicalResults.isNotEmpty) {
+          _patterns = PatternAnalysisService.getTopPatterns(historicalResults);
+          debugPrint('✅ Pattern Analysis: Found ${_patterns.length} pattern types from ${historicalResults.length} lottery results');
+          for (var pattern in _patterns.take(3)) {
+            debugPrint('   ${pattern.patternType}: ${pattern.count} times');
+          }
+        } else if (widget.showMockData) {
+          // Fallback to mock data only if API fails and showMockData is true
+          debugPrint('⚠️ Pattern Analysis: Using mock data (API returned no results)');
+          _patterns = PatternAnalysisService.getMockPatternData();
+        } else {
+          _patterns = [];
+        }
+      } catch (e) {
+        debugPrint('❌ Pattern Analysis: Error fetching historical results: $e');
+        if (widget.showMockData) {
+          _patterns = PatternAnalysisService.getMockPatternData();
+        } else {
+          _patterns = [];
+        }
+      }
     }
 
     if (mounted) {

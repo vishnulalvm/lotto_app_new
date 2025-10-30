@@ -33,10 +33,12 @@ class DynamicPrizeSectionsWidget extends StatefulWidget {
   });
 
   @override
-  State<DynamicPrizeSectionsWidget> createState() => _DynamicPrizeSectionsWidgetState();
+  State<DynamicPrizeSectionsWidget> createState() =>
+      _DynamicPrizeSectionsWidgetState();
 }
 
-class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget> {
+class _DynamicPrizeSectionsWidgetState
+    extends State<DynamicPrizeSectionsWidget> {
   List<Widget>? _cachedSections;
   String _cachedSearchQuery = '';
   bool _isInitialized = false;
@@ -73,10 +75,7 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
       _isInitialized = true;
 
       // Debug: Print pattern numbers received by widget
-      print('🎨 [UI DEBUG] DynamicPrizeSectionsWidget received pattern numbers: ${widget.patternNumbers.length}');
-      if (widget.patternNumbers.isNotEmpty) {
-        print('🎨 [UI DEBUG] Pattern numbers set: ${widget.patternNumbers}');
-      }
+      if (widget.patternNumbers.isNotEmpty) {}
 
       _cachedSearchQuery = widget.highlightedTicketNotifier.value;
       _cachedSections = _buildDynamicPrizeSections(
@@ -190,7 +189,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     return sections;
   }
 
-  Widget _buildPrizeSection(ThemeData theme, PrizeModel prize, String searchQuery) {
+  Widget _buildPrizeSection(
+      ThemeData theme, PrizeModel prize, String searchQuery) {
     if (prize.isGrid) {
       return _buildGridPrizeSection(theme, prize, searchQuery);
     } else if (prize.hasLocationInfo) {
@@ -200,7 +200,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     }
   }
 
-  Widget _buildPrizeWithLocationSection(ThemeData theme, PrizeModel prize, String searchQuery) {
+  Widget _buildPrizeWithLocationSection(
+      ThemeData theme, PrizeModel prize, String searchQuery) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -215,29 +216,33 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 _buildPrizeAmount(theme, prize.formattedPrizeAmount),
                 const SizedBox(height: 10),
                 ...prize.ticketsWithLocation.map((ticket) {
-                  final keyId = '${prize.prizeTypeFormatted}_${ticket.ticketNumber}';
+                  final keyId =
+                      '${prize.prizeTypeFormatted}_${ticket.ticketNumber}';
                   final globalKey = widget.ticketGlobalKeys[keyId];
 
                   // Check pattern and repeated matching using last 4 digits
-                  final lastFour = _getLastFourDigits(ticket.ticketNumber);
+                  _getLastFourDigits(ticket.ticketNumber);
                   final isPatternMatch = _isPatternMatch(ticket.ticketNumber);
                   final isRepeatedMatch = _isRepeatedMatch(ticket.ticketNumber);
 
                   // Debug
-                  if (widget.patternNumbers.isNotEmpty || widget.repeatedNumbers.isNotEmpty) {
-                    print('🎯 [MATCH] "${ticket.ticketNumber}" -> Last4: "$lastFour" | Pattern: $isPatternMatch | Repeated: $isRepeatedMatch');
-                  }
+                  if (widget.patternNumbers.isNotEmpty ||
+                      widget.repeatedNumbers.isNotEmpty) {}
 
                   return _HighlightedTicketWidget(
-                    key: globalKey ?? ValueKey('${prize.prizeType}_${ticket.ticketNumber}'),
+                    key: globalKey ??
+                        ValueKey('${prize.prizeType}_${ticket.ticketNumber}'),
                     ticketNumber: ticket.ticketNumber,
                     category: prize.prizeTypeFormatted,
                     location: ticket.location,
                     theme: theme,
                     variant: TicketVariant.withLocation,
-                    isNewlyUpdated: widget.newlyUpdatedTickets.contains(ticket.ticketNumber),
-                    isHighlighted: _isTicketHighlighted(ticket.ticketNumber, searchQuery),
-                    isMatched: widget.matchedNumbers.contains(ticket.ticketNumber),
+                    isNewlyUpdated: widget.newlyUpdatedTickets
+                        .contains(ticket.ticketNumber),
+                    isHighlighted:
+                        _isTicketHighlighted(ticket.ticketNumber, searchQuery),
+                    isMatched:
+                        widget.matchedNumbers.contains(ticket.ticketNumber),
                     matchHighlightColor: widget.matchHighlightColor,
                     isPattern: isPatternMatch,
                     patternHighlightColor: widget.patternHighlightColor,
@@ -253,7 +258,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     );
   }
 
-  Widget _buildSinglePrizeSection(ThemeData theme, PrizeModel prize, String searchQuery) {
+  Widget _buildSinglePrizeSection(
+      ThemeData theme, PrizeModel prize, String searchQuery) {
     final ticketNumbers = widget.result.getPrizeTicketNumbers(prize);
     final hasMultipleNumbers = ticketNumbers.length > 1;
 
@@ -271,32 +277,33 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 _buildPrizeAmount(theme, prize.formattedPrizeAmount),
                 const SizedBox(height: 10),
                 if (hasMultipleNumbers)
-                  _buildSinglePrizeTwoColumnGrid(
-                      ticketNumbers, theme, prize.prizeTypeFormatted, searchQuery)
+                  _buildSinglePrizeTwoColumnGrid(ticketNumbers, theme,
+                      prize.prizeTypeFormatted, searchQuery)
                 else
                   () {
-                    final keyId = '${prize.prizeTypeFormatted}_${ticketNumbers.first}';
+                    final keyId =
+                        '${prize.prizeTypeFormatted}_${ticketNumbers.first}';
                     final globalKey = widget.ticketGlobalKeys[keyId];
 
                     // Check pattern and repeated matching using last 4 digits
-                    final lastFour = _getLastFourDigits(ticketNumbers.first);
+                    _getLastFourDigits(ticketNumbers.first);
                     final isPatternMatch = _isPatternMatch(ticketNumbers.first);
-                    final isRepeatedMatch = _isRepeatedMatch(ticketNumbers.first);
+                    final isRepeatedMatch =
+                        _isRepeatedMatch(ticketNumbers.first);
 
-                    // Debug
-                    if (widget.patternNumbers.isNotEmpty || widget.repeatedNumbers.isNotEmpty) {
-                      print('🎯 [MATCH] Single "${ticketNumbers.first}" -> Last4: "$lastFour" | Pattern: $isPatternMatch | Repeated: $isRepeatedMatch');
-                    }
-
-                      return _HighlightedTicketWidget(
-                      key: globalKey ?? ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
+                    return _HighlightedTicketWidget(
+                      key: globalKey ??
+                          ValueKey('${prize.prizeType}_${ticketNumbers.first}'),
                       ticketNumber: ticketNumbers.first,
                       category: prize.prizeTypeFormatted,
                       theme: theme,
                       variant: TicketVariant.singleLarge,
-                      isNewlyUpdated: widget.newlyUpdatedTickets.contains(ticketNumbers.first),
-                      isHighlighted: _isTicketHighlighted(ticketNumbers.first, searchQuery),
-                      isMatched: widget.matchedNumbers.contains(ticketNumbers.first),
+                      isNewlyUpdated: widget.newlyUpdatedTickets
+                          .contains(ticketNumbers.first),
+                      isHighlighted: _isTicketHighlighted(
+                          ticketNumbers.first, searchQuery),
+                      isMatched:
+                          widget.matchedNumbers.contains(ticketNumbers.first),
                       matchHighlightColor: widget.matchHighlightColor,
                       isPattern: isPatternMatch,
                       patternHighlightColor: widget.patternHighlightColor,
@@ -312,8 +319,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     );
   }
 
-  Widget _buildSinglePrizeTwoColumnGrid(
-      List<String> ticketNumbers, ThemeData theme, String category, String searchQuery) {
+  Widget _buildSinglePrizeTwoColumnGrid(List<String> ticketNumbers,
+      ThemeData theme, String category, String searchQuery) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
@@ -327,14 +334,9 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
             final globalKey = widget.ticketGlobalKeys[keyId];
 
             // Check pattern and repeated matching using last 4 digits
-            final lastFour = _getLastFourDigits(ticketNumber);
+            _getLastFourDigits(ticketNumber);
             final isPatternMatch = _isPatternMatch(ticketNumber);
             final isRepeatedMatch = _isRepeatedMatch(ticketNumber);
-
-            // Debug
-            if (widget.patternNumbers.isNotEmpty || widget.repeatedNumbers.isNotEmpty) {
-              print('🎯 [MATCH] 2-col "$ticketNumber" -> Last4: "$lastFour" | Pattern: $isPatternMatch | Repeated: $isRepeatedMatch');
-            }
 
             return SizedBox(
               width: cellWidth,
@@ -344,7 +346,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 category: category,
                 theme: theme,
                 variant: TicketVariant.twoColumn,
-                isNewlyUpdated: widget.newlyUpdatedTickets.contains(ticketNumber),
+                isNewlyUpdated:
+                    widget.newlyUpdatedTickets.contains(ticketNumber),
                 isHighlighted: _isTicketHighlighted(ticketNumber, searchQuery),
                 isMatched: widget.matchedNumbers.contains(ticketNumber),
                 matchHighlightColor: widget.matchHighlightColor,
@@ -360,7 +363,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     );
   }
 
-  Widget _buildGridPrizeSection(ThemeData theme, PrizeModel prize, String searchQuery) {
+  Widget _buildGridPrizeSection(
+      ThemeData theme, PrizeModel prize, String searchQuery) {
     final ticketNumbers = widget.result.getPrizeTicketNumbers(prize);
     final isConsolationPrize = prize.prizeType.toLowerCase() == 'consolation';
 
@@ -378,11 +382,11 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
                 _buildPrizeAmount(theme, prize.formattedPrizeAmount),
                 const SizedBox(height: 10),
                 if (isConsolationPrize)
-                  _buildConsolationNumberGrid(
-                      ticketNumbers, theme, prize.prizeTypeFormatted, searchQuery)
+                  _buildConsolationNumberGrid(ticketNumbers, theme,
+                      prize.prizeTypeFormatted, searchQuery)
                 else
-                  _buildStandardNumberGrid(
-                      ticketNumbers, theme, prize.prizeTypeFormatted, searchQuery),
+                  _buildStandardNumberGrid(ticketNumbers, theme,
+                      prize.prizeTypeFormatted, searchQuery),
                 const SizedBox(height: 10),
               ],
             ),
@@ -392,8 +396,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     );
   }
 
-  Widget _buildConsolationNumberGrid(
-      List<String> numbers, ThemeData theme, String category, String searchQuery) {
+  Widget _buildConsolationNumberGrid(List<String> numbers, ThemeData theme,
+      String category, String searchQuery) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
@@ -434,8 +438,8 @@ class _DynamicPrizeSectionsWidgetState extends State<DynamicPrizeSectionsWidget>
     );
   }
 
-  Widget _buildStandardNumberGrid(
-      List<String> numbers, ThemeData theme, String category, String searchQuery) {
+  Widget _buildStandardNumberGrid(List<String> numbers, ThemeData theme,
+      String category, String searchQuery) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
@@ -661,7 +665,8 @@ class _HighlightedTicketWidget extends StatelessWidget {
                             ? const Color(0xFF424242)
                             : Colors.grey[400]!)))));
 
-    final borderWidth = (isMatched || isPattern || isRepeated || isHighlighted) ? 2.0 : 1.0;
+    final borderWidth =
+        (isMatched || isPattern || isRepeated || isHighlighted) ? 2.0 : 1.0;
     final borderRadius = variant == TicketVariant.singleLarge
         ? 12.0
         : (variant == TicketVariant.standardGrid ? 6.0 : 8.0);
@@ -691,10 +696,9 @@ class _HighlightedTicketWidget extends StatelessWidget {
     } else if (variant != TicketVariant.standardGrid) {
       shadows = [
         BoxShadow(
-          color: (theme.brightness == Brightness.dark
-                  ? Colors.black
-                  : Colors.grey)
-              .withValues(alpha: 0.1),
+          color:
+              (theme.brightness == Brightness.dark ? Colors.black : Colors.grey)
+                  .withValues(alpha: 0.1),
           blurRadius: variant == TicketVariant.singleLarge ? 4.0 : 2.0,
           offset: variant == TicketVariant.singleLarge
               ? const Offset(0, 2)
@@ -744,4 +748,3 @@ class _HighlightedTicketWidget extends StatelessWidget {
     );
   }
 }
-
