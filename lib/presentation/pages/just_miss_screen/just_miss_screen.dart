@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
-class JustMissScreen extends StatelessWidget {
+class JustMissScreen extends StatefulWidget {
   final TicketCheckResponseModel result;
 
   const JustMissScreen({
@@ -11,12 +12,30 @@ class JustMissScreen extends StatelessWidget {
   });
 
   @override
+  State<JustMissScreen> createState() => _JustMissScreenState();
+}
+
+class _JustMissScreenState extends State<JustMissScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Track screen view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AnalyticsService.trackScreenView(
+        screenName: 'just_miss_screen',
+        screenClass: 'JustMissScreen',
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final justMissData = result.previousResult.justMissData;
+    final justMissData = widget.result.previousResult.justMissData;
 
     // If no just miss data, show error message
     if (justMissData == null || !justMissData.hasAnyMatches) {
@@ -123,7 +142,7 @@ class JustMissScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  result.lotteryName,
+                  widget.result.lotteryName,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -131,9 +150,10 @@ class JustMissScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                result.previousResult.date,
+                widget.result.previousResult.date,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                  color:
+                      theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -148,11 +168,12 @@ class JustMissScreen extends StatelessWidget {
                   Text(
                     'draw'.tr(),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: theme.textTheme.bodySmall?.color
+                          ?.withValues(alpha: 0.6),
                     ),
                   ),
                   Text(
-                    result.previousResult.drawNumber,
+                    widget.result.previousResult.drawNumber,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -165,11 +186,12 @@ class JustMissScreen extends StatelessWidget {
                   Text(
                     'ticket'.tr(),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: theme.textTheme.bodySmall?.color
+                          ?.withValues(alpha: 0.6),
                     ),
                   ),
                   Text(
-                    result.ticketNumber,
+                    widget.result.ticketNumber,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -240,7 +262,7 @@ class JustMissScreen extends StatelessWidget {
             ),
             color: theme.colorScheme.surfaceContainerHighest,
             child: Text(
-              result.ticketNumber,
+              widget.result.ticketNumber,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -298,7 +320,8 @@ class JustMissScreen extends StatelessWidget {
             child: Text(
               '${match.prizeType} ${match.formattedPrize}',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                color:
+                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.right,
             ),

@@ -29,15 +29,12 @@ class HistoricalResultsService {
 
       // Get cached results from last 7 days only
       final cachedResults = <LotteryResultModel>[];
-      int totalCached = 0;
-      int oldResultsSkipped = 0;
 
       for (var key in box.keys) {
         if (key == _lastCleanupKey) continue; // Skip cleanup metadata key
 
         try {
           final cachedData = box.get(key);
-          totalCached++;
 
           if (cachedData != null && !cachedData.isExpired) {
             final resultDetails = cachedData.toResultDetails();
@@ -48,15 +45,13 @@ class HistoricalResultsService {
 
               if (resultDate.isAfter(cutoffDate) && resultDetails.result.isPublished) {
                 cachedResults.add(resultDetails.result);
-              } else {
-                oldResultsSkipped++;
               }
             } catch (e) {
-              print('Error parsing date for result: ${resultDetails.result.date}');
+              // Error parsing date for result, skip this entry
             }
           }
         } catch (e) {
-          print('Error parsing cached result for key $key: $e');
+          // Error parsing cached result, skip this entry
         }
       }
 
@@ -64,11 +59,9 @@ class HistoricalResultsService {
       cachedResults.sort((a, b) => b.date.compareTo(a.date));
       final limitedResults = cachedResults.take(limit).toList();
 
-      print('📦 Found ${limitedResults.length} lottery results from last $_daysToKeep days (Total cached: $totalCached, Skipped old: $oldResultsSkipped)');
-
       return limitedResults;
     } catch (e) {
-      print('❌ Error fetching historical results from cache: $e');
+      // Error fetching historical results from cache
       return [];
     }
   }
@@ -85,16 +78,14 @@ class HistoricalResultsService {
       if (lastCleanup == null) {
         // Never cleaned up before
         shouldCleanup = true;
-      } else if (lastCleanup is CachedResultDetailsModel) {
+      } else {
         // Check if it's been more than 7 days since last cleanup
         final daysSinceCleanup = now.difference(lastCleanup.cachedAt).inDays;
         shouldCleanup = daysSinceCleanup >= _daysToKeep;
       }
 
       if (shouldCleanup) {
-        print('🧹 Performing weekly cache cleanup...');
         final cutoffDate = now.subtract(const Duration(days: _daysToKeep));
-        int deletedCount = 0;
 
         final keysToDelete = <dynamic>[];
 
@@ -121,7 +112,6 @@ class HistoricalResultsService {
         // Delete old entries
         for (var key in keysToDelete) {
           await box.delete(key);
-          deletedCount++;
         }
 
         // Store cleanup timestamp
@@ -134,11 +124,9 @@ class HistoricalResultsService {
             expiresAt: now.add(const Duration(days: 365)), // Never expires
           ),
         );
-
-        print('✅ Weekly cleanup complete: Deleted $deletedCount old results');
       }
     } catch (e) {
-      print('❌ Error during weekly cleanup: $e');
+      // Error during weekly cleanup
     }
   }
 
@@ -155,10 +143,8 @@ class HistoricalResultsService {
       // Force cleanup by removing last cleanup timestamp
       await box.delete(_lastCleanupKey);
       await _performWeeklyCleanup(box);
-
-      print('✅ Manual cache cleanup triggered successfully');
     } catch (e) {
-      print('❌ Error during manual cleanup: $e');
+      // Error during manual cleanup
     }
   }
 }

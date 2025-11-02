@@ -69,7 +69,9 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
         widget.historicalResults!.isNotEmpty) {
       // Use provided historical results for real pattern analysis
       _patterns =
-          PatternAnalysisService.getTopPatterns(widget.historicalResults!);
+          PatternAnalysisService.getTopPatterns(widget.historicalResults!)
+              .where((pattern) => pattern.patternType != 'Near Sequential')
+              .toList();
 
       // Debug: Print the actual counts to verify they're updating
       debugPrint('🔍 Pattern Analysis: Found ${_patterns.length} pattern types from provided data');
@@ -83,7 +85,9 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
         final historicalResults = await HistoricalResultsService.getHistoricalResults(limit: 50);
 
         if (historicalResults.isNotEmpty) {
-          _patterns = PatternAnalysisService.getTopPatterns(historicalResults);
+          _patterns = PatternAnalysisService.getTopPatterns(historicalResults)
+              .where((pattern) => pattern.patternType != 'Near Sequential')
+              .toList();
           debugPrint('✅ Pattern Analysis: Found ${_patterns.length} pattern types from ${historicalResults.length} lottery results');
           for (var pattern in _patterns.take(3)) {
             debugPrint('   ${pattern.patternType}: ${pattern.count} times');
@@ -91,14 +95,18 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
         } else if (widget.showMockData) {
           // Fallback to mock data only if API fails and showMockData is true
           debugPrint('⚠️ Pattern Analysis: Using mock data (API returned no results)');
-          _patterns = PatternAnalysisService.getMockPatternData();
+          _patterns = PatternAnalysisService.getMockPatternData()
+              .where((pattern) => pattern.patternType != 'Near Sequential')
+              .toList();
         } else {
           _patterns = [];
         }
       } catch (e) {
         debugPrint('❌ Pattern Analysis: Error fetching historical results: $e');
         if (widget.showMockData) {
-          _patterns = PatternAnalysisService.getMockPatternData();
+          _patterns = PatternAnalysisService.getMockPatternData()
+              .where((pattern) => pattern.patternType != 'Near Sequential')
+              .toList();
         } else {
           _patterns = [];
         }

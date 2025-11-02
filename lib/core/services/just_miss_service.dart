@@ -20,13 +20,8 @@ class JustMissService {
     required String ticketNumber,
     required LotteryResultModel fullResult,
   }) {
-    print('🔍 [JustMissService] Starting analysis for ticket: $ticketNumber');
-    print('🔍 [JustMissService] Lottery name: ${fullResult.lotteryName}');
-    print('🔍 [JustMissService] Total prizes to check: ${fullResult.prizes.length}');
-
     // Validate ticket number
     if (ticketNumber.isEmpty || ticketNumber.length < 4) {
-      print('❌ [JustMissService] Invalid ticket number (empty or < 4 chars)');
       return JustMissData(
         hasJustMiss: false,
         shuffleMatches: [],
@@ -37,28 +32,21 @@ class JustMissService {
 
     // Extract last 4 digits from user's ticket for comparison
     final userLast4Digits = _getLast4Digits(ticketNumber);
-    print('🔢 [JustMissService] User ticket last 4 digits: $userLast4Digits (from $ticketNumber)');
 
     final shuffleMatches = <JustMissMatch>[];
     final oneNumberMatches = <JustMissMatch>[];
     final twoNumberMatches = <JustMissMatch>[];
 
-    int totalTicketsChecked = 0;
-
     // Iterate through all prizes and their winning tickets
     for (final prize in fullResult.prizes) {
       // Skip consolation prizes
       if (prize.prizeTypeFormatted.toLowerCase().contains('consolation')) {
-        print('⏭️  [JustMissService] Skipping Consolation Prize');
         continue;
       }
 
       final winningTickets = prize.getAllTicketNumbers(shouldReOrder: false);
-      print('🎁 [JustMissService] Prize: ${prize.prizeTypeFormatted} (${prize.prizeAmount}) - Tickets: ${winningTickets.length}');
 
       for (final winningTicket in winningTickets) {
-        totalTicketsChecked++;
-
         // Extract last 4 digits from winning ticket
         // If ticket is 8 digits (series + 6 digits), take last 4
         // If ticket is 4 digits, use all 4
@@ -66,31 +54,30 @@ class JustMissService {
 
         // Skip if it's the exact match on last 4 digits (user already won)
         if (winningLast4Digits == userLast4Digits) {
-          print('✅ [JustMissService] Exact match on last 4 digits - skipping (user won!)');
           continue;
         }
 
         // Check for different types of matches using last 4 digits
-        final isShuffleMatch = _isShuffleMatch(userLast4Digits, winningLast4Digits);
-        final isOneNumberDiff = _isOneNumberDifferent(userLast4Digits, winningLast4Digits);
-        final isTwoNumberDiff = _isTwoNumbersDifferent(userLast4Digits, winningLast4Digits);
+        final isShuffleMatch =
+            _isShuffleMatch(userLast4Digits, winningLast4Digits);
+        final isOneNumberDiff =
+            _isOneNumberDifferent(userLast4Digits, winningLast4Digits);
+        final isTwoNumberDiff =
+            _isTwoNumbersDifferent(userLast4Digits, winningLast4Digits);
 
         if (isShuffleMatch) {
-          print('🔀 [JustMissService] SHUFFLE MATCH: $userLast4Digits ↔️ $winningLast4Digits | Full: $ticketNumber ↔️ $winningTicket (${prize.prizeTypeFormatted})');
           shuffleMatches.add(JustMissMatch(
             ticketNumber: winningTicket,
             prizeType: prize.prizeTypeFormatted,
             prizeAmount: prize.prizeAmount,
           ));
         } else if (isOneNumberDiff) {
-          print('1️⃣ [JustMissService] ONE NUMBER DIFF: $userLast4Digits ↔️ $winningLast4Digits | Full: $ticketNumber ↔️ $winningTicket (${prize.prizeTypeFormatted})');
           oneNumberMatches.add(JustMissMatch(
             ticketNumber: winningTicket,
             prizeType: prize.prizeTypeFormatted,
             prizeAmount: prize.prizeAmount,
           ));
         } else if (isTwoNumberDiff) {
-          print('2️⃣ [JustMissService] TWO NUMBERS DIFF: $userLast4Digits ↔️ $winningLast4Digits | Full: $ticketNumber ↔️ $winningTicket (${prize.prizeTypeFormatted})');
           twoNumberMatches.add(JustMissMatch(
             ticketNumber: winningTicket,
             prizeType: prize.prizeTypeFormatted,
@@ -100,21 +87,14 @@ class JustMissService {
       }
     }
 
-    print('📊 [JustMissService] Total winning tickets checked: $totalTicketsChecked');
-    print('📊 [JustMissService] Raw matches - Shuffle: ${shuffleMatches.length}, One: ${oneNumberMatches.length}, Two: ${twoNumberMatches.length}');
-
     // Remove duplicates (in case same ticket appears in multiple prize categories)
     final uniqueShuffleMatches = _removeDuplicates(shuffleMatches);
     final uniqueOneNumberMatches = _removeDuplicates(oneNumberMatches);
     final uniqueTwoNumberMatches = _removeDuplicates(twoNumberMatches);
 
-    print('📊 [JustMissService] Unique matches - Shuffle: ${uniqueShuffleMatches.length}, One: ${uniqueOneNumberMatches.length}, Two: ${uniqueTwoNumberMatches.length}');
-
     final hasAnyMatches = uniqueShuffleMatches.isNotEmpty ||
         uniqueOneNumberMatches.isNotEmpty ||
         uniqueTwoNumberMatches.isNotEmpty;
-
-    print('🎯 [JustMissService] Final result: hasAnyMatches = $hasAnyMatches');
 
     return JustMissData(
       hasJustMiss: hasAnyMatches,
@@ -129,7 +109,6 @@ class JustMissService {
   static bool _isShuffleMatch(String ticket1, String ticket2) {
     // Must be same length
     if (ticket1.length != ticket2.length) {
-      print('   🔀 _isShuffleMatch: Length mismatch - $ticket1 (${ticket1.length}) vs $ticket2 (${ticket2.length})');
       return false;
     }
 
@@ -139,13 +118,8 @@ class JustMissService {
     final sorted1Str = sorted1.join();
     final sorted2Str = sorted2.join();
 
-    final isSame = sorted1Str == sorted2Str && ticket1 != ticket2;
-    if (isSame) {
-      print('   🔀 _isShuffleMatch: TRUE - $ticket1 (sorted: $sorted1Str) vs $ticket2 (sorted: $sorted2Str)');
-    }
-
     // Compare sorted versions
-    return isSame;
+    return sorted1Str == sorted2Str && ticket1 != ticket2;
   }
 
   /// Check if two ticket numbers differ by exactly one digit
@@ -153,28 +127,20 @@ class JustMissService {
   static bool _isOneNumberDifferent(String ticket1, String ticket2) {
     // Must be same length
     if (ticket1.length != ticket2.length) {
-      print('   1️⃣ _isOneNumberDifferent: Length mismatch - $ticket1 (${ticket1.length}) vs $ticket2 (${ticket2.length})');
       return false;
     }
 
     int differenceCount = 0;
-    final diffPositions = <int>[];
     for (int i = 0; i < ticket1.length; i++) {
       if (ticket1[i] != ticket2[i]) {
         differenceCount++;
-        diffPositions.add(i);
         if (differenceCount > 1) {
           return false; // More than one difference
         }
       }
     }
 
-    final isMatch = differenceCount == 1;
-    if (isMatch) {
-      print('   1️⃣ _isOneNumberDifferent: TRUE - $ticket1 vs $ticket2 (diff at position ${diffPositions.first}: ${ticket1[diffPositions.first]} → ${ticket2[diffPositions.first]})');
-    }
-
-    return isMatch;
+    return differenceCount == 1;
   }
 
   /// Check if two ticket numbers differ by exactly two digits
@@ -182,28 +148,20 @@ class JustMissService {
   static bool _isTwoNumbersDifferent(String ticket1, String ticket2) {
     // Must be same length
     if (ticket1.length != ticket2.length) {
-      print('   2️⃣ _isTwoNumbersDifferent: Length mismatch - $ticket1 (${ticket1.length}) vs $ticket2 (${ticket2.length})');
       return false;
     }
 
     int differenceCount = 0;
-    final diffPositions = <int>[];
     for (int i = 0; i < ticket1.length; i++) {
       if (ticket1[i] != ticket2[i]) {
         differenceCount++;
-        diffPositions.add(i);
         if (differenceCount > 2) {
           return false; // More than two differences
         }
       }
     }
 
-    final isMatch = differenceCount == 2;
-    if (isMatch) {
-      print('   2️⃣ _isTwoNumbersDifferent: TRUE - $ticket1 vs $ticket2 (diff at positions $diffPositions)');
-    }
-
-    return isMatch;
+    return differenceCount == 2;
   }
 
   /// Extract last 4 digits from a ticket number
@@ -302,7 +260,8 @@ class JustMissService {
             prizeType: prize.prizeTypeFormatted,
             prizeAmount: prize.prizeAmount,
           ));
-        } else if (_isTwoNumbersDifferent(userLast4Digits, winningLast4Digits)) {
+        } else if (_isTwoNumbersDifferent(
+            userLast4Digits, winningLast4Digits)) {
           twoNumberMatches.add(JustMissMatch(
             ticketNumber: winningTicket,
             prizeType: prize.prizeTypeFormatted,
