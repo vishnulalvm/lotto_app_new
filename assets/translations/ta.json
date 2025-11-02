@@ -512,5 +512,10 @@
   "scratch_card": "ஸ்கிராட்ச் கார்டு",
   "live": "நேரடி",
   "result_screen": "முடிவு திரை",
-  "error": "பிழை"
+  "error": "பிழை",
+  "just_miss": "ஜஸ்ட் மிஸ்",
+  "just_miss_for_shuffle": "ஜஸ்ட் மிஸ் ஃபார் ஷஃபிள்",
+  "just_miss_for_one_number": "ஜஸ்ட் மிஸ் ஃபார் ஒன் நம்பர்",
+  "just_miss_for_two_number": "ஜஸ்ட் மிஸ் ஃபார் டூ நம்பர்",
+  "view_results": "முடிவுகளைக் காண்க"
 }

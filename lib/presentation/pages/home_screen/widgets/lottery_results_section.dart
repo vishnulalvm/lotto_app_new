@@ -8,8 +8,11 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
+import 'package:lotto_app/core/services/widget_capture_service.dart';
 
 class LotteryResultsSection extends StatelessWidget {
+  // Map to store GlobalKeys for each result card
+  static final Map<String, GlobalKey> _cardKeys = {};
   final VoidCallback onLoadLotteryResults;
   final VoidCallback onShowDatePicker;
   final Animation<double> blinkAnimation;
@@ -253,7 +256,15 @@ class LotteryResultsSection extends StatelessWidget {
             end: Alignment.bottomRight,
           );
 
-    return Stack(
+    // Get or create a GlobalKey for this result card
+    final cardKey = _cardKeys.putIfAbsent(
+      result.uniqueId,
+      () => GlobalKey(),
+    );
+
+    return RepaintBoundary(
+      key: cardKey,
+      child: Stack(
       clipBehavior: Clip.none,
       children: [
         // Main Card
@@ -264,7 +275,7 @@ class LotteryResultsSection extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
           ),
-          child: InkWell(
+          child: GestureDetector(
             onTap: () {
               // Track lottery result view
               AnalyticsService.trackLotteryEvent(
@@ -284,8 +295,17 @@ class LotteryResultsSection extends StatelessWidget {
                 'isNew': result.isNew,
               });
             },
-            borderRadius:
-                BorderRadius.circular(AppResponsive.spacing(context, 12)),
+            onLongPress: () async {
+              // Capture and share the result card
+              // Format date for filename (remove special characters)
+              final dateForFilename = result.formattedDate.replaceAll('/', '-');
+
+              await WidgetCaptureService.captureAndShare(
+                key: cardKey,
+                fileName: 'lottery_${result.lotteryCode}_${result.drawNumber}_$dateForFilename',
+                shareText: '${result.getFormattedTitle(context)} - ${result.formattedDate}\n\nDownload app: https://play.google.com/store/apps/details?id=app.solidapps.lotto',
+              );
+            },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -608,6 +628,7 @@ class LotteryResultsSection extends StatelessWidget {
                       ),
           ),
       ],
+    ),
     );
   }
 

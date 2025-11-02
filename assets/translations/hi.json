@@ -444,5 +444,10 @@
   "scratch_card": "स्क्रैच कार्ड",
   "live": "लाइव",
   "result_screen": "परिणाम स्क्रीन",
-  "error": "त्रुटि"
+  "error": "त्रुटि",
+  "just_miss": "जस्ट मिस",
+  "just_miss_for_shuffle": "जस्ट मिस फॉर शफल",
+  "just_miss_for_one_number": "जस्ट मिस फॉर वन नंबर",
+  "just_miss_for_two_number": "जस्ट मिस फॉर टू नंबर",
+  "view_results": "परिणाम देखें"
 }

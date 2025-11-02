@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lotto_app/presentation/pages/probility_screen/probability_barcode_scanner.dart';
 import 'package:lotto_app/presentation/pages/result_details_screen/result_details_screen.dart';
 import 'package:lotto_app/presentation/pages/scrach_card_screen/scratch_card_screen.dart';
+import 'package:lotto_app/data/models/scrach_card_screen/result_check.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lotto_app/presentation/pages/bar_code_screen/barcode_scanner_screen.dart';
 import 'package:lotto_app/presentation/pages/claim_screen/claim_screen.dart';
@@ -16,6 +17,7 @@ import 'package:lotto_app/presentation/pages/splash_screen/splash_screen.dart';
 import 'package:lotto_app/presentation/pages/live_video_screen/live_video_screen.dart';
 import 'package:lotto_app/presentation/pages/feedback_screen/feedback_screen.dart';
 import 'package:lotto_app/presentation/pages/how_to_use_screen/how_to_use_screen.dart';
+import 'package:lotto_app/presentation/pages/just_miss_screen/just_miss_screen.dart';
 import 'package:lotto_app/routes/app_routes.dart';
 
 class AppRouter {
@@ -158,6 +160,14 @@ class AppRouter {
                 path: 'probability_barcode_scanner',
                 name: RouteNames.probabilityBarcodeScanner,
                 builder: (context, state) => const ProbabilityBarcodeScannerScreen(),
+              ),
+              GoRoute(
+                path: 'just-miss',
+                name: RouteNames.justMissScreen,
+                builder: (context, state) {
+                  final result = state.extra as TicketCheckResponseModel;
+                  return JustMissScreen(result: result);
+                },
               ),
 
             ],

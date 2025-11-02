@@ -599,5 +599,10 @@
   "scratch_card": "Scratch Card",
   "live": "Live",
   "result_screen": "Result Screen",
-  "error": "Error"
+  "error": "Error",
+  "just_miss": "Just Miss",
+  "just_miss_for_shuffle": "Just Miss For Shuffle",
+  "just_miss_for_one_number": "Just Miss For One Number",
+  "just_miss_for_two_number": "Just Miss For Two Number",
+  "view_results": "View Results"
 }

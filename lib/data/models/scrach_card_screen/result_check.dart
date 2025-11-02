@@ -177,6 +177,7 @@ class PreviousResult {
   final String uniqueId;
   final double totalPrizeAmount;
   final PrizeDetails? prizeDetails;
+  final JustMissData? justMissData;
 
   PreviousResult({
     required this.date,
@@ -184,6 +185,7 @@ class PreviousResult {
     required this.uniqueId,
     required this.totalPrizeAmount,
     this.prizeDetails,
+    this.justMissData,
   });
 
   factory PreviousResult.fromJson(Map<String, dynamic> json) {
@@ -192,9 +194,13 @@ class PreviousResult {
       drawNumber: json['drawNumber'] ?? '',
       uniqueId: json['uniqueId'] ?? '',
       totalPrizeAmount: (json['totalPrizeAmount'] ?? 0.0).toDouble(),
-      prizeDetails: json['prizeDetails'] != null && 
+      prizeDetails: json['prizeDetails'] != null &&
                    json['prizeDetails'] is Map<String, dynamic>
           ? _parsePrizeDetails(json['prizeDetails'])
+          : null,
+      justMissData: json['justMissData'] != null &&
+                   json['justMissData'] is Map<String, dynamic>
+          ? JustMissData.fromJson(json['justMissData'])
           : null,
     );
   }
@@ -250,4 +256,85 @@ enum ResponseType {
   previousLoser, // won_prize=false, result_published=false, isPrevious_result=true
   resultNotPublished, // won_prize=false, result_published=false, isPrevious_result=false
   unknown,
+}
+
+class JustMissData {
+  final bool hasJustMiss;
+  final List<JustMissMatch> shuffleMatches;
+  final List<JustMissMatch> oneNumberMatches;
+  final List<JustMissMatch> twoNumberMatches;
+
+  JustMissData({
+    required this.hasJustMiss,
+    required this.shuffleMatches,
+    required this.oneNumberMatches,
+    required this.twoNumberMatches,
+  });
+
+  factory JustMissData.fromJson(Map<String, dynamic> json) {
+    return JustMissData(
+      hasJustMiss: json['hasJustMiss'] ?? false,
+      shuffleMatches: (json['shuffleMatches'] as List<dynamic>?)
+              ?.map((item) => JustMissMatch.fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+      oneNumberMatches: (json['oneNumberMatches'] as List<dynamic>?)
+              ?.map((item) => JustMissMatch.fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+      twoNumberMatches: (json['twoNumberMatches'] as List<dynamic>?)
+              ?.map((item) => JustMissMatch.fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+
+  bool get hasAnyMatches =>
+      shuffleMatches.isNotEmpty ||
+      oneNumberMatches.isNotEmpty ||
+      twoNumberMatches.isNotEmpty;
+}
+
+class JustMissMatch {
+  final String ticketNumber;
+  final String prizeType;
+  final double prizeAmount;
+
+  JustMissMatch({
+    required this.ticketNumber,
+    required this.prizeType,
+    required this.prizeAmount,
+  });
+
+  factory JustMissMatch.fromJson(Map<String, dynamic> json) {
+    return JustMissMatch(
+      ticketNumber: json['ticketNumber'] ?? '',
+      prizeType: json['prizeType'] ?? '',
+      prizeAmount: (json['prizeAmount'] ?? 0.0).toDouble(),
+    );
+  }
+
+  String get formattedPrize {
+    if (prizeAmount > 0) {
+      return '₹${_formatNumber(prizeAmount)}/-';
+    }
+    return '₹0/-';
+  }
+
+  String _formatNumber(double number) {
+    String numStr = number.toInt().toString();
+    String result = '';
+    int counter = 0;
+
+    for (int i = numStr.length - 1; i >= 0; i--) {
+      if (counter == 3) {
+        result = ',$result';
+        counter = 0;
+      }
+      result = numStr[i] + result;
+      counter++;
+    }
+
+    return result;
+  }
 }

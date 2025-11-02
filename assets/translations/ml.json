@@ -537,5 +537,10 @@
   "scratch_card": "സ്ക്രാച്ച് കാർഡ്",
   "live": "ലൈവ്",
   "result_screen": "ഫല സ്ക്രീൻ",
-  "error": "പിശക്"
+  "error": "പിശക്",
+  "just_miss": "ജസ്റ്റ് മിസ്",
+  "just_miss_for_shuffle": "ജസ്റ്റ് മിസ് ഫോർ ഷഫിൾ",
+  "just_miss_for_one_number": "ജസ്റ്റ് മിസ് ഫോർ വൺ നമ്പർ",
+  "just_miss_for_two_number": "ജസ്റ്റ് മിസ് ഫോർ ടൂ നമ്പർ",
+  "view_results": "ഫലങ്ങൾ കാണുക"
 }

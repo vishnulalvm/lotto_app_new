@@ -177,6 +177,11 @@ class MyApp extends StatelessWidget {
                 TicketCheckApiService(),
               ),
             ),
+            LotteryResultDetailsRepository(
+              LotteryResultDetailsApiService(),
+              ResultDetailsCacheRepositoryImpl(),
+              _getConnectivityService(),
+            ),
           ),
         ),
         BlocProvider(

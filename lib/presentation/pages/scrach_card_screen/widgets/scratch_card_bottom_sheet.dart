@@ -312,31 +312,98 @@ class ScratchCardBottomSheet extends StatelessWidget {
         );
 
       case ResponseType.currentLoser:
+        // Check if just miss data is available
+        final hasJustMissData =
+            result.previousResult.justMissData?.hasAnyMatches ?? false;
+
         return Column(
           children: [
-            // Primary action - View Results
-            ElevatedButton(
-              onPressed: () => _navigateToResultDetails(context, result),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, buttonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            // Primary action - Split buttons if just miss data exists
+            if (hasJustMissData)
+              Row(
                 children: [
-                  const Icon(Icons.list_alt_outlined),
-                  const SizedBox(width: 8),
-                  Text(
-                    'view_full_results'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _navigateToJustMiss(context, result),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, buttonHeight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(borderRadius),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.shuffle_outlined, size: 20),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'just_miss'.tr(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: buttonSpacing),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _navigateToResultDetails(context, result),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, buttonHeight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(borderRadius),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.list_alt_outlined, size: 20),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'view_results'.tr(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
+              )
+            else
+              ElevatedButton(
+                onPressed: () => _navigateToResultDetails(context, result),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, buttonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.list_alt_outlined),
+                    const SizedBox(width: 8),
+                    Text(
+                      'view_full_results'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
-            ),
             SizedBox(height: buttonSpacing),
             // Secondary action - Scan Again
             OutlinedButton(
@@ -453,6 +520,126 @@ class ScratchCardBottomSheet extends StatelessWidget {
         );
 
       case ResponseType.previousLoser:
+        // Check if just miss data is available
+        final hasJustMissDataPrevious =
+            result.previousResult.justMissData?.hasAnyMatches ?? false;
+
+        return Column(
+          children: [
+            // Primary action - Split buttons if just miss data exists
+            if (hasJustMissDataPrevious)
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _navigateToJustMiss(context, result),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, buttonHeight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(borderRadius),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.shuffle_outlined, size: 20),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'just_miss'.tr(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: buttonSpacing),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _navigateToResultDetails(context, result),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, buttonHeight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(borderRadius),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.list_alt_outlined, size: 20),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'view_results'.tr(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              ElevatedButton(
+                onPressed: () => _navigateToResultDetails(context, result),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, buttonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.list_alt_outlined),
+                    const SizedBox(width: 8),
+                    Text(
+                      'view_full_results'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(height: buttonSpacing),
+
+            // Secondary action - Scan Again
+            OutlinedButton(
+              onPressed: onScanAgain,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.primaryColor,
+                minimumSize: Size(double.infinity, buttonHeight),
+                side: BorderSide(color: theme.primaryColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.qr_code_scanner_outlined),
+                  const SizedBox(width: 8),
+                  Text(
+                    'scan_again'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
       case ResponseType.unknown:
         return Column(
           children: [
@@ -525,6 +712,11 @@ class ScratchCardBottomSheet extends StatelessWidget {
       // Fallback to home if no unique ID available
       context.go('/');
     }
+  }
+
+  void _navigateToJustMiss(
+      BuildContext context, TicketCheckResponseModel result) {
+    context.push('/just-miss', extra: result);
   }
 
   void _launchClaimProcess(
