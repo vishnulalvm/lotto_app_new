@@ -119,6 +119,16 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-1386225714525775~3471696284"/>
 
+        <!-- WebView process isolation for AdMob stability -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="true" />
+
+        <!-- Prevent GPU crashes on low-end devices -->
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="false" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

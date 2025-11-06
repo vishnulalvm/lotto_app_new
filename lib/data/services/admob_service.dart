@@ -570,29 +570,38 @@ class AdMobService {
 
     final completer = Completer<void>();
 
-    await InterstitialAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(
-        httpTimeoutMillis: 30000,
-      ),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _updateInterstitialAdState(adType, AdWrapper(
-            ad: ad,
-            state: AdState.loaded,
-            lastLoadTime: DateTime.now(),
-          ));
-          completer.complete();
-        },
-        onAdFailedToLoad: (error) {
-          _updateInterstitialAdState(adType, AdWrapper(
-            state: AdState.failed,
-            error: error.toString(),
-          ));
-          completer.complete();
-        },
-      ),
-    );
+    try {
+      await InterstitialAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(
+          httpTimeoutMillis: 30000,
+        ),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            _updateInterstitialAdState(adType, AdWrapper(
+              ad: ad,
+              state: AdState.loaded,
+              lastLoadTime: DateTime.now(),
+            ));
+            completer.complete();
+          },
+          onAdFailedToLoad: (error) {
+            _updateInterstitialAdState(adType, AdWrapper(
+              state: AdState.failed,
+              error: error.toString(),
+            ));
+            completer.complete();
+          },
+        ),
+      );
+    } catch (e) {
+      // Catch native GPU/WebView crashes
+      _updateInterstitialAdState(adType, AdWrapper(
+        state: AdState.failed,
+        error: 'Failed to load ad: ${e.toString()}',
+      ));
+      completer.complete();
+    }
 
     return completer.future;
   }

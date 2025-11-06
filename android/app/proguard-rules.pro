@@ -131,7 +131,8 @@
 -keep class androidx.** { *; }
 -keep interface androidx.** { *; }
 
-# Keep WebView
+# Keep WebView - Critical for AdMob to prevent GPU crashes
+-keep class android.webkit.** { *; }
 -keepclassmembers class * extends android.webkit.WebViewClient {
     public void *(android.webkit.WebView, java.lang.String, android.graphics.Bitmap);
     public boolean *(android.webkit.WebView, java.lang.String);
@@ -139,6 +140,13 @@
 -keepclassmembers class * extends android.webkit.WebViewClient {
     public void *(android.webkit.WebView, java.lang.String);
 }
+-keepclassmembers class * extends android.webkit.WebChromeClient {
+    public void *(android.webkit.WebView, java.lang.String);
+}
+
+# Prevent WebView renderer crashes (MediaTek GPU issue fix)
+-keep class org.chromium.** { *; }
+-dontwarn org.chromium.**
 
 # Keep Activity classes
 -keep public class * extends android.app.Activity
