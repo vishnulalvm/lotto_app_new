@@ -165,6 +165,33 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
+          // Track successful login/signup conversion
+          final isNewUser = state.message.toLowerCase().contains('welcome') ||
+                            state.message.toLowerCase().contains('registered');
+
+          if (isNewUser) {
+            // Track sign up conversion
+            AnalyticsService.trackSignUp(
+              signUpMethod: 'phone_number',
+              success: true,
+            );
+
+            // Set user properties for new user
+            AnalyticsService.setEnhancedUserProperties(
+              userType: 'new',
+              preferredLanguage: context.locale.languageCode,
+            );
+          } else {
+            // Track login conversion
+            AnalyticsService.trackLogin(
+              loginMethod: 'phone_number',
+              success: true,
+            );
+          }
+
+          // Track session start with quality metrics
+          AnalyticsService.trackEnhancedSessionStart();
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 backgroundColor: theme.primaryColor,
@@ -176,6 +203,18 @@ class _LoginScreenState extends State<LoginScreen> {
           // Note: FCM token registration is already handled in AuthBloc
           context.go('/');
         } else if (state is AuthFailure) {
+          // Track failed login
+          AnalyticsService.trackLogin(
+            loginMethod: 'phone_number',
+            success: false,
+          );
+
+          AnalyticsService.trackError(
+            errorMessage: 'Authentication failed',
+            errorCode: 'auth_failure',
+            screen: 'login_screen',
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('auth_error'.tr())),
           );

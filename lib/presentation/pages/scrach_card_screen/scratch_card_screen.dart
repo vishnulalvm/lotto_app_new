@@ -138,6 +138,15 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
 
   void _onScratchUpdate(double progress) {
     setState(() {
+      // Track scratch started (first time only)
+      if (scratchProgress == 0.0 && progress > 0.0) {
+        AnalyticsService.trackScratchCard(
+          action: 'started',
+          ticketNumber: widget.ticketData['ticketNumber']?.toString(),
+          resultDate: widget.ticketData['date']?.toString(),
+        );
+      }
+
       scratchProgress = progress;
       // Auto-reveal when 50% scratched and we have API results
       if (progress >= 0.5 && !_autoRevealTriggered && _ticketResult != null) {
@@ -148,6 +157,13 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
   }
 
   void _autoRevealScratchCard() {
+    // Track scratch completion
+    AnalyticsService.trackScratchCard(
+      action: 'completed',
+      ticketNumber: widget.ticketData['ticketNumber']?.toString(),
+      resultDate: widget.ticketData['date']?.toString(),
+    );
+
     // Automatically reveal the entire scratch card
     _scratcherKey.currentState
         ?.reveal(duration: const Duration(milliseconds: 500));
@@ -161,6 +177,15 @@ class _ScratchCardResultScreenState extends State<ScratchCardResultScreen>
           // Play celebration sound for winners
           _audioService.playCelebrationSound();
         }
+
+        // Track result revealed with prize information
+        AnalyticsService.trackScratchCard(
+          action: 'result_revealed',
+          ticketNumber: widget.ticketData['ticketNumber']?.toString(),
+          resultDate: widget.ticketData['date']?.toString(),
+          isWinner: _ticketResult!.isWinner,
+          prizeAmount: _ticketResult!.isWinner ? _ticketResult!.formattedPrize : null,
+        );
       });
     });
   }

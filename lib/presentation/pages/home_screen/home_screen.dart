@@ -60,7 +60,10 @@ class _HomeScreenState extends State<HomeScreen>
             'timestamp': DateTime.now().millisecondsSinceEpoch,
           },
         );
-        AnalyticsService.trackSessionStart();
+        // Use enhanced session tracking for Google Ads optimization
+        AnalyticsService.trackEnhancedSessionStart();
+        // Increment screen count for session quality tracking
+        AnalyticsService.incrementSessionScreenCount();
       });
 
       // Check and show rate us dialog using BLoC
@@ -112,8 +115,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    // Track session end
-    AnalyticsService.trackSessionEnd();
+    // Track enhanced session end with quality metrics
+    AnalyticsService.trackEnhancedSessionEnd();
 
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);

@@ -491,7 +491,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 
         if (scannedValue.isNotEmpty) {
           // Handle the scanned barcode same as camera scan
-          _handleScannedBarcode(scannedValue);
+          _handleScannedBarcode(scannedValue, scanSource: 'gallery');
         } else {
           _showNoBarcodeFoundDialog();
         }
@@ -544,10 +544,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 
 // Remove the old _showGalleryInfoDialog method as it's no longer needed
 
-  void _handleScannedBarcode(String barcodeValue) async {
+  void _handleScannedBarcode(String barcodeValue, {String scanSource = 'camera'}) async {
     if (isProcessing || barcodeValue == lastScannedCode) {
       return; // Ignore duplicate/processing scans
     }
+
+    // Track scan attempt
+    AnalyticsService.trackBarcodeScan(
+      status: 'attempt',
+      scanSource: scanSource,
+    );
 
     setState(() {
       isProcessing = true;
@@ -556,10 +562,25 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 
     // Validate barcode format
     if (!BarcodeValidator.isValidLotteryTicket(barcodeValue)) {
+      // Track scan failure
+      AnalyticsService.trackBarcodeScan(
+        status: 'failure',
+        scanSource: scanSource,
+        resultType: 'invalid_format',
+        errorReason: BarcodeValidator.getValidationError(barcodeValue),
+      );
+
       _showValidationErrorDialog(BarcodeValidator.getValidationError(barcodeValue));
       setState(() => isProcessing = false);
       return;
     }
+
+    // Track successful scan
+    AnalyticsService.trackBarcodeScan(
+      status: 'success',
+      scanSource: scanSource,
+      resultType: 'lottery_ticket',
+    );
 
     // Format data
     final ticketData = {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:async';
+import 'package:lotto_app/data/services/analytics_service.dart';
 
 /// Ad loading states for better state management
 enum AdState { idle, loading, loaded, failed, disposed }
@@ -355,11 +356,27 @@ class AdMobService {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
+        // Track ad dismissed
+        AnalyticsService.trackAdDismissed(
+          adFormat: 'interstitial',
+          adUnitId: _getInterstitialAdUnitId(adType) ?? 'unknown',
+          placement: adType,
+        );
         onDismissed?.call();
         _scheduleReload(adType);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
+        // Track ad show failure
+        AnalyticsService.trackEvent(
+          eventName: 'ad_show_failed',
+          parameters: {
+            'ad_format': 'interstitial',
+            'ad_type': adType,
+            'error_code': error.code.toString(),
+            'error_message': error.message,
+          },
+        );
         // Handle VP9 codec errors specifically
         final errorMessage = error.toString();
         if (errorMessage.contains('MediaCodec') || errorMessage.contains('VP9')) {
@@ -377,7 +394,24 @@ class AdMobService {
         }
       },
       onAdShowedFullScreenContent: (ad) {
-        // Ad displayed successfully
+        // Ad displayed successfully - Track impression
+        // Estimated eCPM for interstitial ads: $2.00-$5.00
+        AnalyticsService.trackAdImpression(
+          adFormat: 'interstitial',
+          adUnitId: _getInterstitialAdUnitId(adType) ?? 'unknown',
+          adSource: 'admob',
+          value: 3.5, // Estimated CPM/1000, adjust based on your actual eCPM
+          currency: 'USD',
+          placement: adType,
+        );
+      },
+      onAdClicked: (ad) {
+        // Track ad click
+        AnalyticsService.trackAdClick(
+          adFormat: 'interstitial',
+          adUnitId: _getInterstitialAdUnitId(adType) ?? 'unknown',
+          placement: adType,
+        );
       },
     );
 
@@ -404,21 +438,63 @@ class AdMobService {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
+        AnalyticsService.trackAdDismissed(
+          adFormat: 'rewarded',
+          adUnitId: _getRewardedAdUnitId(adType) ?? 'unknown',
+          placement: adType,
+        );
         onDismissed?.call();
         _scheduleReload(adType);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
+        AnalyticsService.trackEvent(
+          eventName: 'ad_show_failed',
+          parameters: {
+            'ad_format': 'rewarded',
+            'ad_type': adType,
+            'error_code': error.code.toString(),
+            'error_message': error.message,
+          },
+        );
         _updateRewardedAdState(adType, AdWrapper(
-          state: AdState.failed, 
+          state: AdState.failed,
           error: error.toString(),
         ));
         onFailed?.call(error.toString());
         _scheduleReload(adType);
       },
+      onAdShowedFullScreenContent: (ad) {
+        // Estimated eCPM for rewarded ads: $5.00-$15.00
+        AnalyticsService.trackAdImpression(
+          adFormat: 'rewarded',
+          adUnitId: _getRewardedAdUnitId(adType) ?? 'unknown',
+          adSource: 'admob',
+          value: 10.0, // Estimated CPM/1000
+          currency: 'USD',
+          placement: adType,
+        );
+      },
+      onAdClicked: (ad) {
+        AnalyticsService.trackAdClick(
+          adFormat: 'rewarded',
+          adUnitId: _getRewardedAdUnitId(adType) ?? 'unknown',
+          placement: adType,
+        );
+      },
     );
 
     await ad.show(onUserEarnedReward: (ad, reward) {
+      // Track reward earned
+      AnalyticsService.trackEvent(
+        eventName: 'ad_reward_earned',
+        parameters: {
+          'ad_format': 'rewarded',
+          'ad_type': adType,
+          'reward_type': reward.type,
+          'reward_amount': reward.amount,
+        },
+      );
       onRewardEarned?.call();
     });
   }
@@ -583,6 +659,15 @@ class AdMobService {
               state: AdState.loaded,
               lastLoadTime: DateTime.now(),
             ));
+            // Track ad load success
+            AnalyticsService.trackEvent(
+              eventName: 'ad_loaded',
+              parameters: {
+                'ad_format': 'interstitial',
+                'ad_unit_id': adUnitId,
+                'ad_type': adType,
+              },
+            );
             completer.complete();
           },
           onAdFailedToLoad: (error) {
@@ -590,6 +675,13 @@ class AdMobService {
               state: AdState.failed,
               error: error.toString(),
             ));
+            // Track ad load failure
+            AnalyticsService.trackAdLoadFailed(
+              adFormat: 'interstitial',
+              adUnitId: adUnitId,
+              errorCode: error.code.toString(),
+              errorMessage: error.message,
+            );
             completer.complete();
           },
         ),
@@ -620,8 +712,55 @@ class AdMobService {
     return NativeAd(
       adUnitId: adUnitId,
       listener: NativeAdListener(
-        onAdLoaded: (ad) => onLoaded(ad as NativeAd),
-        onAdFailedToLoad: (ad, error) => onFailed(ad as NativeAd, error),
+        onAdLoaded: (ad) {
+          onLoaded(ad as NativeAd);
+          // Track ad load success
+          AnalyticsService.trackEvent(
+            eventName: 'ad_loaded',
+            parameters: {
+              'ad_format': 'native',
+              'ad_unit_id': adUnitId,
+            },
+          );
+        },
+        onAdFailedToLoad: (ad, error) {
+          onFailed(ad as NativeAd, error);
+          // Track ad load failure
+          AnalyticsService.trackAdLoadFailed(
+            adFormat: 'native',
+            adUnitId: adUnitId,
+            errorCode: error.code.toString(),
+            errorMessage: error.message,
+          );
+        },
+        onAdImpression: (ad) {
+          // Track ad impression (when ad is actually viewed)
+          // Estimated eCPM for native ads: $0.50-$2.00
+          AnalyticsService.trackAdImpression(
+            adFormat: 'native',
+            adUnitId: adUnitId,
+            adSource: 'admob',
+            value: 1.0, // Estimated CPM/1000, adjust based on your actual eCPM
+            currency: 'USD',
+            placement: 'content_feed',
+          );
+        },
+        onAdClicked: (ad) {
+          // Track ad click
+          AnalyticsService.trackAdClick(
+            adFormat: 'native',
+            adUnitId: adUnitId,
+            placement: 'content_feed',
+          );
+        },
+        onAdClosed: (ad) {
+          // Track ad dismissed (if applicable)
+          AnalyticsService.trackAdDismissed(
+            adFormat: 'native',
+            adUnitId: adUnitId,
+            placement: 'content_feed',
+          );
+        },
       ),
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
