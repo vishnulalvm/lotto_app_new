@@ -28,12 +28,12 @@ class LotteryResultDetailsRepository {
           if (cachedResult != null) {
             // Return cached data immediately
             final result = cachedResult.toResultDetails();
-            
-            // If connected and cache should be refreshed, refresh in background
-            if (isConnected && cachedResult.shouldRefreshInLiveHours) {
+
+            // Always refresh in background when connected
+            if (isConnected) {
               _refreshInBackground(uniqueId);
             }
-            
+
             return result;
           }
         } catch (e) {

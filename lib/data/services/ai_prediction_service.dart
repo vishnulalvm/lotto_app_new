@@ -2,19 +2,52 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive/hive.dart';
 import '../models/predict_screen/ai_prediction_model.dart';
+import '../models/home_screen/cached_home_screen_model.dart';
+import 'statistical_prediction_engine.dart';
+import 'hive_service.dart';
 
 class AiPredictionService {
   static const String _boxName = 'ai_predictions';
   static const String _lastGeneratedDateKey = 'last_generated_date';
-  
+
   static Box<AiPredictionModel>? _box;
   static final Random _random = Random();
+  static final StatisticalPredictionEngine _predictionEngine = StatisticalPredictionEngine();
 
   static Future<void> init() async {
     if (!Hive.isBoxOpen(_boxName)) {
       _box = await Hive.openBox<AiPredictionModel>(_boxName);
     } else {
       _box = Hive.box<AiPredictionModel>(_boxName);
+    }
+  }
+
+  /// Fetches cached lottery results for statistical analysis
+  /// Returns up to 30 days of cached results for pattern analysis
+  static Future<List<CachedHomeScreenResultModel>> _getCachedResults() async {
+    try {
+      // Ensure Hive is initialized
+      await HiveService.init();
+
+      final cacheBox = await Hive.openBox<CachedHomeScreenModel>('home_screen_cache');
+      final List<CachedHomeScreenResultModel> allResults = [];
+
+      // Collect results from all cached entries
+      for (var cachedData in cacheBox.values) {
+        allResults.addAll(cachedData.results);
+      }
+
+      // Sort by date (newest first) and limit to 30 most recent
+      allResults.sort((a, b) {
+        final dateA = DateTime.tryParse(a.date) ?? DateTime.now();
+        final dateB = DateTime.tryParse(b.date) ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+
+      return allResults.take(30).toList();
+    } catch (e) {
+      // If cache read fails, return empty list (will use fallback random generation)
+      return [];
     }
   }
 
@@ -38,11 +71,11 @@ class AiPredictionService {
   /// This is used for comparing with today's lottery results
   static Future<AiPredictionModel?> getActualTodaysPrediction(int prizeType) async {
     await init();
-    
+
     final now = DateTime.now();
     final actualToday = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final key = '${actualToday}_$prizeType';
-    
+
     // Check if we have prediction stored for actual today's date
     final prediction = _box?.get(key);
     if (prediction != null) {
@@ -50,8 +83,8 @@ class AiPredictionService {
     }
 
     // If no prediction for actual today, generate one with actual today's date
-    final numbers = _generateRandomNumbers(prizeType);
-    
+    final numbers = await _generateRandomNumbers(prizeType);
+
     final newPrediction = AiPredictionModel(
       date: actualToday,
       prizeType: prizeType,
@@ -66,9 +99,9 @@ class AiPredictionService {
   /// Gets prediction for a specific date and prize type
   static Future<AiPredictionModel?> getPredictionForDate(String date, int prizeType) async {
     await init();
-    
+
     final key = '${date}_$prizeType';
-    
+
     // Check if we have prediction for this date and prize type
     final prediction = _box?.get(key);
     if (prediction != null) {
@@ -76,8 +109,8 @@ class AiPredictionService {
     }
 
     // Generate new prediction for this specific date
-    final numbers = _generateRandomNumbers(prizeType);
-    
+    final numbers = await _generateRandomNumbers(prizeType);
+
     final newPrediction = AiPredictionModel(
       date: date,
       prizeType: prizeType,
@@ -91,8 +124,8 @@ class AiPredictionService {
 
   static Future<AiPredictionModel> _generateAndStorePrediction(int prizeType) async {
     final today = _getTodayDateString();
-    final numbers = _generateRandomNumbers(prizeType);
-    
+    final numbers = await _generateRandomNumbers(prizeType);
+
     final prediction = AiPredictionModel(
       date: today,
       prizeType: prizeType,
@@ -102,24 +135,52 @@ class AiPredictionService {
 
     final key = '${today}_$prizeType';
     await _box?.put(key, prediction);
-    
+
     return prediction;
   }
 
-  static List<String> _generateRandomNumbers(int prizeType) {
+  static Future<List<String>> _generateRandomNumbers(int prizeType) async {
+    // Try to get cached results for statistical analysis
+    final cachedResults = await _getCachedResults();
+
+    // If we have cached data, use statistical prediction engine
+    if (cachedResults.isNotEmpty) {
+      try {
+        // Analyze patterns and digit frequency from cached results
+        final statistics = _predictionEngine.analyzeResults(cachedResults);
+
+        // Generate 12 predictions based on pattern probabilities and digit frequency
+        final predictions = _predictionEngine.generatePredictions(
+          statistics,
+          count: 12,
+        );
+
+        return predictions;
+      } catch (e) {
+        // If statistical analysis fails, fall back to random generation
+        return _generateRandomNumbersFallback();
+      }
+    }
+
+    // No cached data available, use fallback random generation
+    return _generateRandomNumbersFallback();
+  }
+
+  /// Fallback method for generating random numbers when no cached data is available
+  static List<String> _generateRandomNumbersFallback() {
     final numbers = <String>[];
     final usedNumbers = <String>{};
-    
+
     // Generate 12 unique fancy 4-digit numbers
     while (numbers.length < 12) {
       String number = _generateFancyNumber();
-      
+
       if (!usedNumbers.contains(number)) {
         numbers.add(number);
         usedNumbers.add(number);
       }
     }
-    
+
     return numbers;
   }
 

@@ -591,34 +591,151 @@ class LotteryResultDetailsBloc
     return currentTickets.difference(previousTickets);
   }
 
-  /// Smart search with fallback logic
+  /// Smart search with prize-level awareness and improved input handling
   List<Map<String, dynamic>> _performSmartSearch(
     String searchQuery,
     List<Map<String, dynamic>> allNumbers,
   ) {
-    final searchLower = searchQuery.toLowerCase();
+    // Normalize input: uppercase and remove spaces
+    final normalizedQuery = searchQuery.toUpperCase().replaceAll(' ', '');
 
-    // First attempt: Direct search for the full query
-    List<Map<String, dynamic>> results = allNumbers.where((item) {
-      final ticketNumber = item['number'].toString().toLowerCase();
-      return ticketNumber.contains(searchLower);
-    }).toList();
+    // Detect input type and validate
+    final inputType = _detectInputType(normalizedQuery);
 
-    // If no results found and query is longer than 4 digits, try fallback search
-    if (results.isEmpty && searchQuery.length > 4) {
-      // Extract last 4 digits for fallback search
-      final lastFourDigits = searchQuery.substring(searchQuery.length - 4);
-
-      // Only proceed if last 4 digits are all numeric
-      if (RegExp(r'^\d{4}$').hasMatch(lastFourDigits)) {
-        results = allNumbers.where((item) {
-          final ticketNumber = item['number'].toString().toLowerCase();
-          return ticketNumber.contains(lastFourDigits.toLowerCase());
-        }).toList();
-      }
+    // Determine if search should proceed based on input type
+    if (!_shouldPerformSearch(inputType, normalizedQuery)) {
+      // Return all numbers when search should be blocked
+      return allNumbers;
     }
 
-    return results;
+    // Perform search based on input type
+    switch (inputType) {
+      case _SearchInputType.fullNumber:
+        return _searchByFullNumber(normalizedQuery, allNumbers);
+
+      case _SearchInputType.fourDigits:
+        return _searchByLastFourDigits(normalizedQuery, allNumbers);
+
+      case _SearchInputType.twoLetters:
+        return _searchBySeriesPrefix(normalizedQuery, allNumbers);
+
+      case _SearchInputType.invalid:
+        // For invalid patterns, return empty to show "no results"
+        return [];
+    }
+  }
+
+  /// Detect the type of search input
+  _SearchInputType _detectInputType(String normalizedQuery) {
+    // Pattern: 2 letters + 6 digits (e.g., KG125263)
+    final fullNumberPattern = RegExp(r'^[A-Z]{2}\d{6}$');
+
+    // Pattern: exactly 4 digits (e.g., 5263)
+    final fourDigitsPattern = RegExp(r'^\d{4}$');
+
+    // Pattern: exactly 2 letters (e.g., KG)
+    final twoLettersPattern = RegExp(r'^[A-Z]{2}$');
+
+    // Check patterns
+    if (fullNumberPattern.hasMatch(normalizedQuery)) {
+      return _SearchInputType.fullNumber;
+    } else if (fourDigitsPattern.hasMatch(normalizedQuery)) {
+      return _SearchInputType.fourDigits;
+    } else if (twoLettersPattern.hasMatch(normalizedQuery)) {
+      return _SearchInputType.twoLetters;
+    } else {
+      return _SearchInputType.invalid;
+    }
+  }
+
+  /// Determine if search should proceed based on input type and query
+  bool _shouldPerformSearch(_SearchInputType inputType, String normalizedQuery) {
+    switch (inputType) {
+      case _SearchInputType.fullNumber:
+      case _SearchInputType.fourDigits:
+      case _SearchInputType.twoLetters:
+        // These are valid complete patterns - proceed with search
+        return true;
+
+      case _SearchInputType.invalid:
+        // Check for incomplete patterns that should block search
+        final hasLetters = RegExp(r'[A-Z]').hasMatch(normalizedQuery);
+        final hasDigits = RegExp(r'\d').hasMatch(normalizedQuery);
+
+        // If it has both letters and digits but isn't a full number, block it
+        // (e.g., "GH25" - partial input, wait for completion)
+        if (hasLetters && hasDigits) {
+          return false;
+        }
+
+        // If it's just one letter, block search (wait for second letter)
+        if (RegExp(r'^[A-Z]$').hasMatch(normalizedQuery)) {
+          return false;
+        }
+
+        // For other invalid patterns, show no results
+        return true;
+    }
+  }
+
+  /// Search by full ticket number with prize-level awareness
+  /// Prizes 1-3: Full match, Prizes 4-10: Last 4 digits match
+  List<Map<String, dynamic>> _searchByFullNumber(
+    String fullNumber,
+    List<Map<String, dynamic>> allNumbers,
+  ) {
+    // Extract last 4 digits from the search query
+    final lastFourDigits = fullNumber.substring(fullNumber.length - 4);
+
+    // Define top prize categories (1st, 2nd, 3rd)
+    final topPrizes = {'1st Prize', '2nd Prize', '3rd Prize'};
+
+    return allNumbers.where((item) {
+      final ticketNumber = item['number'].toString().toUpperCase();
+      final category = item['category'].toString();
+
+      // For prizes 1-3: Exact full number match
+      if (topPrizes.contains(category)) {
+        return ticketNumber == fullNumber;
+      }
+
+      // For prizes 4-10: Match by last 4 digits
+      return _getLastFourDigits(ticketNumber) == lastFourDigits;
+    }).toList();
+  }
+
+  /// Search by last 4 digits across all prize levels
+  List<Map<String, dynamic>> _searchByLastFourDigits(
+    String fourDigits,
+    List<Map<String, dynamic>> allNumbers,
+  ) {
+    return allNumbers.where((item) {
+      final ticketNumber = item['number'].toString();
+      return _getLastFourDigits(ticketNumber) == fourDigits;
+    }).toList();
+  }
+
+  /// Search by series prefix (first 2 letters) across all prize levels
+  List<Map<String, dynamic>> _searchBySeriesPrefix(
+    String seriesPrefix,
+    List<Map<String, dynamic>> allNumbers,
+  ) {
+    return allNumbers.where((item) {
+      final ticketNumber = item['number'].toString().toUpperCase();
+      return ticketNumber.startsWith(seriesPrefix);
+    }).toList();
+  }
+
+  /// Extract last 4 digits from a ticket number
+  String _getLastFourDigits(String ticketNumber) {
+    // Remove all non-digit characters
+    final digitsOnly = ticketNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.length < 4) {
+      return '';
+    }
+
+    return digitsOnly.substring(digitsOnly.length - 4);
   }
 
   /// Load matched numbers from AI predictions
@@ -720,4 +837,12 @@ class LotteryResultDetailsBloc
   bool _isLiveHours(LotteryResultModel result) {
     return result.isPublished && !result.reOrder;
   }
+}
+
+/// Enum to represent different search input types
+enum _SearchInputType {
+  fullNumber,    // 2 letters + 6 digits (e.g., KG125263)
+  fourDigits,    // Exactly 4 digits (e.g., 5263)
+  twoLetters,    // Exactly 2 letters (e.g., KG)
+  invalid,       // Invalid or incomplete pattern
 }
