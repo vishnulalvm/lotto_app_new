@@ -67,9 +67,9 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
     _cachedTheme = theme;
     _isDark = theme.brightness == Brightness.dark;
 
-    // Cache theme colors
-    _lightBackground = const Color(0xFFFFE4E6);
-    _darkBackground = const Color(0xFF2D1518);
+    // Cache theme colors - dynamically based on primary color
+    _lightBackground = theme.primaryColor.withValues(alpha: 0.1);
+    _darkBackground = theme.primaryColor.withValues(alpha: 0.2);
   }
 
   void _cacheResponsiveValues(BuildContext context) {

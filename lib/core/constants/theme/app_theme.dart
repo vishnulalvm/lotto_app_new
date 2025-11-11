@@ -1,9 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:lotto_app/core/services/theme_service.dart';
 
+// Theme extension for custom colors
+class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
+  final Color liveColor;
+  final Color newColor;
+  final Color bumperPrimaryColor;
+  final Color bumperSecondaryColor;
+
+  const AppThemeExtension({
+    required this.liveColor,
+    required this.newColor,
+    required this.bumperPrimaryColor,
+    required this.bumperSecondaryColor,
+  });
+
+  @override
+  ThemeExtension<AppThemeExtension> copyWith({
+    Color? liveColor,
+    Color? newColor,
+    Color? bumperPrimaryColor,
+    Color? bumperSecondaryColor,
+  }) {
+    return AppThemeExtension(
+      liveColor: liveColor ?? this.liveColor,
+      newColor: newColor ?? this.newColor,
+      bumperPrimaryColor: bumperPrimaryColor ?? this.bumperPrimaryColor,
+      bumperSecondaryColor: bumperSecondaryColor ?? this.bumperSecondaryColor,
+    );
+  }
+
+  @override
+  ThemeExtension<AppThemeExtension> lerp(
+    ThemeExtension<AppThemeExtension>? other,
+    double t,
+  ) {
+    if (other is! AppThemeExtension) {
+      return this;
+    }
+    return AppThemeExtension(
+      liveColor: Color.lerp(liveColor, other.liveColor, t)!,
+      newColor: Color.lerp(newColor, other.newColor, t)!,
+      bumperPrimaryColor: Color.lerp(bumperPrimaryColor, other.bumperPrimaryColor, t)!,
+      bumperSecondaryColor: Color.lerp(bumperSecondaryColor, other.bumperSecondaryColor, t)!,
+    );
+  }
+}
+
 class AppTheme {
   // Custom Red color constant (default)
   static const Color crimsonRed = Color(0xFFEF5458); // #EF5458
+
+  // Status colors
+  static const Color liveColor = Color(0xFFFF3B30); // Red for live badges
+  static const Color newColor = Color(0xFF4CAF50); // Green for new badges
+
+  // Bumper lottery colors
+  static const Color bumperPrimaryColor = Color(0xFF7B1FA2); // Purple
+  static const Color bumperSecondaryColor = Color(0xFF512DA8); // Deep Purple
+
+  // Cache for ThemeData objects to avoid recreating on every theme change
+  static final Map<AppColorScheme, ThemeData> _lightThemeCache = {};
+  static final Map<AppColorScheme, ThemeData> _darkThemeCache = {};
 
   // Color scheme mapping
   static Color getColorFromScheme(AppColorScheme scheme) {
@@ -28,6 +86,18 @@ class AppTheme {
   }
 
   static ThemeData lightTheme(AppColorScheme colorScheme) {
+    // Return cached theme if available
+    if (_lightThemeCache.containsKey(colorScheme)) {
+      return _lightThemeCache[colorScheme]!;
+    }
+
+    // Create and cache new theme
+    final theme = _createLightTheme(colorScheme);
+    _lightThemeCache[colorScheme] = theme;
+    return theme;
+  }
+
+  static ThemeData _createLightTheme(AppColorScheme colorScheme) {
     final primaryColor = getColorFromScheme(colorScheme);
     // Create a light tinted background based on the primary color
     final scaffoldColor = Color.alphaBlend(
@@ -106,10 +176,30 @@ class AppTheme {
         onSurface: Colors.black87,
         onError: Colors.white,
       ),
+      extensions: <ThemeExtension<dynamic>>[
+        const AppThemeExtension(
+          liveColor: liveColor,
+          newColor: newColor,
+          bumperPrimaryColor: bumperPrimaryColor,
+          bumperSecondaryColor: bumperSecondaryColor,
+        ),
+      ],
     );
   }
 
   static ThemeData darkTheme(AppColorScheme colorScheme) {
+    // Return cached theme if available
+    if (_darkThemeCache.containsKey(colorScheme)) {
+      return _darkThemeCache[colorScheme]!;
+    }
+
+    // Create and cache new theme
+    final theme = _createDarkTheme(colorScheme);
+    _darkThemeCache[colorScheme] = theme;
+    return theme;
+  }
+
+  static ThemeData _createDarkTheme(AppColorScheme colorScheme) {
     final primaryColor = getColorFromScheme(colorScheme);
     return ThemeData(
       useMaterial3: true,
@@ -187,6 +277,14 @@ class AppTheme {
         onSurface: Colors.white,
         onError: Colors.white,
       ),
+      extensions: <ThemeExtension<dynamic>>[
+        const AppThemeExtension(
+          liveColor: liveColor,
+          newColor: newColor,
+          bumperPrimaryColor: bumperPrimaryColor,
+          bumperSecondaryColor: bumperSecondaryColor,
+        ),
+      ],
     );
   }
 }

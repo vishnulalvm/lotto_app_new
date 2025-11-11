@@ -1,11 +1,16 @@
-class LotteryResultDetailsModel {
+import 'package:equatable/equatable.dart';
+
+class LotteryResultDetailsModel extends Equatable {
   final String status;
   final LotteryResultModel result;
 
-  LotteryResultDetailsModel({
+  const LotteryResultDetailsModel({
     required this.status,
     required this.result,
   });
+
+  @override
+  List<Object?> get props => [status, result];
 
   factory LotteryResultDetailsModel.fromJson(Map<String, dynamic> json) {
     return LotteryResultDetailsModel(
@@ -22,7 +27,7 @@ class LotteryResultDetailsModel {
   }
 }
 
-class LotteryResultModel {
+class LotteryResultModel extends Equatable {
   final String date;
   final int id;
   final String uniqueId;
@@ -36,7 +41,7 @@ class LotteryResultModel {
   final String createdAt;
   final String updatedAt;
 
-  LotteryResultModel({
+  const LotteryResultModel({
     required this.date,
     required this.id,
     required this.uniqueId,
@@ -50,6 +55,22 @@ class LotteryResultModel {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  @override
+  List<Object?> get props => [
+        date,
+        id,
+        uniqueId,
+        lotteryName,
+        lotteryCode,
+        drawNumber,
+        prizes,
+        isPublished,
+        isBumper,
+        reOrder,
+        createdAt,
+        updatedAt,
+      ];
 
   factory LotteryResultModel.fromJson(Map<String, dynamic> json) {
     return LotteryResultModel(
@@ -146,7 +167,7 @@ class LotteryResultModel {
   }
 }
 
-class PrizeModel {
+class PrizeModel extends Equatable {
   final String prizeType;
   final double prizeAmount;
   final bool placeUsed;
@@ -154,7 +175,7 @@ class PrizeModel {
   final String? ticketNumbers; // For grid-based prizes
   final List<TicketModel> tickets; // For individual ticket prizes
 
-  PrizeModel({
+  const PrizeModel({
     required this.prizeType,
     required this.prizeAmount,
     required this.placeUsed,
@@ -162,6 +183,16 @@ class PrizeModel {
     this.ticketNumbers,
     required this.tickets,
   });
+
+  @override
+  List<Object?> get props => [
+        prizeType,
+        prizeAmount,
+        placeUsed,
+        isGrid,
+        ticketNumbers,
+        tickets,
+      ];
 
   factory PrizeModel.fromJson(Map<String, dynamic> json) {
     return PrizeModel(
@@ -274,14 +305,17 @@ class PrizeModel {
   List<String> get ticketNumbersList => getAllTicketNumbers();
 }
 
-class TicketModel {
+class TicketModel extends Equatable {
   final String ticketNumber;
   final String? location;
 
-  TicketModel({
+  const TicketModel({
     required this.ticketNumber,
     this.location,
   });
+
+  @override
+  List<Object?> get props => [ticketNumber, location];
 
   factory TicketModel.fromJson(Map<String, dynamic> json) {
     return TicketModel(

@@ -16,15 +16,24 @@ class ThemeService {
   static const String _themeModeKey = 'theme_mode';
   static const String _colorSchemeKey = 'color_scheme';
 
+  // Cached SharedPreferences instance to avoid repeated getInstance() calls
+  static SharedPreferences? _prefsInstance;
+
+  /// Ensure SharedPreferences is initialized and cached
+  Future<SharedPreferences> _getPrefs() async {
+    _prefsInstance ??= await SharedPreferences.getInstance();
+    return _prefsInstance!;
+  }
+
   /// Save theme mode (system, light, dark)
   Future<void> saveThemeMode(ThemeMode themeMode) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setString(_themeModeKey, themeMode.name);
   }
 
   /// Load theme mode
   Future<ThemeMode> loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final themeModeString = prefs.getString(_themeModeKey);
 
     if (themeModeString == null) {
@@ -39,13 +48,13 @@ class ThemeService {
 
   /// Save color scheme
   Future<void> saveColorScheme(AppColorScheme colorScheme) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setString(_colorSchemeKey, colorScheme.name);
   }
 
   /// Load color scheme
   Future<AppColorScheme> loadColorScheme() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final colorSchemeString = prefs.getString(_colorSchemeKey);
 
     if (colorSchemeString == null) {

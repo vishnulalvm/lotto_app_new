@@ -149,8 +149,10 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
 
   // ... (Your _buildGradientPlaceholder, _buildShimmerEffect, and _buildErrorWidget methods remain the same)
   Widget _buildGradientPlaceholder() {
-    final startColor = widget.gradientStartColor ?? Colors.pink.shade100;
-    final endColor = widget.gradientEndColor ?? Colors.pink.shade300;
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+    final startColor = widget.gradientStartColor ?? primaryColor.withValues(alpha: 0.2);
+    final endColor = widget.gradientEndColor ?? primaryColor.withValues(alpha: 0.5);
 
     return Container(
       width: double.infinity,
@@ -195,6 +197,9 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
   }
 
   Widget _buildShimmerEffect() {
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+
     return Container(
       width: 60,
       height: 60,
@@ -203,7 +208,7 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
         gradient: RadialGradient(
           colors: [
             Colors.white.withAlpha(204),
-            (widget.gradientStartColor ?? Colors.pink.shade100)
+            (widget.gradientStartColor ?? primaryColor.withValues(alpha: 0.2))
                 .withAlpha(0),
           ],
         ),
@@ -211,7 +216,7 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
       child: Icon(
         Icons.image,
         size: 30,
-        color: widget.gradientEndColor ?? Colors.pink.shade400,
+        color: widget.gradientEndColor ?? primaryColor.withValues(alpha: 0.7),
       ),
     );
   }

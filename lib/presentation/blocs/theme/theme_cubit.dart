@@ -7,7 +7,7 @@ class ThemeCubit extends Cubit<ThemeState> {
   final ThemeService _themeService;
 
   ThemeCubit(this._themeService)
-      : super(ThemeState(
+      : super(const ThemeState(
           themeMode: ThemeMode.system,
           colorScheme: AppColorScheme.scarlet, // Default to crimsonRed
         )) {
@@ -18,7 +18,10 @@ class ThemeCubit extends Cubit<ThemeState> {
   Future<void> _loadThemeSettings() async {
     try {
       final settings = await _themeService.loadThemeSettings();
-      emit(ThemeState(
+      emit(const ThemeState(
+        themeMode: ThemeMode.system,
+        colorScheme: AppColorScheme.scarlet,
+      ).copyWith(
         themeMode: settings.themeMode,
         colorScheme: settings.colorScheme,
       ));

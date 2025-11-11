@@ -24,13 +24,14 @@ class CachedHomeScreenModelAdapter extends TypeAdapter<CachedHomeScreenModel> {
       cacheExpiryHours: fields[4] as int,
       totalPoints: fields[5] as int,
       updates: fields[6] as CachedUpdatesModel,
+      textUpdate: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, CachedHomeScreenModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.status)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class CachedHomeScreenModelAdapter extends TypeAdapter<CachedHomeScreenModel> {
       ..writeByte(5)
       ..write(obj.totalPoints)
       ..writeByte(6)
-      ..write(obj.updates);
+      ..write(obj.updates)
+      ..writeByte(7)
+      ..write(obj.textUpdate);
   }
 
   @override
@@ -80,13 +83,14 @@ class CachedHomeScreenResultModelAdapter
       consolationPrizes: fields[7] as CachedConsolationPrizesModel?,
       isPublished: fields[8] as bool,
       isBumper: fields[9] as bool,
+      liveEnd: fields[10] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, CachedHomeScreenResultModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)
@@ -106,7 +110,9 @@ class CachedHomeScreenResultModelAdapter
       ..writeByte(8)
       ..write(obj.isPublished)
       ..writeByte(9)
-      ..write(obj.isBumper);
+      ..write(obj.isBumper)
+      ..writeByte(10)
+      ..write(obj.liveEnd);
   }
 
   @override

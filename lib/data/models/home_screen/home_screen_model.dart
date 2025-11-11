@@ -27,6 +27,7 @@ class HomeScreenResultsModel {
   final String status;
   final int count;
   final int totalPoints;
+  final String? textUpdate;
   final UpdatesModel updates;
   final List<HomeScreenResultModel> results;
 
@@ -34,6 +35,7 @@ class HomeScreenResultsModel {
     required this.status,
     required this.count,
     required this.totalPoints,
+    this.textUpdate,
     required this.updates,
     required this.results,
   });
@@ -43,6 +45,7 @@ class HomeScreenResultsModel {
       status: json['status'] ?? '',
       count: json['count'] ?? 0,
       totalPoints: json['total_points'] ?? 0,
+      textUpdate: json['text_update'],
       updates: UpdatesModel.fromJson(json['updates'] ?? {}),
       results: (json['results'] as List<dynamic>?)
               ?.map((item) => HomeScreenResultModel.fromJson(item))
@@ -117,6 +120,7 @@ class HomeScreenResultModel {
   final ConsolationPrizesModel? consolationPrizes;
   final bool isPublished;
   final bool isBumper;
+  final bool liveEnd;
 
   HomeScreenResultModel({
     required this.date,
@@ -129,6 +133,7 @@ class HomeScreenResultModel {
     this.consolationPrizes,
     required this.isPublished,
     required this.isBumper,
+    required this.liveEnd,
   });
 
   factory HomeScreenResultModel.fromJson(Map<String, dynamic> json) {
@@ -145,6 +150,7 @@ class HomeScreenResultModel {
           : null,
       isPublished: json['is_published'] ?? false,
       isBumper: json['is_bumper'] ?? false,
+      liveEnd: json['live_end'] ?? false,
     );
   }
 
@@ -227,17 +233,17 @@ class HomeScreenResultModel {
     return resultDate == today;
   }
 
-  bool get isLive {
+  // Helper to check if result is today's lottery
+  bool get isToday {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final resultDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    
-    // Only show Live badge if it's today's result
-    if (resultDate != today) return false;
-    
-    // Check if current time is between 3 PM (15:00) and 4 PM (16:00)
-    final currentHour = now.hour;
-    return currentHour >= 15 && currentHour < 16;
+    return resultDate == today;
+  }
+
+  // Live when: today's lottery, published, and not past live end time (live_end = false)
+  bool get isLive {
+    return isToday && isPublished && !liveEnd;
   }
 
   bool get hasConsolationPrizes => consolationPrizes != null;

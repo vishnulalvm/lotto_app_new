@@ -427,11 +427,14 @@ class _ColorThemeDialogState extends State<ColorThemeDialog>
 
   void _applyTheme() {
     if (_selectedColorScheme != null && _selectedThemeMode != null) {
+      // Close dialog immediately for better perceived performance
+      Navigator.of(context).pop();
+
+      // Apply theme change after dialog closes
       context.read<ThemeCubit>().updateThemeSettings(
         colorScheme: _selectedColorScheme,
         themeMode: _selectedThemeMode,
       );
-      Navigator.of(context).pop();
     }
   }
 }

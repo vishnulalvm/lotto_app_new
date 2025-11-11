@@ -1,10 +1,11 @@
+import 'package:equatable/equatable.dart';
 import 'package:hive/hive.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 
 part 'cached_result_details_model.g.dart';
 
 @HiveType(typeId: 5)
-class CachedResultDetailsModel {
+class CachedResultDetailsModel extends Equatable {
   @HiveField(0)
   final String uniqueId;
 
@@ -17,12 +18,15 @@ class CachedResultDetailsModel {
   @HiveField(3)
   final DateTime expiresAt;
 
-  CachedResultDetailsModel({
+  const CachedResultDetailsModel({
     required this.uniqueId,
     required this.data,
     required this.cachedAt,
     required this.expiresAt,
   });
+
+  @override
+  List<Object?> get props => [uniqueId, data, cachedAt, expiresAt];
 
   factory CachedResultDetailsModel.fromResultDetails(
     String uniqueId,

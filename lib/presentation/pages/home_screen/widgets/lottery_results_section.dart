@@ -9,6 +9,7 @@ import 'package:lotto_app/presentation/blocs/home_screen/home_screen_event.dart'
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_state.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/core/services/widget_capture_service.dart';
+import 'package:lotto_app/core/constants/theme/app_theme.dart';
 
 class LotteryResultsSection extends StatelessWidget {
   // Map to store GlobalKeys for each result card
@@ -182,10 +183,8 @@ class LotteryResultsSection extends StatelessWidget {
   }
 
   Widget _buildDateDivider(String text, ThemeData theme, BuildContext context) {
-    // Define colors based on theme brightness
-    final dividerColor = theme.brightness == Brightness.dark
-        ? const Color(0xFF616161) // Medium-dark grey for dark mode
-        : Colors.grey[600]; // Darker grey for light mode
+    // Use theme divider color
+    final dividerColor = theme.dividerColor;
 
     final textColor = theme.brightness == Brightness.dark
         ? const Color(0xFFE0E0E0) // Light grey for dark mode
@@ -241,16 +240,22 @@ class LotteryResultsSection extends StatelessWidget {
 
     // Define colors based on bumper status
     final bool isBumper = result.isBumper;
+    final themeExtension = theme.extension<AppThemeExtension>()!;
+
     final Gradient firstPrizeGradient = isBumper
-        ? const LinearGradient(
-            colors: [Colors.purple, Colors.deepPurple, Colors.indigo],
+        ? LinearGradient(
+            colors: [
+              themeExtension.bumperPrimaryColor,
+              themeExtension.bumperSecondaryColor,
+              themeExtension.bumperSecondaryColor.withValues(alpha: 0.9),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
-        : const LinearGradient(
+        : LinearGradient(
             colors: [
-              Color(0xFFFA5053), // #FA5053
-              Color(0xFFE75353),
+              theme.primaryColor,
+              theme.primaryColor.withValues(alpha: 0.85),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -478,10 +483,13 @@ class LotteryResultsSection extends StatelessWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: isBumper
-                                      ? [Colors.purple, Colors.deepPurple]
-                                      : const [
-                                          Color(0xFFFA5053), // #FA5053
-                                          Color(0xFFE75353),
+                                      ? [
+                                          themeExtension.bumperPrimaryColor,
+                                          themeExtension.bumperSecondaryColor,
+                                        ]
+                                      : [
+                                          theme.primaryColor,
+                                          theme.primaryColor.withValues(alpha: 0.85),
                                         ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -567,12 +575,15 @@ class LotteryResultsSection extends StatelessWidget {
             child: result.isBumper
                 ? _buildShimmerBadge(
                     context: context,
-                    gradient: const LinearGradient(
-                      colors: [Colors.purple, Colors.deepPurple],
+                    gradient: LinearGradient(
+                      colors: [
+                        themeExtension.bumperPrimaryColor,
+                        themeExtension.bumperSecondaryColor,
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    shadowColor: Colors.purple.withValues(alpha: 0.4),
+                    shadowColor: themeExtension.bumperPrimaryColor.withValues(alpha: 0.4),
                     text: 'BUMPER',
                     icon: Icons.star,
                   )
@@ -589,7 +600,7 @@ class LotteryResultsSection extends StatelessWidget {
                               topRight: Radius.circular(
                                   AppResponsive.spacing(context, 8)),
                             ),
-                            color: Colors.red,
+                            color: themeExtension.liveColor,
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.2),
@@ -617,14 +628,17 @@ class LotteryResultsSection extends StatelessWidget {
                       )
                     : _buildShimmerBadge(
                         context: context,
-                        gradient: const LinearGradient(
-                          colors: [Colors.green, Colors.lightGreen],
+                        gradient: LinearGradient(
+                          colors: [
+                            themeExtension.newColor,
+                            themeExtension.newColor.withValues(alpha: 0.8),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        shadowColor: Colors.green.withValues(alpha: 0.4),
+                        shadowColor: themeExtension.newColor.withValues(alpha: 0.4),
                         text: 'new_badge'.tr(),
-                        backgroundColor: Colors.green,
+                        backgroundColor: themeExtension.newColor,
                       ),
           ),
       ],

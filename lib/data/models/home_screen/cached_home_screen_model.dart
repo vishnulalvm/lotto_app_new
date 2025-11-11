@@ -26,6 +26,9 @@ class CachedHomeScreenModel extends HiveObject {
   @HiveField(6)
   final CachedUpdatesModel updates;
 
+  @HiveField(7)
+  final String? textUpdate;
+
   CachedHomeScreenModel({
     required this.status,
     required this.count,
@@ -34,6 +37,7 @@ class CachedHomeScreenModel extends HiveObject {
     this.cacheExpiryHours = 48,
     required this.totalPoints,
     required this.updates,
+    this.textUpdate,
   });
 
   /// Convert from API model to cached model
@@ -48,6 +52,7 @@ class CachedHomeScreenModel extends HiveObject {
         cacheTime: DateTime.now(),
         totalPoints: apiModel.totalPoints,
         updates: CachedUpdatesModel.fromApiModel(apiModel.updates),
+        textUpdate: apiModel.textUpdate,
       );
     } catch (e) {
       rethrow;
@@ -62,6 +67,7 @@ class CachedHomeScreenModel extends HiveObject {
       results: results.map((result) => result.toApiModel()).toList(),
       totalPoints: totalPoints,
       updates: updates.toApiModel(),
+      textUpdate: textUpdate,
     );
   }
 
@@ -113,6 +119,9 @@ class CachedHomeScreenResultModel extends HiveObject {
   @HiveField(9)
   final bool isBumper;
 
+  @HiveField(10)
+  final bool liveEnd;
+
   CachedHomeScreenResultModel({
     required this.date,
     required this.id,
@@ -124,6 +133,7 @@ class CachedHomeScreenResultModel extends HiveObject {
     this.consolationPrizes,
     required this.isPublished,
     required this.isBumper,
+    required this.liveEnd,
   });
 
   /// Convert from API model to cached model
@@ -137,11 +147,12 @@ class CachedHomeScreenResultModel extends HiveObject {
         lotteryCode: apiModel.lotteryCode,
         drawNumber: apiModel.drawNumber,
         firstPrize: CachedFirstPrizeModel.fromApiModel(apiModel.firstPrize),
-        consolationPrizes: apiModel.consolationPrizes != null 
+        consolationPrizes: apiModel.consolationPrizes != null
             ? CachedConsolationPrizesModel.fromApiModel(apiModel.consolationPrizes!)
             : null,
         isPublished: apiModel.isPublished,
         isBumper: apiModel.isBumper,
+        liveEnd: apiModel.liveEnd,
       );
     } catch (e) {
       rethrow;
@@ -161,6 +172,7 @@ class CachedHomeScreenResultModel extends HiveObject {
       consolationPrizes: consolationPrizes?.toApiModel(),
       isPublished: isPublished,
       isBumper: isBumper,
+      liveEnd: liveEnd,
     );
   }
 }

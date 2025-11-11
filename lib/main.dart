@@ -251,6 +251,9 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(
+        buildWhen: (previous, current) =>
+            previous.themeMode != current.themeMode ||
+            previous.colorScheme != current.colorScheme,
         builder: (context, themeState) {
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,

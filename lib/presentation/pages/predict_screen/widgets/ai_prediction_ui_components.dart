@@ -39,7 +39,7 @@ class AIPredictionUIComponents {
         color: theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.red[700]!,
+          color: theme.primaryColor,
           width: .5,
         ),
       ),
@@ -47,7 +47,7 @@ class AIPredictionUIComponents {
         child: DropdownButton<int>(
           value: selectedPrizeType,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down, color: Colors.red[700]!),
+          icon: Icon(Icons.keyboard_arrow_down, color: theme.primaryColor),
           items: LotteryInfoService.getAvailablePrizeTypes().map((prizeType) {
             return DropdownMenuItem<int>(
               value: prizeType,
@@ -111,7 +111,7 @@ class AIPredictionUIComponents {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.red[700]!,
+          color: theme.primaryColor,
           width: .5,
         ),
       ),
@@ -162,9 +162,10 @@ class AIIconContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Icon(
       Icons.auto_awesome,
-      color: Colors.red[700]!,
+      color: theme.primaryColor,
       size: 16,
     );
   }
@@ -318,7 +319,7 @@ class PredictionNumberTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border.all(
-          color: Colors.red[700]!,
+          color: theme.primaryColor,
           width: .5,
         ),
         borderRadius: BorderRadius.circular(12),
