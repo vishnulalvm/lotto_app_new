@@ -21,7 +21,7 @@ import 'package:lotto_app/data/repositories/predict_screen/predict_repository.da
 import 'package:lotto_app/data/repositories/live_video_screen/live_video_repository.dart';
 import 'package:lotto_app/data/repositories/probability_screen/probability_repository.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
-import 'package:lotto_app/data/services/theme_service.dart';
+import 'package:lotto_app/core/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/app_update_service.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
@@ -43,9 +43,8 @@ import 'package:lotto_app/data/repositories/cache/lottery_statistics_cache_repos
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_bloc.dart';
-import 'package:lotto_app/presentation/blocs/color_theme/theme_bloc.dart';
-import 'package:lotto_app/presentation/blocs/color_theme/theme_event.dart';
-import 'package:lotto_app/presentation/blocs/color_theme/theme_state.dart';
+import 'package:lotto_app/presentation/blocs/theme/theme_cubit.dart';
+import 'package:lotto_app/presentation/blocs/theme/theme_state.dart';
 import 'package:lotto_app/presentation/blocs/home_screen/home_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/results_screen/results_details_screen_bloc.dart';
 import 'package:lotto_app/presentation/blocs/scrach_screen/scratch_card_bloc.dart';
@@ -132,8 +131,7 @@ class MyApp extends StatelessWidget {
       providers: [
         // Critical BLoCs - loaded immediately
         BlocProvider(
-          create: (context) =>
-              ThemeBloc(themeService: _themeService)..add(ThemeInitialized()),
+          create: (context) => ThemeCubit(_themeService),
         ),
         BlocProvider(
           create: (context) => AuthBloc(
@@ -252,14 +250,14 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-      child: BlocBuilder<ThemeBloc, ThemeState>(
+      child: BlocBuilder<ThemeCubit, ThemeState>(
         builder: (context, themeState) {
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: 'Lotto App',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeState.materialThemeMode, // Use the bloc state
+            theme: AppTheme.lightTheme(themeState.colorScheme),
+            darkTheme: AppTheme.darkTheme(themeState.colorScheme),
+            themeMode: themeState.themeMode, // Use the cubit state
             routerConfig: AppRouter.router,
             // Add Firebase Analytics observer
             builder: (context, child) {

@@ -37,12 +37,8 @@ class AppRouter {
       final prefs = await SharedPreferences.getInstance();
       final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-      // If user is not logged in and trying to access any page other than login
-      if (!isLoggedIn && state.matchedLocation != '/login') {
-        return '/login';
-      }
-
-      // If user is logged in and trying to access login
+      // Auto-login is handled in splash screen, no need to redirect to /login
+      // Just prevent accessing login screen if already logged in
       if (isLoggedIn && state.matchedLocation == '/login') {
         return '/';
       }

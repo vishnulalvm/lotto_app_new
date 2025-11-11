@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
@@ -8,6 +9,9 @@ import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
+import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
+import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 
@@ -171,13 +175,54 @@ class _SplashScreenState extends State<SplashScreen> {
       if (isLoggedIn) {
         context.go('/');
       } else {
-        context.go('/login');
+        // Auto-login for new users
+        await _performAutoLogin();
       }
 
     } catch (e) {
       if (mounted) {
-        context.go('/login');
+        // On error, try auto-login anyway
+        await _performAutoLogin();
       }
+    }
+  }
+
+  /// Performs automatic login for first-time users
+  /// Generates unique phone number based on current timestamp: YYYYMMDDHHMMSS
+  Future<void> _performAutoLogin() async {
+    try {
+      if (!mounted) return;
+
+      // Generate unique phone number using current timestamp
+      final now = DateTime.now();
+      final phoneNumber = '${now.year}'
+          '${now.month.toString().padLeft(2, '0')}'
+          '${now.day.toString().padLeft(2, '0')}'
+          '${now.hour.toString().padLeft(2, '0')}'
+          '${now.minute.toString().padLeft(2, '0')}'
+          '${now.second.toString().padLeft(2, '0')}';
+
+      // Trigger auto-login through AuthBloc
+      final authBloc = context.read<AuthBloc>();
+      authBloc.add(AuthAutoSignInRequested(
+        'Unknown',
+        phoneNumber,
+      ));
+
+      // Wait for authentication result
+      await for (final state in authBloc.stream) {
+        if (state is AuthSuccess) {
+          if (mounted) context.go('/');
+          break;
+        } else if (state is AuthFailure) {
+          // Even on failure, navigate to home (graceful degradation)
+          if (mounted) context.go('/');
+          break;
+        }
+      }
+    } catch (e) {
+      // Fallback: navigate to home anyway
+      if (mounted) context.go('/');
     }
   }
 
