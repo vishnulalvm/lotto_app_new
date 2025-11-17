@@ -182,55 +182,8 @@ class LotteryResultsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildDateDivider(String text, ThemeData theme, BuildContext context) {
-    // Use theme divider color
-    final dividerColor = theme.dividerColor;
-
-    final textColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFE0E0E0) // Light grey for dark mode
-        : Colors.black87; // Normal dark text for light mode
-
-    return GestureDetector(
-      onTap: onShowDatePicker,
-      child: Container(
-        color: Colors.transparent,
-        child: Padding(
-          padding: AppResponsive.padding(context, horizontal: 24, vertical: 6),
-          child: Row(
-            children: [
-              Expanded(
-                child: Divider(
-                  color: dividerColor,
-                  thickness: 1.0, // Thicker divider for better visibility
-                ),
-              ),
-              Padding(
-                padding: AppResponsive.padding(context, horizontal: 16),
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: AppResponsive.fontSize(context, 14),
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Divider(
-                  color: dividerColor,
-                  thickness: 1.0, // Thicker divider for better visibility
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildResultCard(
-      HomeScreenResultModel result, ThemeData theme, BuildContext context) {
+      HomeScreenResultModel result, ThemeData theme, BuildContext context, {int index = -1}) {
     // Get first 5 consolation tickets for display
     List<String> consolationTickets =
         result.consolationTicketsList.take(5).toList();
@@ -274,11 +227,12 @@ class LotteryResultsSection extends StatelessWidget {
       children: [
         // Main Card
         Card(
+          elevation: 1,
           color: theme.cardTheme.color,
-          margin: AppResponsive.margin(context, horizontal: 16, vertical: 10),
+          margin: AppResponsive.margin(context, horizontal: 12, vertical: 6),
           shape: RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.circular(AppResponsive.spacing(context, 12)),
+                BorderRadius.circular(AppResponsive.spacing(context, 6)),
           ),
           child: GestureDetector(
             onTap: () {
@@ -345,21 +299,14 @@ class LotteryResultsSection extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
 
-                      // Prize Amount and Date Column
-                      Column(
-                        children: [
-                          // Prize Amount
-                          Text(
-                            result.firstPrize.amount >= 10000000
-                                ? '₹${result.firstPrize.amount.toInt()}/-'
-                                : '₹${result.firstPrize.amount.toInt()}/-',
-                            style: TextStyle(
-                              fontSize: AppResponsive.fontSize(context, 18),
-                              fontWeight: FontWeight.w700,
-                              color: theme.textTheme.titleMedium?.color,
-                            ),
-                          ),
-                        ],
+                      // Date Display
+                      Text(
+                        result.formattedDate,
+                        style: TextStyle(
+                          fontSize: AppResponsive.fontSize(context, 16),
+                          fontWeight: FontWeight.w500,
+                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                        ),
                       ),
                     ],
                   ),
@@ -568,10 +515,11 @@ class LotteryResultsSection extends StatelessWidget {
         ),
 
         // Badge (New/Live/Bumper based on time, date, and lottery type)
-        if (result.isNew || result.isLive || result.isBumper)
+        // Show NEW badge on first card (index == 0) regardless of date
+        if (result.isNew || result.isLive || result.isBumper || index == 0)
           Positioned(
-            top: 13,
-            right: AppResponsive.spacing(context, 16),
+            top: 7,
+            right: AppResponsive.spacing(context, 11),
             child: result.isBumper
                 ? _buildShimmerBadge(
                     context: context,
@@ -707,14 +655,18 @@ class LotteryResultsSection extends StatelessWidget {
     // Group results by date category
     final groupedResults = _groupResultsByDate(data.results);
 
+    // Track overall card index across all date groups
+    int cardIndex = 0;
+
     // Build widgets: date divider → result cards
     for (final entry in groupedResults.entries) {
       // Add date divider first
-      widgets.add(_buildDateDivider(entry.key, theme, context));
+      // widgets.add(_buildDateDivider(entry.key, theme, context));
 
       // Add result cards for this date
       for (final result in entry.value) {
-        widgets.add(_buildResultCard(result, theme, context));
+        widgets.add(_buildResultCard(result, theme, context, index: cardIndex));
+        cardIndex++;
       }
     }
 

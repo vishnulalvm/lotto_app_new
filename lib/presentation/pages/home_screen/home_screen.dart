@@ -405,11 +405,11 @@ class _HomeScreenState extends State<HomeScreen>
                       // Optional: Custom settings
 
                       autoPlay: true,
-                      autoPlayInterval: const Duration(seconds: 4),
+                      autoPlayInterval: const Duration(seconds: 6),
                     );
                   },
                 ),
-                SizedBox(height: AppResponsive.spacing(context, 5)),
+                // SizedBox(height: AppResponsive.spacing(context, 5)),
                 const NavigationIconsWidget(),
                 SizedBox(height: AppResponsive.spacing(context, 10)),
                 LotteryResultsSection(

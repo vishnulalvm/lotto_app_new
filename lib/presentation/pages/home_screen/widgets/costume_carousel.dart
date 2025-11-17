@@ -37,23 +37,6 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
   @override
   bool get wantKeepAlive => true;
 
-  @override
-  void initState() {
-    super.initState();
-    // Track carousel view when widget is initialized
-    _trackCarouselView();
-  }
-
-  Future<void> _trackCarouselView() async {
-    await AnalyticsService.track(
-      eventName: 'carousel_view',
-      parameters: {
-        'widget_type': 'SimpleCarouselWidget',
-        'image_count': widget.images.length,
-      },
-    );
-  }
-
   // REMOVED: didUpdateWidget and _listEquals are not needed.
   // The build method is automatically called when widget.images changes.
 
