@@ -5,14 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/models/live_video_screen/live_video_model.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_event.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_state.dart';
-import 'package:lotto_app/presentation/pages/live_video_screen/widgets/video_player_widget.dart';
-import 'package:lotto_app/presentation/widgets/native_ad_video_widget.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 
 class LiveVideoScreen extends StatefulWidget {
@@ -29,8 +27,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
   late Animation<double> _fabAnimation;
   bool _isExpanded = true;
   bool _isScrollingDown = false;
-  bool _isVideoPlaying = false;
-  String? _currentPlayingVideoId;
 
   @override
   void initState() {
@@ -110,25 +106,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
     }
   }
 
-  /// Handle app lifecycle changes (following home screen pattern)
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-
-    switch (state) {
-      case AppLifecycleState.paused:
-        // Video pausing is handled by the YouTube player automatically
-        break;
-      case AppLifecycleState.resumed:
-        // Optionally resume video when app comes back
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.detached:
-      case AppLifecycleState.hidden:
-        break;
-    }
-  }
-
   /// Launch YouTube URL when button is tapped
   Future<void> _launchYouTubeUrl(String url) async {
     try {
@@ -169,56 +146,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
     }
   }
 
-  /// Play video in app when card is tapped
-  Future<void> _playVideo(LiveVideoModel video) async {
-    try {
-      setState(() {
-        _currentPlayingVideoId = video.youtubeVideoId;
-        _isVideoPlaying = true;
-      });
-
-      // Extract video ID from YouTube URL
-      final extractedVideoId =
-          YoutubePlayerController.convertUrlToId(video.youtubeUrl);
-
-      if (extractedVideoId != null) {
-        // Navigate to video player screen
-        if (mounted) {
-          Navigator.of(context)
-              .push(
-            MaterialPageRoute(
-              builder: (context) => VideoPlayerWidget(
-                videoId: extractedVideoId,
-                videoTitle: video.formattedTitle,
-                onClose: () {
-                  setState(() {
-                    _isVideoPlaying = false;
-                    _currentPlayingVideoId = null;
-                  });
-                },
-              ),
-            ),
-          )
-              .then((_) {
-            // Reset state when returning from video player
-            setState(() {
-              _isVideoPlaying = false;
-              _currentPlayingVideoId = null;
-            });
-          });
-        }
-      } else {
-        // Fallback to opening in browser
-        await _launchYouTubeUrl(video.youtubeUrl);
-      }
-    } catch (e) {
-      _showErrorSnackBar('error_playing_video'.tr());
-      setState(() {
-        _isVideoPlaying = false;
-        _currentPlayingVideoId = null;
-      });
-    }
-  }
 
   /// Format date for display (following home screen pattern)
   String _formatDateForDisplay(DateTime date) {
@@ -253,7 +180,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
                 content: Text('error_prefix'.tr()),
                 backgroundColor: Colors.red,
                 action: SnackBarAction(
-                  
                   label: 'retry'.tr(),
                   textColor: Colors.white,
                   onPressed: () =>
@@ -321,40 +247,20 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
       return _buildEmptyState(theme);
     }
 
-    List<Widget> videoWidgets = [];
-    bool isFirstVideo = true;
-    
-    for (int i = 0; i < videos.length; i++) {
-      // Add video card
-      videoWidgets.add(_buildVideoCard(videos[i], theme));
-      
-      bool shouldInsertAd = false;
-      
-      // For the first video, show ad after it
-      if (isFirstVideo) {
-        shouldInsertAd = true;
-        isFirstVideo = false;
-      }
-      // For subsequent videos, show ad after every 5th video (following home screen pattern)
-      else if ((i + 1) % 5 == 0) {
-        shouldInsertAd = true;
-      }
-      
-      // Insert ad if conditions are met and not after the last video
-      if (shouldInsertAd && i < videos.length - 1) {
-        videoWidgets.add(const NativeAdVideoWidget());
-      }
-    }
-
-    return Column(
-      children: videoWidgets,
+    // Use ListView.builder for lazy loading - much better performance
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: videos.length,
+      itemBuilder: (context, index) {
+        return RepaintBoundary(
+          child: _buildVideoCard(videos[index], theme),
+        );
+      },
     );
   }
 
   Widget _buildVideoCard(LiveVideoModel video, ThemeData theme) {
-    final isCurrentlyPlaying =
-        _currentPlayingVideoId == video.youtubeVideoId && _isVideoPlaying;
-
     return Card(
       color: theme.cardTheme.color,
       margin: AppResponsive.margin(context, horizontal: 16, vertical: 8),
@@ -373,7 +279,7 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
         children: [
           // Video thumbnail section
           GestureDetector(
-            onTap: () => _playVideo(video),
+            onTap: () => _launchYouTubeUrl(video.youtubeUrl),
             child: Stack(
               children: [
                 ClipRRect(
@@ -382,11 +288,13 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
                   ),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: Image.network(
-                      video.thumbnail,
+                    child: CachedNetworkImage(
+                      imageUrl: video.thumbnail,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
+                      memCacheWidth: 800, // Limit memory cache size
+                      maxWidthDiskCache: 800, // Limit disk cache size
+                      errorWidget: (context, url, error) {
                         return Container(
                           color: Colors.grey[300],
                           child: Center(
@@ -398,17 +306,11 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
                           ),
                         );
                       },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
+                      placeholder: (context, url) {
                         return Container(
                           color: Colors.grey[300],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
+                          child: const Center(
+                            child: CircularProgressIndicator(),
                           ),
                         );
                       },
@@ -441,7 +343,7 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
                           ],
                         ),
                         child: Icon(
-                          isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
+                          Icons.play_arrow,
                           color: Colors.black87,
                           size: AppResponsive.fontSize(context, 28),
                         ),
@@ -651,8 +553,22 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
   }
 
   Widget _buildRefreshButton(ThemeData theme) {
+    // Pre-build static parts outside AnimatedBuilder
+    final icon = Icon(
+      Icons.refresh,
+      size: AppResponsive.fontSize(context, 24),
+    );
+
+    final labelText = Text(
+      'refresh'.tr(),
+      style: TextStyle(
+        fontSize: AppResponsive.fontSize(context, 14),
+      ),
+    );
+
     return AnimatedBuilder(
       animation: _fabAnimation,
+      child: labelText, // Pass static text as child
       builder: (context, child) {
         return FloatingActionButton.extended(
           onPressed: () {
@@ -660,10 +576,7 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
           },
           backgroundColor: theme.floatingActionButtonTheme.backgroundColor,
           foregroundColor: theme.floatingActionButtonTheme.foregroundColor,
-          icon: Icon(
-            Icons.refresh,
-            size: AppResponsive.fontSize(context, 24),
-          ),
+          icon: icon,
           label: SizeTransition(
             sizeFactor: _fabAnimation,
             axis: Axis.horizontal,
@@ -672,12 +585,7 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
               padding: EdgeInsets.only(
                 left: 8.0 * _fabAnimation.value,
               ),
-              child: Text(
-                'refresh'.tr(),
-                style: TextStyle(
-                  fontSize: AppResponsive.fontSize(context, 14),
-                ),
-              ),
+              child: child, // Use pre-built child
             ),
           ),
           extendedPadding: EdgeInsets.symmetric(
@@ -711,7 +619,8 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
             Text(
               'loading_videos'.tr(),
               style: TextStyle(
-                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color:
+                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                 fontSize: AppResponsive.fontSize(context, 16),
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.5,
@@ -743,7 +652,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
               fontWeight: FontWeight.bold,
             ),
           ),
-    
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () =>

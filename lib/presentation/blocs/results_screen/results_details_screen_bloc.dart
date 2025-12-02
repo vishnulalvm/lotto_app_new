@@ -87,8 +87,12 @@ class LotteryResultDetailsBloc
 
       emit(loadedState);
 
+      // Trigger background refresh to get latest data
+      add(const BackgroundRefreshResultDetailsEvent());
+
       // If initial search query provided, perform search
-      if (event.initialSearchQuery != null && event.initialSearchQuery!.isNotEmpty) {
+      if (event.initialSearchQuery != null &&
+          event.initialSearchQuery!.isNotEmpty) {
         add(SearchQueryChangedEvent(event.initialSearchQuery!));
       }
 
@@ -156,9 +160,10 @@ class LotteryResultDetailsBloc
           : '';
 
       // Re-apply search if there was one
-      final filteredNumbers = searchQuery.isNotEmpty && searchQuery.length >= _minSearchLength
-          ? _performSmartSearch(searchQuery, allNumbers)
-          : allNumbers;
+      final filteredNumbers =
+          searchQuery.isNotEmpty && searchQuery.length >= _minSearchLength
+              ? _performSmartSearch(searchQuery, allNumbers)
+              : allNumbers;
 
       emit(LotteryResultDetailsLoaded(
         data: result,
@@ -201,7 +206,8 @@ class LotteryResultDetailsBloc
     try {
       // Only refresh if we have a current uniqueId
       if (_currentUniqueId != null) {
-        final result = await _useCase.execute(_currentUniqueId!, forceRefresh: true);
+        final result =
+            await _useCase.execute(_currentUniqueId!, forceRefresh: true);
 
         // Process lottery numbers
         final allNumbers = _processLotteryNumbers(result.result);
@@ -239,10 +245,10 @@ class LotteryResultDetailsBloc
 
   void _startLiveRefreshTimer() {
     _liveRefreshTimer?.cancel();
-    
+
     final now = DateTime.now();
     final isLiveHour = now.hour >= 15 && now.hour < 16;
-    
+
     if (isLiveHour) {
       // During live hours, refresh every 30 seconds
       _liveRefreshTimer = Timer.periodic(
@@ -250,7 +256,7 @@ class LotteryResultDetailsBloc
         (timer) {
           final currentTime = DateTime.now();
           final stillLiveHour = currentTime.hour >= 15 && currentTime.hour < 16;
-          
+
           if (stillLiveHour) {
             add(BackgroundRefreshResultDetailsEvent());
           } else {
@@ -388,7 +394,8 @@ class LotteryResultDetailsBloc
 
     try {
       // Format result text using the formatter
-      final resultText = LotteryResultTextFormatter.format(currentState.data.result);
+      final resultText =
+          LotteryResultTextFormatter.format(currentState.data.result);
 
       // Copy to clipboard
       await Clipboard.setData(ClipboardData(text: resultText));
@@ -582,7 +589,8 @@ class LotteryResultDetailsBloc
       for (final ticket in prize.ticketsWithLocation) {
         previousTickets.add(ticket.ticketNumber);
       }
-      for (final ticketNumber in _previousResult!.getPrizeTicketNumbers(prize)) {
+      for (final ticketNumber
+          in _previousResult!.getPrizeTicketNumbers(prize)) {
         previousTickets.add(ticketNumber);
       }
     }
@@ -649,7 +657,8 @@ class LotteryResultDetailsBloc
   }
 
   /// Determine if search should proceed based on input type and query
-  bool _shouldPerformSearch(_SearchInputType inputType, String normalizedQuery) {
+  bool _shouldPerformSearch(
+      _SearchInputType inputType, String normalizedQuery) {
     switch (inputType) {
       case _SearchInputType.fullNumber:
       case _SearchInputType.fourDigits:
@@ -799,7 +808,8 @@ class LotteryResultDetailsBloc
       for (final prize in result.prizes) {
         // Check tickets with location
         for (final ticket in prize.ticketsWithLocation) {
-          if (_matchesRepeatedPattern(ticket.ticketNumber, cachedRepeatedNumbers)) {
+          if (_matchesRepeatedPattern(
+              ticket.ticketNumber, cachedRepeatedNumbers)) {
             matchedTickets.add(ticket.ticketNumber);
           }
         }
@@ -819,7 +829,8 @@ class LotteryResultDetailsBloc
   }
 
   /// Check if a ticket number's last 4 digits match any repeated pattern
-  bool _matchesRepeatedPattern(String ticketNumber, List<String> repeatedPatterns) {
+  bool _matchesRepeatedPattern(
+      String ticketNumber, List<String> repeatedPatterns) {
     // Extract last 4 digits from ticket number (remove any prefix letters)
     final digitsOnly = ticketNumber.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -841,8 +852,8 @@ class LotteryResultDetailsBloc
 
 /// Enum to represent different search input types
 enum _SearchInputType {
-  fullNumber,    // 2 letters + 6 digits (e.g., KG125263)
-  fourDigits,    // Exactly 4 digits (e.g., 5263)
-  twoLetters,    // Exactly 2 letters (e.g., KG)
-  invalid,       // Invalid or incomplete pattern
+  fullNumber, // 2 letters + 6 digits (e.g., KG125263)
+  fourDigits, // Exactly 4 digits (e.g., 5263)
+  twoLetters, // Exactly 2 letters (e.g., KG)
+  invalid, // Invalid or incomplete pattern
 }

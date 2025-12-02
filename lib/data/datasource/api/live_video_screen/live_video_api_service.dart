@@ -10,7 +10,6 @@ class LiveVideoApiService {
         Uri.parse('${ApiConstants.baseUrl}${ApiConstants.liveVideos}'),
         headers: {'Content-Type': 'application/json'},
       );
-
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return LiveVideoResponseModel.fromJson(jsonData);

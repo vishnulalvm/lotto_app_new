@@ -2,7 +2,7 @@ name: lotto_app
 description: "A Lottery Result App"
 publish_to: "none"
 
-version: 2.2.02+70
+version: 2.2.03+71
 
 environment:
   sdk: ^3.6.0
@@ -42,7 +42,6 @@ dependencies:
   shimmer: ^3.0.0
   typewritertext: ^3.0.9
   url_launcher: ^6.3.1
-  youtube_player_iframe: ^5.2.1
 
 dev_dependencies:
   build_runner: ^2.4.13

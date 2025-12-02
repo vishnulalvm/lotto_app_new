@@ -318,39 +318,48 @@ class _PredictScreenState extends State<PredictScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildMotivationalBanner(theme),
+                  RepaintBoundary(child: _buildMotivationalBanner(theme)),
                   const SizedBox(height: 12),
-                  AiPredictionCard(
-                    initialPrizeType: _selectedPrizeType,
-                    onPrizeTypeChanged: (newPrizeType) {
-                      // Update shared state but don't rebuild entire widget tree
-                      _selectedPrizeType = newPrizeType;
-                      // Notify PredictionMatchCard of the change
-                      _predictionMatchCardKey.currentState
-                          ?.updatePrizeType(newPrizeType);
-                    },
+                  RepaintBoundary(
+                    child: AiPredictionCard(
+                      initialPrizeType: _selectedPrizeType,
+                      onPrizeTypeChanged: (newPrizeType) {
+                        // Update shared state but don't rebuild entire widget tree
+                        _selectedPrizeType = newPrizeType;
+                        // Notify PredictionMatchCard of the change
+                        _predictionMatchCardKey.currentState
+                            ?.updatePrizeType(newPrizeType);
+                      },
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  _buildMostRepeatedCard(theme, data.repeatedNumbers),
+                  RepaintBoundary(child: _buildMostRepeatedCard(theme, data.repeatedNumbers)),
                   const SizedBox(height: 12),
-                  const WeeklyFancyNumberCard(),
+                  const RepaintBoundary(child: WeeklyFancyNumberCard()),
                   const SizedBox(height: 12),
-                  const PatternStatisticsCard(
-                    showMockData: false, // Use real data from API
+                  const RepaintBoundary(
+                    child: PatternStatisticsCard(
+                      showMockData: false, // Use real data from API
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  _buildPeoplePredictionsCard(theme, data.peoplesPredictions),
+                  RepaintBoundary(child: _buildPeoplePredictionsCard(theme, data.peoplesPredictions)),
                   const SizedBox(height: 12),
-                  _buildMostRepeatedLast7DaysCard(
-                      theme, data.repeatedSingleDigits),
+                  RepaintBoundary(
+                    child: _buildMostRepeatedLast7DaysCard(
+                        theme, data.repeatedSingleDigits),
+                  ),
                   const SizedBox(height: 12),
-                  _buildMostRepeatedLast2DigitsCard(
-                      theme, data.repeatedTwoDigits),
-                  // const SizedBox(height: 5),
+                  RepaintBoundary(
+                    child: _buildMostRepeatedLast2DigitsCard(
+                        theme, data.repeatedTwoDigits),
+                  ),
                   const SizedBox(height: 12),
-                  PredictionMatchCard(
-                    key: _predictionMatchCardKey,
-                    selectedPrizeType: _selectedPrizeType,
+                  RepaintBoundary(
+                    child: PredictionMatchCard(
+                      key: _predictionMatchCardKey,
+                      selectedPrizeType: _selectedPrizeType,
+                    ),
                   ),
                 ],
               ),

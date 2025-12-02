@@ -378,36 +378,38 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               children: [
                 // Replace _buildCarousel() with the custom widget
-                BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                  buildWhen: (previous, current) {
-                    // Only rebuild if images actually changed
-                    if (previous is HomeScreenResultsLoaded &&
-                        current is HomeScreenResultsLoaded) {
-                      return previous.data.updates.allImages !=
-                          current.data.updates.allImages;
-                    }
-                    return previous.runtimeType != current.runtimeType;
-                  },
-                  builder: (context, state) {
-                    List<String> carouselImages = [];
+                RepaintBoundary(
+                  child: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                    buildWhen: (previous, current) {
+                      // Only rebuild if images actually changed
+                      if (previous is HomeScreenResultsLoaded &&
+                          current is HomeScreenResultsLoaded) {
+                        return previous.data.updates.allImages !=
+                            current.data.updates.allImages;
+                      }
+                      return previous.runtimeType != current.runtimeType;
+                    },
+                    builder: (context, state) {
+                      List<String> carouselImages = [];
 
-                    // Get images from API response
-                    if (state is HomeScreenResultsLoaded) {
-                      carouselImages = state.data.updates.allImages;
-                    }
+                      // Get images from API response
+                      if (state is HomeScreenResultsLoaded) {
+                        carouselImages = state.data.updates.allImages;
+                      }
 
-                    return SimpleCarouselWidget(
-                      images: carouselImages,
-                      onImageTap: () => _launchWebsite(),
-                      // Optional: Customize colors to match your theme
-                      gradientStartColor: Colors.pink.shade100,
-                      gradientEndColor: Colors.pink.shade300,
-                      // Optional: Custom settings
+                      return SimpleCarouselWidget(
+                        images: carouselImages,
+                        onImageTap: () => _launchWebsite(),
+                        // Optional: Customize colors to match your theme
+                        gradientStartColor: Colors.pink.shade100,
+                        gradientEndColor: Colors.pink.shade300,
+                        // Optional: Custom settings
 
-                      autoPlay: true,
-                      autoPlayInterval: const Duration(seconds: 6),
-                    );
-                  },
+                        autoPlay: true,
+                        autoPlayInterval: const Duration(seconds: 6),
+                      );
+                    },
+                  ),
                 ),
                 // SizedBox(height: AppResponsive.spacing(context, 5)),
                 const NavigationIconsWidget(),
@@ -467,9 +469,9 @@ class _HomeScreenState extends State<HomeScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.wifi_off,
-                    size: 16,
+                    size: AppResponsive.fontSize(context, 16),
                     color: Colors.white,
                   ),
                   SizedBox(width: AppResponsive.spacing(context, 8)),

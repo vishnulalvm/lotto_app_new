@@ -14,10 +14,10 @@ class AnalyticsService {
   static Future<void> initialize() async {
     _analytics = FirebaseAnalytics.instance;
     _observer = FirebaseAnalyticsObserver(analytics: _analytics!);
-    
+
     // Set analytics collection enabled
     await _analytics!.setAnalyticsCollectionEnabled(true);
-    
+
     // Track first time user
     await _trackFirstTimeUser();
   }
@@ -38,21 +38,23 @@ class AnalyticsService {
   static Future<void> _trackFirstTimeUser() async {
     final prefs = await SharedPreferences.getInstance();
     final isFirstTime = !(prefs.getBool('user_opened_app_before') ?? false);
-    
+
     if (isFirstTime) {
       await _analytics!.logEvent(
-        name: 'app_first_open', // changed from 'first_open' to avoid reserved name
+        name:
+            'app_first_open', // changed from 'first_open' to avoid reserved name
         parameters: {
           'platform': defaultTargetPlatform.name,
           'timestamp': DateTime.now().millisecondsSinceEpoch,
         },
       );
-      
+
       // Mark user as having opened the app
       await prefs.setBool('user_opened_app_before', true);
-      await prefs.setString('first_open_date', DateTime.now().toIso8601String());
+      await prefs.setString(
+          'first_open_date', DateTime.now().toIso8601String());
     }
-    
+
     // Always log app open for active user tracking
     await _analytics!.logEvent(
       name: 'app_open',
@@ -71,8 +73,7 @@ class AnalyticsService {
   }) async {
     // Convert any boolean parameters to int
     final safeParameters = parameters?.map((key, value) =>
-      value is bool ? MapEntry(key, value ? 1 : 0) : MapEntry(key, value)
-    );
+        value is bool ? MapEntry(key, value ? 1 : 0) : MapEntry(key, value));
     await _analytics?.logScreenView(
       screenName: screenName,
       screenClass: screenClass ?? screenName,
@@ -177,7 +178,9 @@ class AnalyticsService {
     await _analytics?.logLogin(
       loginMethod: loginMethod,
       parameters: {
-        'success': success ? 'true' : 'false', // Convert boolean to string for Firebase Analytics
+        'success': success
+            ? 'true'
+            : 'false', // Convert boolean to string for Firebase Analytics
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
@@ -191,7 +194,9 @@ class AnalyticsService {
     await _analytics?.logSignUp(
       signUpMethod: signUpMethod,
       parameters: {
-        'success': success ? 'true' : 'false', // Convert boolean to string for Firebase Analytics
+        'success': success
+            ? 'true'
+            : 'false', // Convert boolean to string for Firebase Analytics
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       },
     );
@@ -212,10 +217,11 @@ class AnalyticsService {
   static Future<void> trackSessionEnd() async {
     final prefs = await SharedPreferences.getInstance();
     final sessionStart = prefs.getInt('session_start');
-    
+
     if (sessionStart != null) {
-      final sessionDuration = DateTime.now().millisecondsSinceEpoch - sessionStart;
-      
+      final sessionDuration =
+          DateTime.now().millisecondsSinceEpoch - sessionStart;
+
       await _analytics?.logEvent(
         name: 'custom_session_end',
         parameters: {
@@ -223,7 +229,7 @@ class AnalyticsService {
           'timestamp': DateTime.now().millisecondsSinceEpoch,
         },
       );
-      
+
       // Clear session start time
       await prefs.remove('session_start');
     }
@@ -239,19 +245,21 @@ class AnalyticsService {
     if (userId != null && userId.isNotEmpty) {
       await _analytics?.setUserId(id: userId);
     }
-    
+
     if (userType != null && userType.isNotEmpty) {
       await _analytics?.setUserProperty(name: 'user_type', value: userType);
     }
-    
+
     if (preferredLanguage != null && preferredLanguage.isNotEmpty) {
-      await _analytics?.setUserProperty(name: 'preferred_language', value: preferredLanguage);
+      await _analytics?.setUserProperty(
+          name: 'preferred_language', value: preferredLanguage);
     }
-    
+
     if (customProperties != null) {
       for (final entry in customProperties.entries) {
         if (entry.value.isNotEmpty) {
-          await _analytics?.setUserProperty(name: entry.key, value: entry.value);
+          await _analytics?.setUserProperty(
+              name: entry.key, value: entry.value);
         }
       }
     }
@@ -299,14 +307,15 @@ class AnalyticsService {
     Map<String, Object>? parameters,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now().toLocal().toString().split(' ')[0]; // YYYY-MM-DD format
+    final today =
+        DateTime.now().toLocal().toString().split(' ')[0]; // YYYY-MM-DD format
     final countKey = '${eventName}_count_$today';
-    
+
     // Get current daily count and increment
     final currentCount = prefs.getInt(countKey) ?? 0;
     final newCount = currentCount + 1;
     await prefs.setInt(countKey, newCount);
-    
+
     // Track the event with daily count
     await _analytics?.logEvent(
       name: eventName,
@@ -364,7 +373,8 @@ class AnalyticsService {
     String? adSource, // e.g., 'admob'
     double? value, // estimated revenue in USD
     String? currency,
-    String? placement, // where ad was shown (e.g., 'home_screen', 'result_details')
+    String?
+        placement, // where ad was shown (e.g., 'home_screen', 'result_details')
   }) async {
     await _analytics?.logEvent(
       name: 'ad_impression',
@@ -612,20 +622,24 @@ class AnalyticsService {
     }
 
     if (preferredLanguage != null && preferredLanguage.isNotEmpty) {
-      await _analytics?.setUserProperty(name: 'language', value: preferredLanguage);
+      await _analytics?.setUserProperty(
+          name: 'language', value: preferredLanguage);
     }
 
     // Set engagement-based properties
     if (engagementLevel != null && engagementLevel.isNotEmpty) {
-      await _analytics?.setUserProperty(name: 'engagement_level', value: engagementLevel);
+      await _analytics?.setUserProperty(
+          name: 'engagement_level', value: engagementLevel);
     }
 
     if (featurePreference != null && featurePreference.isNotEmpty) {
-      await _analytics?.setUserProperty(name: 'feature_preference', value: featurePreference);
+      await _analytics?.setUserProperty(
+          name: 'feature_preference', value: featurePreference);
     }
 
     // Set device info
-    await _analytics?.setUserProperty(name: 'platform', value: defaultTargetPlatform.name);
+    await _analytics?.setUserProperty(
+        name: 'platform', value: defaultTargetPlatform.name);
 
     // Calculate and set user tenure
     final prefs = await SharedPreferences.getInstance();
@@ -649,7 +663,8 @@ class AnalyticsService {
     if (customProperties != null) {
       for (final entry in customProperties.entries) {
         if (entry.value.isNotEmpty) {
-          await _analytics?.setUserProperty(name: entry.key, value: entry.value);
+          await _analytics?.setUserProperty(
+              name: entry.key, value: entry.value);
         }
       }
     }
@@ -675,7 +690,8 @@ class AnalyticsService {
     if (sessionCount >= 3) engagementLevel = 'medium'; // 3-7 sessions
     if (sessionCount >= 8) engagementLevel = 'high'; // 8+ sessions
 
-    await _analytics?.setUserProperty(name: 'engagement_level', value: engagementLevel);
+    await _analytics?.setUserProperty(
+        name: 'engagement_level', value: engagementLevel);
   }
 
   /// Track daily active user (DAU)
@@ -710,7 +726,7 @@ class AnalyticsService {
     await prefs.setInt('session_event_count', 0);
 
     await _analytics?.logEvent(
-      name: 'session_start',
+      name: 'custom_session_start',
       parameters: {
         if (referrer != null) 'referrer': referrer,
         if (campaignId != null) 'campaign_id': campaignId,
@@ -740,7 +756,8 @@ class AnalyticsService {
     final screenCount = prefs.getInt('session_screen_count') ?? 0;
 
     if (sessionStart != null) {
-      final sessionDuration = DateTime.now().millisecondsSinceEpoch - sessionStart;
+      final sessionDuration =
+          DateTime.now().millisecondsSinceEpoch - sessionStart;
 
       // Classify session quality
       String sessionQuality = 'bounce'; // < 10 seconds
@@ -749,7 +766,7 @@ class AnalyticsService {
       if (sessionDuration > 120000) sessionQuality = 'long'; // 2+ minutes
 
       await _analytics?.logEvent(
-        name: 'session_end',
+        name: 'custom_session_end',
         parameters: {
           'session_duration_ms': sessionDuration,
           'session_duration_sec': (sessionDuration / 1000).round(),

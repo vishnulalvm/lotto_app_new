@@ -63,10 +63,6 @@ class AdMobService {
   // Debug mode flag - set to true to use test ads
   static const bool useTestAds = false; // Production mode - using real ad units
 
-  // NATIVE AD UNIT IDs
-  static const String nativeLiveVideo = 'ca-app-pub-1386225714525775/5079790413';
-  
-
   // Consolidated ad state management
   final Map<String, AdWrapper<InterstitialAd>> _interstitialAds = {};
   final Map<String, AdWrapper<NativeAd>> _nativeAds = {};
@@ -821,7 +817,7 @@ class AdMobService {
 
   // Type checking helpers
   bool _isNativeAdType(String adType) {
-    return ['live_video'].contains(adType);
+    return false; // No native ads currently in use
   }
 
   bool _isInterstitialAdType(String adType) {
@@ -829,10 +825,8 @@ class AdMobService {
   }
 
   String? _getNativeAdUnitId(String adType) {
-    switch (adType) {
-      case 'live_video': return nativeLiveVideo;
-      default: return null;
-    }
+    // No native ads currently in use
+    return null;
   }
 
   String? _getInterstitialAdUnitId(String adType) {
@@ -963,9 +957,9 @@ class AdMobService {
 
   @Deprecated('Use preloadAds() with specific ad types instead')
   Future<void> smartPreload({bool isDarkTheme = false, bool isHomeScreen = false}) {
-    final adTypes = isHomeScreen 
+    final adTypes = isHomeScreen
         ? ['predict_interstitial']
-        : ['live_video', 'lotto_points', 'news_feed'];
+        : <String>[];
     return preloadAds(adTypes: adTypes, isDarkTheme: isDarkTheme);
   }
 
@@ -978,25 +972,4 @@ class AdMobService {
     _nativeAdsController.add(Map.unmodifiable(_nativeAds));
   }
 
-  // Additional legacy methods for other ad types
-
-  @Deprecated('Use loadAd() instead')
-  Future<void> preloadLiveVideoAd({bool isDarkTheme = false}) =>
-      loadAd('live_video', isDarkTheme: isDarkTheme);
-
-  @Deprecated('Use getAd() instead')
-  NativeAd? getCachedLiveVideoAd() => getAd<NativeAd>('live_video');
-
-  @Deprecated('Use _createNativeAd() or loadAd() instead')
-  NativeAd createNewsStyleNativeLiveVideoAd({
-    required NativeAdListener listener,
-    bool isDarkTheme = false,
-  }) {
-    return _createNativeAd(
-      adUnitId: nativeLiveVideo,
-      isDarkTheme: isDarkTheme,
-      onLoaded: (ad) => listener.onAdLoaded?.call(ad),
-      onFailed: (ad, error) => listener.onAdFailedToLoad?.call(ad, error),
-    );
-  }
 }
