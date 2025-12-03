@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:go_router/go_router.dart';
 import 'dart:math';
 
 class ProbabilityResultDialog extends StatefulWidget {
@@ -475,12 +474,7 @@ class _ProbabilityResultDialogState extends State<ProbabilityResultDialog>
                             if (Navigator.of(context).canPop()) {
                               Navigator.of(context).pop();
                             }
-                            // Navigate to home screen to prevent back button issues
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (context.mounted) {
-                                context.go('/');
-                              }
-                            });
+            
                           },
                           icon: const Icon(Icons.close, size: 18),
                           style: IconButton.styleFrom(

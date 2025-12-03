@@ -23,10 +23,7 @@ import 'package:lotto_app/data/repositories/probability_screen/probability_repos
 import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/core/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
-import 'package:lotto_app/data/services/app_update_service.dart';
-import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/data/services/predict_cache_service.dart';
-import 'package:lotto_app/data/services/audio_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
@@ -58,7 +55,6 @@ import 'package:lotto_app/data/repositories/feedback_screen/feedback_repository.
 import 'package:lotto_app/data/datasource/api/feedback_screen/feedback_api_service.dart';
 import 'package:lotto_app/routes/route_names.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'dart:async';
 
 // Singleton services to avoid multiple instances
@@ -85,28 +81,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize only the most critical services for app startup
+  // BOOTSTRAP PATTERN: Initialize ONLY what's absolutely required to render the app
+  // Everything else is handled by SplashScreen asynchronously
   await Future.wait([
     EasyLocalization.ensureInitialized(),
     Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
-    HiveService.init(), // Initialize Hive for cache functionality
-    AudioService().initialize(), // Initialize audio for click sounds
   ]);
 
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Move all other service initialization to background (non-blocking)
-  unawaited(Future.delayed(const Duration(milliseconds: 100), () {
-    FirebaseMessagingService.initialize().catchError((error) {
-    });
-  }));
-
-  unawaited(Future.delayed(const Duration(milliseconds: 200), () {
-    AppUpdateService().initialize().catchError((error) {
-    });
-  }));
-
+  // Render app immediately - SplashScreen will handle all other initialization
   runApp(
     EasyLocalization(
       supportedLocales: const [

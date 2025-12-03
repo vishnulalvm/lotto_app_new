@@ -9,6 +9,8 @@ import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/data/services/firebase_messaging_service.dart';
 import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
+import 'package:lotto_app/data/services/audio_service.dart';
+import 'package:lotto_app/data/services/app_update_service.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
@@ -52,72 +54,66 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     try {
-      // Phase 1: Only the most critical service for navigation
-      await HiveService.init();
+      // Phase 1: Initialize CRITICAL services required for app to function
+      // These must complete before navigation
+      await Future.wait([
+        HiveService.init(), // Required for cache and user data
+        AudioService().initialize(), // Audio service for UI feedback
+      ]);
 
-      // Phase 2: Navigate immediately - everything else is background
+      // Phase 2: Check login status (requires Hive to be initialized)
       await _checkLoginStatus();
 
-      // Phase 3: Initialize all other services in background after navigation
+      // Phase 3: Initialize all other services in background AFTER navigation
       unawaited(_initializeBackgroundServices());
     } catch (e) {
-      // Still navigate even if critical services fail
+      // Graceful degradation: navigate even if services fail
       await _checkLoginStatus();
-      // Try background services anyway
       unawaited(_initializeBackgroundServices());
     }
   }
 
   /// Initialize all non-critical services in background after navigation
+  /// Services are staggered to prevent UI jank and spread CPU load
   Future<void> _initializeBackgroundServices() async {
     try {
-      // Phase 1: Start connectivity service (needed for cache decisions)
-      unawaited(ConnectivityService().initialize().catchError((e) {
-        // Ignore connectivity service init errors
+      // Phase 1: Lightweight services - start immediately after navigation
+      unawaited(ConnectivityService().initialize().catchError((e) {}));
+      unawaited(SavedResultsService.init().catchError((e) {}));
+
+      // Phase 2: Analytics - 50ms delay (lightweight but non-critical)
+      unawaited(Future.delayed(const Duration(milliseconds: 50), () {
+        AnalyticsService.initialize().catchError((e) {});
       }));
 
-      // Phase 2: Initialize essential app services
-      unawaited(SavedResultsService.init().catchError((e) {
-        // Ignore saved results service init errors
-      }));
-
-      // Phase 3: Initialize heavy services with delays to spread CPU load
+      // Phase 3: App updates check - 100ms delay
       unawaited(Future.delayed(const Duration(milliseconds: 100), () {
-        AnalyticsService.initialize().catchError((e) {
-          // Ignore analytics service init errors
-        });
+        AppUpdateService().initialize().catchError((e) {});
       }));
 
+      // Phase 4: FCM initialization - 200ms delay (after user sees main screen)
       unawaited(Future.delayed(const Duration(milliseconds: 200), () {
-        FirebaseMessagingService.initialize().catchError((e) {
-          // Ignore firebase messaging init errors
-        });
+        FirebaseMessagingService.initialize().catchError((e) {});
       }));
 
+      // Phase 5: AdMob services - 300ms delay (heavy operation)
       unawaited(Future.delayed(const Duration(milliseconds: 300), () {
-        _initializeAdMobServices().catchError((e) {
-          // Ignore AdMob services init errors
-        });
+        _initializeAdMobServices().catchError((e) {});
       }));
 
-      // Phase 4: Initialize cache manager last (least critical)
+      // Phase 6: Cache manager - 400ms delay (maintenance tasks)
       unawaited(Future.delayed(const Duration(milliseconds: 400), () {
         try {
           CacheManager.initialize();
-        } catch (e) {
-          // Ignore cache manager init errors
-        }
+        } catch (e) {}
       }));
 
-      // Phase 5: Track user activity (non-blocking, least critical)
+      // Phase 7: User activity tracking - 500ms delay (least critical)
       unawaited(Future.delayed(const Duration(milliseconds: 500), () {
-        UserService().trackActivity().catchError((e) {
-          // Ignore tracking errors
-          return false;
-        });
+        UserService().trackActivity().catchError((e) => false);
       }));
     } catch (e) {
-      // Ignore background services initialization errors
+      // Silent fail - background services are non-critical
     }
   }
 

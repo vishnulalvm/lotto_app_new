@@ -59,27 +59,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   /// Helper method to register FCM token with logging
+  /// Delayed to avoid blocking authentication flow
   Future<void> _registerFcmToken(String source) async {
-    try {
-      developer.log('Attempting FCM token registration from: $source',
-          name: 'AuthBloc');
-
-      final success = await FirebaseMessagingService.registerToken(
-        notificationsEnabled: true,
-      );
-
-      if (success) {
-        developer.log('FCM token registered successfully from: $source',
+    // Schedule FCM registration to happen after auth completes (non-blocking)
+    // This prevents FCM registration from blocking the auth flow and UI
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      try {
+        developer.log('Attempting FCM token registration from: $source',
             name: 'AuthBloc');
-      } else {
-        developer.log('FCM token registration failed from: $source',
-            name: 'AuthBloc');
+
+        final success = await FirebaseMessagingService.registerToken(
+          notificationsEnabled: true,
+        );
+
+        if (success) {
+          developer.log('FCM token registered successfully from: $source',
+              name: 'AuthBloc');
+        } else {
+          developer.log('FCM token registration failed from: $source',
+              name: 'AuthBloc');
+        }
+      } catch (e) {
+        developer.log('FCM token registration error from: $source - $e',
+            name: 'AuthBloc', error: e);
+        // Silent fail - FCM registration is non-critical for auth
       }
-    } catch (e) {
-      developer.log('FCM token registration error from: $source - $e',
-          name: 'AuthBloc', error: e);
-      // Don't throw - allow authentication to succeed even if FCM registration fails
-    }
+    });
   }
 
   Future<void> _onLogout(
@@ -88,6 +93,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       await repository.logout();
+
+      // Clear FCM registration cache so next login will re-register
+      await FirebaseMessagingService.clearRegistrationCache();
+
       emit(AuthInitial());
     } catch (e) {
       emit(AuthFailure('Logout failed: ${e.toString()}'));

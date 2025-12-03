@@ -132,11 +132,74 @@ class FirebaseMessagingService {
   static String? get currentToken => _currentToken;
 
   /// Register FCM token with backend
+  /// Smart registration: only registers if token or user changed
   static Future<bool> registerToken({bool notificationsEnabled = true}) async {
-    return await _handleTokenOperation(
-      notificationsEnabled: notificationsEnabled,
-      isUpdate: false,
-    );
+    try {
+      final prefs = await _prefsInstance;
+      final token = _currentToken ?? await _getToken();
+      final phoneNumber = await _userServiceInstance.getPhoneNumber();
+
+      if (token == null || phoneNumber == null) {
+        developer.log('Cannot register: token or phone number is null',
+            name: 'FirebaseMessaging');
+        return false;
+      }
+
+      // Check if we've already registered this token for this user
+      final lastRegisteredToken = prefs.getString('last_registered_fcm_token');
+      final lastRegisteredPhone = prefs.getString('last_registered_phone_number');
+      final lastRegistrationTime = prefs.getInt('last_fcm_registration_time') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Skip registration if:
+      // 1. Same token AND same phone number
+      // 2. Last registration was within 24 hours (prevent server spam)
+      final timeSinceLastRegistration = now - lastRegistrationTime;
+      final twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+
+      if (lastRegisteredToken == token &&
+          lastRegisteredPhone == phoneNumber &&
+          timeSinceLastRegistration < twentyFourHoursInMs) {
+        developer.log(
+          'Skipping FCM registration: token already registered '
+          '${Duration(milliseconds: timeSinceLastRegistration).inHours}h ago',
+          name: 'FirebaseMessaging'
+        );
+        return true; // Return true since token is already registered
+      }
+
+      // Log reason for registration
+      if (lastRegisteredToken != token) {
+        developer.log('FCM token changed, re-registering', name: 'FirebaseMessaging');
+      } else if (lastRegisteredPhone != phoneNumber) {
+        developer.log('Phone number changed, re-registering FCM token',
+            name: 'FirebaseMessaging');
+      } else {
+        developer.log('24+ hours since last registration, refreshing',
+            name: 'FirebaseMessaging');
+      }
+
+      // Perform registration
+      final success = await _handleTokenOperation(
+        notificationsEnabled: notificationsEnabled,
+        isUpdate: false,
+      );
+
+      // Save registration details on success
+      if (success) {
+        await prefs.setString('last_registered_fcm_token', token);
+        await prefs.setString('last_registered_phone_number', phoneNumber);
+        await prefs.setInt('last_fcm_registration_time', now);
+        developer.log('FCM registration successful and cached',
+            name: 'FirebaseMessaging');
+      }
+
+      return success;
+    } catch (e) {
+      developer.log('FCM smart registration failed: $e',
+          name: 'FirebaseMessaging', error: e);
+      return false;
+    }
   }
 
   /// Update notification settings
@@ -357,12 +420,27 @@ class FirebaseMessagingService {
     _currentToken = token;
     developer.log('FCM token refreshed', name: 'FirebaseMessaging');
 
-    // Re-register with the new token
+    // Re-register with the new token (smart registration will detect token change)
     registerToken().catchError((error) {
       developer.log('Failed to re-register token after refresh: $error',
           name: 'FirebaseMessaging', error: error);
       return false;
     });
+  }
+
+  /// Clear FCM registration cache
+  /// Call this when user logs out to force re-registration on next login
+  static Future<void> clearRegistrationCache() async {
+    try {
+      final prefs = await _prefsInstance;
+      await prefs.remove('last_registered_fcm_token');
+      await prefs.remove('last_registered_phone_number');
+      await prefs.remove('last_fcm_registration_time');
+      developer.log('FCM registration cache cleared', name: 'FirebaseMessaging');
+    } catch (e) {
+      developer.log('Failed to clear FCM registration cache: $e',
+          name: 'FirebaseMessaging', error: e);
+    }
   }
 }
 

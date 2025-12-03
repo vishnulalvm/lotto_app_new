@@ -15,7 +15,7 @@ class FcmApiService {
     required String name,
     required bool notificationsEnabled,
   }) async {
-    final url = ApiConstants.backUpUrl + ApiConstants.fcmRegister;
+    final url = ApiConstants.baseUrl + ApiConstants.fcmRegister;
 
     developer.log('Registering FCM token',
         name: 'FcmApiService',

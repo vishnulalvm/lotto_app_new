@@ -12,11 +12,10 @@ class ProbabilityApiService {
   Future<ProbabilityResponseModel> getProbability(ProbabilityRequestModel request) async {
     try {
       final response = await client.post(
-        Uri.parse(ApiConstants.backUpUrl + ApiConstants.lotteryPercentage),
+        Uri.parse(ApiConstants.baseUrl + ApiConstants.lotteryPercentage),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
-
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return ProbabilityResponseModel.fromJson(jsonData);
