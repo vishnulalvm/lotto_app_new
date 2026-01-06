@@ -34,17 +34,14 @@ class _RollingDigitState extends State<RollingDigit> {
   void didUpdateWidget(RollingDigit oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Only process if spinning state changes or digit changes when not spinning
-    if (widget.isSpinning && !oldWidget.isSpinning) {
-      // Just started spinning - begin animation
+    if (widget.isSpinning && widget.digit != oldWidget.digit) {
+      // Animate to next position smoothly when digit changes during spinning
       _counter++;
-      _controller.jumpToItem(_counter);
-    } else if (widget.isSpinning && oldWidget.isSpinning) {
-      // Continue spinning - but only if digit actually changed
-      if (widget.digit != oldWidget.digit) {
-        _counter++;
-        _controller.jumpToItem(_counter);
-      }
+      _controller.animateToItem(
+        _counter,
+        duration: widget.duration,
+        curve: Curves.linear, // Smooth linear motion during spinning
+      );
     } else if (oldWidget.isSpinning && !widget.isSpinning) {
       // STOPPING: Transition from spinning to still.
       // Snap to the actual target digit provided by the Cubit.
@@ -169,17 +166,14 @@ class _RollingLetterState extends State<RollingLetter> {
   void didUpdateWidget(RollingLetter oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Only process if spinning state changes or letter changes when not spinning
-    if (widget.isSpinning && !oldWidget.isSpinning) {
-      // Just started spinning - begin animation
+    if (widget.isSpinning && widget.letter != oldWidget.letter) {
+      // Animate to next position smoothly when letter changes during spinning
       _counter++;
-      _controller.jumpToItem(_counter);
-    } else if (widget.isSpinning && oldWidget.isSpinning) {
-      // Continue spinning - but only if letter actually changed
-      if (widget.letter != oldWidget.letter) {
-        _counter++;
-        _controller.jumpToItem(_counter);
-      }
+      _controller.animateToItem(
+        _counter,
+        duration: widget.duration,
+        curve: Curves.linear, // Smooth linear motion during spinning
+      );
     } else if (oldWidget.isSpinning && !widget.isSpinning) {
       // STOPPING: Transition from spinning to still.
       // Snap to the actual target letter provided by the Cubit.

@@ -122,26 +122,21 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     // 2. Wait for the calculated duration
     await Future.delayed(Duration(milliseconds: delayMs));
 
-    // 3. Generate new random data - but only every 3rd tick to reduce state emissions by 66%
-    // This maintains visual spinning effect while dramatically reducing rebuilds
-    final shouldUpdateDigits = state.currentTick % 3 == 0;
-
-    Map<int, List<int>>? newWindowDigits;
-    if (shouldUpdateDigits) {
-      newWindowDigits = <int, List<int>>{};
-      for (int i = 1; i <= 18; i++) {
-        newWindowDigits[i] = List.generate(4, (_) => _random.nextInt(10));
-      }
+    // 3. Generate new random data on EVERY tick for smooth animation
+    // The performance is handled by RepaintBoundary and buildWhen optimizations
+    final newWindowDigits = <int, List<int>>{};
+    for (int i = 1; i <= 18; i++) {
+      newWindowDigits[i] = List.generate(4, (_) => _random.nextInt(10));
     }
 
     // 4. Update state and trigger next tick
     if (!isClosed) {
       emit(state.copyWith(
         currentTick: state.currentTick + 1,
-        mainLetter1: shouldUpdateDigits ? _getRandomLetter() : null,
-        mainLetter2: shouldUpdateDigits ? _getRandomLetter() : null,
-        mainDigits: shouldUpdateDigits ? List.generate(6, (_) => _random.nextInt(10)) : null,
-        timerValue: shouldUpdateDigits ? _random.nextInt(99999).toString().padLeft(5, '0') : null,
+        mainLetter1: _getRandomLetter(),
+        mainLetter2: _getRandomLetter(),
+        mainDigits: List.generate(6, (_) => _random.nextInt(10)),
+        timerValue: _random.nextInt(99999).toString().padLeft(5, '0'),
         windowDigits: newWindowDigits,
       ));
 
