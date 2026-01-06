@@ -34,11 +34,17 @@ class _RollingDigitState extends State<RollingDigit> {
   void didUpdateWidget(RollingDigit oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (widget.isSpinning) {
-      // FORCE MOVEMENT: Even if the digit is the same,
-      // we increment our internal counter to keep the reel rolling down.
+    // Only process if spinning state changes or digit changes when not spinning
+    if (widget.isSpinning && !oldWidget.isSpinning) {
+      // Just started spinning - begin animation
       _counter++;
       _controller.jumpToItem(_counter);
+    } else if (widget.isSpinning && oldWidget.isSpinning) {
+      // Continue spinning - but only if digit actually changed
+      if (widget.digit != oldWidget.digit) {
+        _counter++;
+        _controller.jumpToItem(_counter);
+      }
     } else if (oldWidget.isSpinning && !widget.isSpinning) {
       // STOPPING: Transition from spinning to still.
       // Snap to the actual target digit provided by the Cubit.
@@ -69,54 +75,59 @@ class _RollingDigitState extends State<RollingDigit> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: (widget.style.fontSize ?? 24) * 1.5,
-      width: (widget.style.fontSize ?? 24) * 0.8,
-      child: Stack(
-        children: [
-          // The spinning reel
-          ListWheelScrollView.useDelegate(
-            controller: _controller,
-            itemExtent: (widget.style.fontSize ?? 24) * 1.2,
-            physics: const FixedExtentScrollPhysics(),
-            perspective: 0.005,
-            diameterRatio: 1.2,
-            childDelegate: ListWheelChildLoopingListDelegate(
-              children: List.generate(
-                10,
-                (i) => Center(
-                  child: Text(
-                    '$i',
-                    style: widget.style.copyWith(
-                      // Motion blur simulation: fade slightly while spinning
-                      color: widget.style.color?.withValues(
-                        alpha: widget.isSpinning ? 0.6 : 1.0,
+    return RepaintBoundary(
+      child: SizedBox(
+        height: (widget.style.fontSize ?? 24) * 1.5,
+        width: (widget.style.fontSize ?? 24) * 0.8,
+        child: Stack(
+          children: [
+            // The spinning reel - with cacheExtent to reduce raster overhead
+            ListWheelScrollView.useDelegate(
+              controller: _controller,
+              itemExtent: (widget.style.fontSize ?? 24) * 1.2,
+              physics: const FixedExtentScrollPhysics(),
+              perspective: 0.005,
+              diameterRatio: 1.2,
+              renderChildrenOutsideViewport: false, // Don't render off-screen items
+              clipBehavior: Clip.hardEdge, // More efficient clipping
+              childDelegate: ListWheelChildLoopingListDelegate(
+                children: List.generate(
+                  10,
+                  (i) => Center(
+                    child: Text(
+                      '$i',
+                      style: widget.style.copyWith(
+                        // Motion blur simulation: fade slightly while spinning
+                        color: widget.style.color?.withValues(
+                          alpha: widget.isSpinning ? 0.6 : 1.0,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          // Gradient overlay for depth effect (top/bottom shadows)
-          IgnorePointer(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.3), // Top shadow (numbers emerging from darkness)
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.2), // Bottom shadow (numbers disappearing)
-                  ],
-                  stops: const [0.0, 0.25, 0.75, 1.0],
+            // Simplified overlay - removed gradient to reduce raster cost
+            if (!widget.isSpinning) // Only show overlay when stopped
+              IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.2),
+                      ],
+                      stops: const [0.0, 0.25, 0.75, 1.0],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -158,11 +169,17 @@ class _RollingLetterState extends State<RollingLetter> {
   void didUpdateWidget(RollingLetter oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (widget.isSpinning) {
-      // FORCE MOVEMENT: Even if the letter is the same,
-      // we increment our internal counter to keep the reel rolling down.
+    // Only process if spinning state changes or letter changes when not spinning
+    if (widget.isSpinning && !oldWidget.isSpinning) {
+      // Just started spinning - begin animation
       _counter++;
       _controller.jumpToItem(_counter);
+    } else if (widget.isSpinning && oldWidget.isSpinning) {
+      // Continue spinning - but only if letter actually changed
+      if (widget.letter != oldWidget.letter) {
+        _counter++;
+        _controller.jumpToItem(_counter);
+      }
     } else if (oldWidget.isSpinning && !widget.isSpinning) {
       // STOPPING: Transition from spinning to still.
       // Snap to the actual target letter provided by the Cubit.
@@ -193,53 +210,58 @@ class _RollingLetterState extends State<RollingLetter> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: (widget.style.fontSize ?? 24) * 1.5,
-      width: (widget.style.fontSize ?? 24) * 0.8,
-      child: Stack(
-        children: [
-          // The spinning reel
-          ListWheelScrollView.useDelegate(
-            controller: _controller,
-            itemExtent: (widget.style.fontSize ?? 24) * 1.2,
-            physics: const FixedExtentScrollPhysics(),
-            perspective: 0.005,
-            diameterRatio: 1.2,
-            childDelegate: ListWheelChildLoopingListDelegate(
-              children: _alphabet.map(
-                (l) => Center(
-                  child: Text(
-                    l,
-                    style: widget.style.copyWith(
-                      // Motion blur simulation: fade slightly while spinning
-                      color: widget.style.color?.withValues(
-                        alpha: widget.isSpinning ? 0.6 : 1.0,
+    return RepaintBoundary(
+      child: SizedBox(
+        height: (widget.style.fontSize ?? 24) * 1.5,
+        width: (widget.style.fontSize ?? 24) * 0.8,
+        child: Stack(
+          children: [
+            // The spinning reel - with optimizations to reduce raster overhead
+            ListWheelScrollView.useDelegate(
+              controller: _controller,
+              itemExtent: (widget.style.fontSize ?? 24) * 1.2,
+              physics: const FixedExtentScrollPhysics(),
+              perspective: 0.005,
+              diameterRatio: 1.2,
+              renderChildrenOutsideViewport: false, // Don't render off-screen items
+              clipBehavior: Clip.hardEdge, // More efficient clipping
+              childDelegate: ListWheelChildLoopingListDelegate(
+                children: _alphabet.map(
+                  (l) => Center(
+                    child: Text(
+                      l,
+                      style: widget.style.copyWith(
+                        // Motion blur simulation: fade slightly while spinning
+                        color: widget.style.color?.withValues(
+                          alpha: widget.isSpinning ? 0.6 : 1.0,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ).toList(),
-            ),
-          ),
-          // Gradient overlay for depth effect (top/bottom shadows)
-          IgnorePointer(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.3), // Top shadow (numbers emerging from darkness)
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.2), // Bottom shadow (numbers disappearing)
-                  ],
-                  stops: const [0.0, 0.25, 0.75, 1.0],
-                ),
+                ).toList(),
               ),
             ),
-          ),
-        ],
+            // Simplified overlay - only show when stopped to reduce raster cost
+            if (!widget.isSpinning)
+              IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.2),
+                      ],
+                      stops: const [0.0, 0.25, 0.75, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
