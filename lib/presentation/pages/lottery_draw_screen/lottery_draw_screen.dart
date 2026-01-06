@@ -189,14 +189,14 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Letters
-                _buildLetterBox(state.mainLetter1, duration),
+                _buildLetterBox(state.mainLetter1, duration, isSpinning: state.isDrawing),
                 const SizedBox(width: 3),
-                _buildLetterBox(state.mainLetter2, duration),
+                _buildLetterBox(state.mainLetter2, duration, isSpinning: state.isDrawing),
                 const SizedBox(width: 6),
                 // Digits (no separator)
                 ...state.mainDigits.asMap().entries.map((entry) => Padding(
                   padding: EdgeInsets.only(right: entry.key < state.mainDigits.length - 1 ? 3 : 0),
-                  child: _buildMainDigitBox(entry.value.toString(), duration),
+                  child: _buildMainDigitBox(entry.value.toString(), duration, isSpinning: state.isDrawing),
                 )),
               ],
             ),
@@ -206,7 +206,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
     );
   }
 
-  Widget _buildLetterBox(String letter, Duration duration) {
+  Widget _buildLetterBox(String letter, Duration duration, {bool isSpinning = false}) {
     return Container(
       width: 30,
       height: 35,
@@ -268,6 +268,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
                 color: Color(0xFF1a1a1a),
               ),
               duration: duration,
+              isSpinning: isSpinning,
             ),
           ),
         ],
@@ -275,7 +276,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
     );
   }
 
-  Widget _buildMainDigitBox(String digit, Duration duration) {
+  Widget _buildMainDigitBox(String digit, Duration duration, {bool isSpinning = false}) {
     return Container(
       width: 28,
       height: 40,
@@ -337,6 +338,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
                 color: Color(0xFF000000),
               ),
               duration: duration,
+              isSpinning: isSpinning,
             ),
           ),
         ],
@@ -367,7 +369,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  child: _buildWindowItem(windowNum, state.windowDigits[windowNum]!, duration),
+                  child: _buildWindowItem(windowNum, state.windowDigits[windowNum]!, duration, isSpinning: state.isDrawing),
                 ),
               );
             }).toList(),
@@ -377,7 +379,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
     );
   }
 
-  Widget _buildWindowItem(int number, List<int> digits, Duration duration) {
+  Widget _buildWindowItem(int number, List<int> digits, Duration duration, {bool isSpinning = false}) {
     return Row(
       children: [
         // Window Number (on the left)
@@ -443,7 +445,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: digits.map((digit) => _buildDigitBox(digit.toString(), duration)).toList(),
+              children: digits.map((digit) => _buildDigitBox(digit.toString(), duration, isSpinning: isSpinning)).toList(),
             ),
           ),
         ),
@@ -451,7 +453,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
     );
   }
 
-  Widget _buildDigitBox(String digit, Duration duration) {
+  Widget _buildDigitBox(String digit, Duration duration, {bool isSpinning = false}) {
     return Flexible(
       child: Container(
         constraints: const BoxConstraints(
@@ -488,6 +490,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
               color: Color(0xFF000000),
             ),
             duration: duration,
+            isSpinning: isSpinning,
           ),
         ),
       ),
@@ -668,80 +671,50 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
       onTapCancel: () {
         // User cancelled touch
       },
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: Alignment.topLeft,
-            radius: 1.5,
-            colors: [
-              state.isDrawing ? const Color(0xFF888888) : const Color(0xFFFF3333),
-              state.isDrawing ? const Color(0xFF555555) : const Color(0xFFCC0000),
-              state.isDrawing ? const Color(0xFF333333) : const Color(0xFF990000),
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-          boxShadow: [
-            // Outer glow
-            BoxShadow(
-              color: (state.isDrawing ? Colors.grey : Colors.red).withValues(alpha: 0.5),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-            // Shadow for depth
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.8),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
+      child: AnimatedScale(
+        // Visual compression: Shrinks slightly when drawing (pressed state)
+        scale: state.isDrawing ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 100),
         child: Container(
-          margin: const EdgeInsets.all(6),
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              center: Alignment.topLeft,
-              radius: 1.2,
+              center: const Alignment(-0.2, -0.2), // Highlight at top-left for 3D effect
+              radius: 0.8,
               colors: [
-                state.isDrawing ? const Color(0xFF666666) : const Color(0xFFFF1111),
-                state.isDrawing ? const Color(0xFF444444) : const Color(0xFFBB0000),
+                state.isDrawing ? const Color(0xFF999999) : const Color(0xFFFF5555),
+                state.isDrawing ? const Color(0xFF555555) : const Color(0xFF990000),
               ],
             ),
             border: Border.all(
-              color: state.isDrawing ? const Color(0xFF222222) : const Color(0xFF880000),
-              width: 1.5,
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 2,
             ),
+            // Shadow shift: Remove shadow when pressed to simulate being pushed in
+            boxShadow: state.isDrawing
+                ? [] // No shadow when "pressed"
+                : [
+                    // Outer glow
+                    BoxShadow(
+                      color: Colors.red.withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                    // Shadow for depth
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      offset: const Offset(0, 4),
+                      blurRadius: 8,
+                    ),
+                  ],
           ),
           child: Center(
-            // Black center button
-            child: Container(
-              width: 35,
-              height: 35,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: Alignment.topLeft,
-                  radius: 1.0,
-                  colors: [
-                    const Color(0xFF333333),
-                    const Color(0xFF000000),
-                  ],
-                ),
-                border: Border.all(
-                  color: const Color(0xFF111111),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+            child: Icon(
+              state.isDrawing ? Icons.autorenew : Icons.play_arrow,
+              color: Colors.white,
+              size: 40,
             ),
           ),
         ),

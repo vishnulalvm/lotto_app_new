@@ -88,7 +88,6 @@ class LotteryDrawState extends Equatable {
 
 // Cubit
 class LotteryDrawCubit extends Cubit<LotteryDrawState> {
-  Timer? _drawTimer;
   final Random _random = Random();
 
   LotteryDrawCubit() : super(LotteryDrawState.initial());
@@ -98,60 +97,58 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     return letters[_random.nextInt(letters.length)];
   }
 
-  int _getRandomDigit() {
-    return _random.nextInt(10);
-  }
-
   void startDraw() {
     if (state.isDrawing) return;
 
-    emit(state.copyWith(
-      isDrawing: true,
-      currentTick: 0,
-    ));
+    emit(state.copyWith(isDrawing: true, currentTick: 0));
+    _tick(); // Start the recursive deceleration loop
+  }
 
-    // Cancel any existing timer
-    _drawTimer?.cancel();
+  void _tick() async {
+    if (state.currentTick >= 60) {
+      emit(state.copyWith(isDrawing: false));
+      return;
+    }
 
-    // Animate for 3 seconds (60 ticks * 50ms = 3000ms)
-    _drawTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (timer.tick >= 60) {
-        timer.cancel();
-        emit(state.copyWith(
-          isDrawing: false,
-          currentTick: 0,
-        ));
-        return;
-      }
+    // 1. Calculate the next delay based on progress
+    // Progress goes from 0.0 to 1.0
+    double progress = state.currentTick / 60.0;
 
-      // Update all values
-      final newWindowDigits = <int, List<int>>{};
-      for (int i = 1; i <= 18; i++) {
-        newWindowDigits[i] = List.generate(4, (_) => _getRandomDigit());
-      }
+    // Exponential slowing: The delay starts at 50ms and ends around 600ms
+    // Formula: base_delay + (progress^4 * total_slowdown)
+    // This keeps it fast for the first 70%, then rapidly slows in the final 30%
+    int delayMs = 50 + (pow(progress, 4) * 550).toInt();
 
+    // 2. Wait for the calculated duration
+    await Future.delayed(Duration(milliseconds: delayMs));
+
+    // 3. Generate new random data
+    final newWindowDigits = <int, List<int>>{};
+    for (int i = 1; i <= 18; i++) {
+      newWindowDigits[i] = List.generate(4, (_) => _random.nextInt(10));
+    }
+
+    // 4. Update state and trigger next tick
+    if (!isClosed) {
       emit(state.copyWith(
-        currentTick: timer.tick,
+        currentTick: state.currentTick + 1,
         mainLetter1: _getRandomLetter(),
         mainLetter2: _getRandomLetter(),
-        mainDigits: List.generate(6, (_) => _getRandomDigit()),
+        mainDigits: List.generate(6, (_) => _random.nextInt(10)),
         timerValue: _random.nextInt(99999).toString().padLeft(5, '0'),
         windowDigits: newWindowDigits,
       ));
-    });
+
+      _tick(); // Recurse!
+    }
   }
 
   Duration getAnimationDuration() {
-    if (!state.isDrawing) return const Duration(milliseconds: 200);
+    if (!state.isDrawing) return const Duration(milliseconds: 600);
 
-    final progress = state.currentTick / 60.0; // 0.0 to 1.0
-    final durationMs = 50 + (progress * 350); // 50ms to 400ms
-    return Duration(milliseconds: durationMs.toInt());
-  }
-
-  @override
-  Future<void> close() {
-    _drawTimer?.cancel();
-    return super.close();
+    // Return a duration that matches the current deceleration curve
+    final progress = state.currentTick / 60.0;
+    final durationMs = 50 + (pow(progress, 4) * 550).toInt();
+    return Duration(milliseconds: durationMs);
   }
 }

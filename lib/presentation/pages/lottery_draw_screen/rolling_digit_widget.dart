@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 /// Slot machine digit widget using ListWheelScrollView for authentic reel effect
 class RollingDigit extends StatefulWidget {
   final String digit;
+  final bool isSpinning;
   final TextStyle style;
   final Duration duration;
 
   const RollingDigit({
     super.key,
     required this.digit,
+    required this.isSpinning,
     required this.style,
-    this.duration = const Duration(milliseconds: 600), // Pro tip: 600ms feels more "weighted"
+    this.duration = const Duration(milliseconds: 800),
   });
 
   @override
@@ -19,46 +21,44 @@ class RollingDigit extends StatefulWidget {
 
 class _RollingDigitState extends State<RollingDigit> {
   late FixedExtentScrollController _controller;
-  final List<int> _digits = List.generate(10, (i) => i);
+  int _counter = 0; // Internal counter to keep the wheel moving forward
 
   @override
   void initState() {
     super.initState();
-    final initialDigit = int.parse(widget.digit);
-    _controller = FixedExtentScrollController(initialItem: initialDigit);
-    print('[RollingDigit] initState - initialDigit: $initialDigit');
+    _counter = int.tryParse(widget.digit) ?? 0;
+    _controller = FixedExtentScrollController(initialItem: _counter);
   }
 
   @override
   void didUpdateWidget(RollingDigit oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.digit != widget.digit) {
-      print('[RollingDigit] didUpdateWidget - oldDigit: ${oldWidget.digit}, newDigit: ${widget.digit}');
-      _animateToValue();
+
+    if (widget.isSpinning) {
+      // FORCE MOVEMENT: Even if the digit is the same,
+      // we increment our internal counter to keep the reel rolling down.
+      _counter++;
+      _controller.jumpToItem(_counter);
+    } else if (oldWidget.isSpinning && !widget.isSpinning) {
+      // STOPPING: Transition from spinning to still.
+      // Snap to the actual target digit provided by the Cubit.
+      _snapToTarget();
     }
   }
 
-  void _animateToValue() {
-    final int target = int.parse(widget.digit);
-    final int currentItem = _controller.selectedItem;
+  void _snapToTarget() {
+    final targetDigit = int.tryParse(widget.digit) ?? 0;
+    final currentPos = _controller.selectedItem;
 
-    // Logic: Find the next occurrence of the digit in the loop to ensure it always rolls forward
-    int diff = (target - (currentItem % 10) + 10) % 10;
-    if (diff == 0) diff = 10; // Force a full spin if the number is the same
+    // Calculate distance to the next occurrence of that digit
+    int diff = (targetDigit - (currentPos % 10) + 10) % 10;
+    if (diff == 0) diff = 10; // Force one last spin for impact
 
-    final targetItem = currentItem + diff;
-
-    print('[RollingDigit] _animateToValue - target: $target, currentItem: $currentItem, diff: $diff, targetItem: $targetItem, duration: ${widget.duration.inMilliseconds}ms');
-
-    // Use animateToItem with easeOutBack curve for realistic slot machine physics
-    // The overshoot creates that satisfying "click into place" effect
-    if (_controller.hasClients) {
-      _controller.animateToItem(
-        targetItem,
-        duration: widget.duration,
-        curve: Curves.easeOutBack, // Mimics physical inertia with slight overshoot
-      );
-    }
+    _controller.animateToItem(
+      currentPos + diff,
+      duration: widget.duration,
+      curve: Curves.easeOutBack, // THE MECHANICAL "CLICK" PHYSICS
+    );
   }
 
   @override
@@ -79,10 +79,23 @@ class _RollingDigitState extends State<RollingDigit> {
             controller: _controller,
             itemExtent: (widget.style.fontSize ?? 24) * 1.2,
             physics: const FixedExtentScrollPhysics(),
-            perspective: 0.005, // Adds subtle 3D curve
-            diameterRatio: 1.2, // Smaller drum = more aggressive curve (slot machine aesthetic)
+            perspective: 0.005,
+            diameterRatio: 1.2,
             childDelegate: ListWheelChildLoopingListDelegate(
-              children: _digits.map((d) => Center(child: Text('$d', style: widget.style))).toList(),
+              children: List.generate(
+                10,
+                (i) => Center(
+                  child: Text(
+                    '$i',
+                    style: widget.style.copyWith(
+                      // Motion blur simulation: fade slightly while spinning
+                      color: widget.style.color?.withValues(
+                        alpha: widget.isSpinning ? 0.6 : 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
           // Gradient overlay for depth effect (top/bottom shadows)
@@ -112,14 +125,16 @@ class _RollingDigitState extends State<RollingDigit> {
 /// Rolling letter widget using ListWheelScrollView with the same approach as RollingDigit
 class RollingLetter extends StatefulWidget {
   final String letter;
+  final bool isSpinning;
   final TextStyle style;
   final Duration duration;
 
   const RollingLetter({
     super.key,
     required this.letter,
+    required this.isSpinning,
     required this.style,
-    this.duration = const Duration(milliseconds: 600),
+    this.duration = const Duration(milliseconds: 800),
   });
 
   @override
@@ -128,46 +143,46 @@ class RollingLetter extends StatefulWidget {
 
 class _RollingLetterState extends State<RollingLetter> {
   late FixedExtentScrollController _controller;
-  static const String _letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  late final List<String> _lettersList;
+  final List<String> _alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  int _counter = 0;
 
   @override
   void initState() {
     super.initState();
-    _lettersList = _letters.split('');
-    final initialIndex = _letters.indexOf(widget.letter);
-    _controller = FixedExtentScrollController(initialItem: initialIndex >= 0 ? initialIndex : 0);
+    _counter = _alphabet.indexOf(widget.letter);
+    if (_counter == -1) _counter = 0;
+    _controller = FixedExtentScrollController(initialItem: _counter);
   }
 
   @override
   void didUpdateWidget(RollingLetter oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.letter != widget.letter) {
-      _animateToValue();
+
+    if (widget.isSpinning) {
+      // FORCE MOVEMENT: Even if the letter is the same,
+      // we increment our internal counter to keep the reel rolling down.
+      _counter++;
+      _controller.jumpToItem(_counter);
+    } else if (oldWidget.isSpinning && !widget.isSpinning) {
+      // STOPPING: Transition from spinning to still.
+      // Snap to the actual target letter provided by the Cubit.
+      _snapToTarget();
     }
   }
 
-  void _animateToValue() {
-    final int target = _letters.indexOf(widget.letter);
-    if (target < 0) return; // Invalid letter
+  void _snapToTarget() {
+    final targetIdx = _alphabet.indexOf(widget.letter);
+    final currentPos = _controller.selectedItem;
 
-    final int currentItem = _controller.selectedItem;
+    // Calculate distance to the next occurrence of that letter
+    int diff = (targetIdx - (currentPos % 26) + 26) % 26;
+    if (diff == 0) diff = 26; // Force one last spin for impact
 
-    // Logic: Find the next occurrence of the letter in the loop to ensure it always rolls forward
-    int diff = (target - (currentItem % 26) + 26) % 26;
-    if (diff == 0) diff = 26; // Force a full spin if the letter is the same
-
-    final targetItem = currentItem + diff;
-
-    // Use animateToItem with easeOutBack curve for realistic slot machine physics
-    // The overshoot creates that satisfying "click into place" effect
-    if (_controller.hasClients) {
-      _controller.animateToItem(
-        targetItem,
-        duration: widget.duration,
-        curve: Curves.easeOutBack, // Mimics physical inertia with slight overshoot
-      );
-    }
+    _controller.animateToItem(
+      currentPos + diff,
+      duration: widget.duration,
+      curve: Curves.easeOutBack, // THE MECHANICAL "CLICK" PHYSICS
+    );
   }
 
   @override
@@ -188,10 +203,22 @@ class _RollingLetterState extends State<RollingLetter> {
             controller: _controller,
             itemExtent: (widget.style.fontSize ?? 24) * 1.2,
             physics: const FixedExtentScrollPhysics(),
-            perspective: 0.005, // Adds subtle 3D curve
-            diameterRatio: 1.2, // Smaller drum = more aggressive curve (slot machine aesthetic)
+            perspective: 0.005,
+            diameterRatio: 1.2,
             childDelegate: ListWheelChildLoopingListDelegate(
-              children: _lettersList.map((l) => Center(child: Text(l, style: widget.style))).toList(),
+              children: _alphabet.map(
+                (l) => Center(
+                  child: Text(
+                    l,
+                    style: widget.style.copyWith(
+                      // Motion blur simulation: fade slightly while spinning
+                      color: widget.style.color?.withValues(
+                        alpha: widget.isSpinning ? 0.6 : 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ).toList(),
             ),
           ),
           // Gradient overlay for depth effect (top/bottom shadows)
