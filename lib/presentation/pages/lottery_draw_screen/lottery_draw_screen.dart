@@ -1,234 +1,129 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'lottery_draw_cubit.dart';
+import 'rolling_digit_widget.dart';
 
-class LotteryDrawScreen extends StatefulWidget {
+class LotteryDrawScreen extends StatelessWidget {
   const LotteryDrawScreen({super.key});
 
   @override
-  State<LotteryDrawScreen> createState() => _LotteryDrawScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => LotteryDrawCubit(),
+      child: const _LotteryDrawScreenContent(),
+    );
+  }
 }
 
-class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
-  bool isDrawing = false;
-  final Random random = Random();
-  Timer? _clockTimer;
-  Timer? _drawTimer;
-  String currentTime = '';
-  String currentDate = '';
-  int currentTick = 0;
-
-  // Main window values
-  String mainLetter1 = 'B';
-  String mainLetter2 = 'V';
-  List<int> mainDigits = [8, 5, 6, 2, 8, 1];
-
-  // Timer display
-  String timerValue = '30239';
+class _LotteryDrawScreenContent extends StatefulWidget {
+  const _LotteryDrawScreenContent();
 
   @override
-  void initState() {
-    super.initState();
-    _updateDateTime();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updateDateTime();
-    });
-  }
+  State<_LotteryDrawScreenContent> createState() => _LotteryDrawScreenContentState();
+}
 
-  void _updateDateTime() {
-    final now = DateTime.now();
-    setState(() {
-      currentTime = DateFormat('HH:mm:ss').format(now);
-      currentDate = DateFormat('dd.MM.yyyy').format(now);
-    });
-  }
-
-  @override
-  void dispose() {
-    _clockTimer?.cancel();
-    _drawTimer?.cancel();
-    super.dispose();
-  }
-  
-  // 18 windows (each with 4 digits)
-  Map<int, List<int>> windowDigits = {
-    1: [2, 7, 9, 4],
-    2: [9, 7, 5, 5],
-    3: [4, 3, 5, 5],
-    4: [9, 9, 0, 1],
-    5: [1, 4, 6, 8],
-    6: [5, 8, 9, 2],
-    7: [1, 0, 4, 7],
-    8: [4, 2, 5, 3],
-    9: [7, 8, 0, 3],
-    10: [1, 2, 7, 8],
-    11: [8, 0, 2, 5],
-    12: [2, 5, 9, 4],
-    13: [0, 4, 7, 9],
-    14: [5, 1, 5, 1],
-    15: [8, 5, 4, 6],
-    16: [8, 9, 8, 3],
-    17: [1, 8, 2, 1],
-    18: [6, 8, 5, 7],
-  };
-
-  String getRandomLetter() {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    return letters[random.nextInt(letters.length)];
-  }
-
-  int getRandomDigit() {
-    return random.nextInt(10);
-  }
-
-  Duration getAnimationDuration() {
-    // Calculate duration based on current tick for gradual slowdown
-    // Start fast (50ms), end slow (400ms)
-    if (!isDrawing) return const Duration(milliseconds: 200);
-
-    final progress = currentTick / 60.0; // 0.0 to 1.0
-    final durationMs = 50 + (progress * 350); // 50ms to 400ms
-    return Duration(milliseconds: durationMs.toInt());
-  }
-
-  Future<void> startDraw() async {
-    if (isDrawing) return;
-
-    setState(() {
-      isDrawing = true;
-      currentTick = 0;
-    });
-
-    // Cancel any existing draw timer
-    _drawTimer?.cancel();
-
-    // Animate for 3 seconds
-    _drawTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (timer.tick >= 60) {
-        timer.cancel();
-        setState(() {
-          isDrawing = false;
-          currentTick = 0;
-        });
-        return;
-      }
-
-      setState(() {
-        currentTick = timer.tick;
-
-        // Update main window
-        mainLetter1 = getRandomLetter();
-        mainLetter2 = getRandomLetter();
-        mainDigits = List.generate(6, (_) => getRandomDigit());
-
-        // Update timer
-        timerValue = random.nextInt(99999).toString().padLeft(5, '0');
-
-        // Update all 18 windows
-        for (int i = 1; i <= 18; i++) {
-          windowDigits[i] = List.generate(4, (_) => getRandomDigit());
-        }
-      });
-    });
-  }
-
+class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF000000),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF000000),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(
-            Icons.close,
-            color: Colors.white,
-            size: 28,
+    return BlocBuilder<LotteryDrawCubit, LotteryDrawState>(
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: const Color(0xFF000000),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF000000),
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            title: const Text(
+              'Virtual Draw Machine',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
-        ),
-        title: const Text(
-          'Virtual Draw Machine',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF000000),
-        ),
-        child: Column(
-          children: [
-            // Draw machine (centered, not full height)
-            Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // The lottery machine
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                const Color(0xFF8B1A1A),
-                                const Color(0xFFB22222),
-                                const Color(0xFF8B1A1A),
+          body: Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF000000),
+            ),
+            child: Column(
+              children: [
+                // Draw machine (centered, not full height)
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // The lottery machine
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  const Color(0xFF8B1A1A),
+                                  const Color(0xFFB22222),
+                                  const Color(0xFF8B1A1A),
+                                ],
+                                stops: const [0.0, 0.5, 1.0],
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFF2a2a2a),
+                                width: 6,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.8),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
                               ],
-                              stops: const [0.0, 0.5, 1.0],
                             ),
-                            border: Border.all(
-                              color: const Color(0xFF2a2a2a),
-                              width: 6,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildHeader(),
+                                const SizedBox(height: 10),
+                                _buildMainWindow(state),
+                                const SizedBox(height: 24),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: _buildWindowsGrid(state),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFooter(),
+                              ],
                             ),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.8),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildHeader(),
-                              const SizedBox(height: 10),
-                              _buildMainWindow(),
-                              const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: _buildWindowsGrid(),
-                              ),
-                              const SizedBox(height: 16),
-                              _buildFooter(),
-                            ],
-                          ),
-                        ),
-                        // Press and hold button below the machine
-                        const SizedBox(height: 24),
-                        _buildPressHoldButton(),
-                        const SizedBox(height: 24),
-                      ],
+                          // Press and hold button below the machine
+                          const SizedBox(height: 24),
+                          _buildPressHoldButton(state),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-            
+              ],
+            ),
           ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -239,10 +134,12 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
     );
   }
 
-  Widget _buildMainWindow() {
+  Widget _buildMainWindow(LotteryDrawState state) {
+    final cubit = context.read<LotteryDrawCubit>();
+    final duration = cubit.getAnimationDuration();
+
     return Container(
       width: double.infinity,
-
       decoration: BoxDecoration(
         color: const Color(0xFF8B1A1A),
         border: const Border(
@@ -261,13 +158,13 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
       ),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: const Color(0xFF666666), width: 0.5),
           ),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -292,14 +189,14 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Letters
-                _buildLetterBox(mainLetter1),
+                _buildLetterBox(state.mainLetter1, duration),
                 const SizedBox(width: 3),
-                _buildLetterBox(mainLetter2),
+                _buildLetterBox(state.mainLetter2, duration),
                 const SizedBox(width: 6),
                 // Digits (no separator)
-                ...mainDigits.asMap().entries.map((entry) => Padding(
-                  padding: EdgeInsets.only(right: entry.key < mainDigits.length - 1 ? 3 : 0),
-                  child: _buildMainDigitBox(entry.value.toString()),
+                ...state.mainDigits.asMap().entries.map((entry) => Padding(
+                  padding: EdgeInsets.only(right: entry.key < state.mainDigits.length - 1 ? 3 : 0),
+                  child: _buildMainDigitBox(entry.value.toString(), duration),
                 )),
               ],
             ),
@@ -309,10 +206,10 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
     );
   }
 
-  Widget _buildLetterBox(String letter) {
+  Widget _buildLetterBox(String letter, Duration duration) {
     return Container(
-      width: 32,
-      height: 40,
+      width: 42,
+      height: 35,
       decoration: BoxDecoration(
         color: const Color(0xFFFFD700),
         borderRadius: BorderRadius.circular(3),
@@ -361,28 +258,16 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
               ),
             ),
           ),
-          // Animated Text
+          // Rolling Letter
           Center(
-            child: AnimatedSwitcher(
-              duration: getAnimationDuration(),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                );
-              },
-              child: Text(
-                letter,
-                key: ValueKey(letter),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1a1a1a),
-                ),
+            child: RollingLetter(
+              letter: letter,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF1a1a1a),
               ),
+              duration: duration,
             ),
           ),
         ],
@@ -390,7 +275,7 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
     );
   }
 
-  Widget _buildMainDigitBox(String digit) {
+  Widget _buildMainDigitBox(String digit, Duration duration) {
     return Container(
       width: 28,
       height: 40,
@@ -442,28 +327,16 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
               ),
             ),
           ),
-          // Animated Text
+          // Rolling Digit
           Center(
-            child: AnimatedSwitcher(
-              duration: getAnimationDuration(),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                );
-              },
-              child: Text(
-                digit,
-                key: ValueKey(digit),
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF000000),
-                ),
+            child: RollingDigit(
+              digit: digit,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF000000),
               ),
+              duration: duration,
             ),
           ),
         ],
@@ -471,32 +344,40 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
     );
   }
 
-  Widget _buildWindowsGrid() {
-    final windowOrder = [1, 7, 13, 2, 8, 14, 3, 9, 15, 4, 10, 16, 5, 11, 17, 6, 12, 18];
+  Widget _buildWindowsGrid(LotteryDrawState state) {
+    final cubit = context.read<LotteryDrawCubit>();
+    final duration = cubit.getAnimationDuration();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Always use 3 columns for mobile
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 2.5,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+    // Simple sequential order: 1, 2, 3 / 4, 5, 6 / 7, 8, 9 / etc.
+    final windows = List.generate(18, (index) => index + 1);
+
+    // Split into rows of 3
+    final rows = <List<int>>[];
+    for (int i = 0; i < windows.length; i += 3) {
+      rows.add(windows.sublist(i, i + 3));
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: rows.map((row) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: row.map((windowNum) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  child: _buildWindowItem(windowNum, state.windowDigits[windowNum]!, duration),
+                ),
+              );
+            }).toList(),
           ),
-          itemCount: 18,
-          itemBuilder: (context, index) {
-            final windowNum = windowOrder[index];
-            return _buildWindowItem(windowNum, windowDigits[windowNum]!);
-          },
         );
-      },
+      }).toList(),
     );
   }
 
-  Widget _buildWindowItem(int number, List<int> digits) {
+  Widget _buildWindowItem(int number, List<int> digits, Duration duration) {
     return Row(
       children: [
         // Window Number (on the left)
@@ -562,7 +443,7 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: digits.map((digit) => _buildDigitBox(digit.toString())).toList(),
+              children: digits.map((digit) => _buildDigitBox(digit.toString(), duration)).toList(),
             ),
           ),
         ),
@@ -570,7 +451,7 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
     );
   }
 
-  Widget _buildDigitBox(String digit) {
+  Widget _buildDigitBox(String digit, Duration duration) {
     return Flexible(
       child: Container(
         constraints: const BoxConstraints(
@@ -599,26 +480,14 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
           ],
         ),
         child: Center(
-          child: AnimatedSwitcher(
-            duration: getAnimationDuration(),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -1),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              );
-            },
-            child: Text(
-              digit,
-              key: ValueKey(digit),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF000000),
-              ),
+          child: RollingDigit(
+            digit: digit,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF000000),
             ),
+            duration: duration,
           ),
         ),
       ),
@@ -786,11 +655,11 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
     );
   }
 
-  Widget _buildPressHoldButton() {
+  Widget _buildPressHoldButton(LotteryDrawState state) {
     return GestureDetector(
       onTapDown: (_) {
-        if (!isDrawing) {
-          startDraw();
+        if (!state.isDrawing) {
+          context.read<LotteryDrawCubit>().startDraw();
         }
       },
       onTapUp: (_) {
@@ -808,16 +677,16 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
             center: Alignment.topLeft,
             radius: 1.5,
             colors: [
-              isDrawing ? const Color(0xFF888888) : const Color(0xFFFF3333),
-              isDrawing ? const Color(0xFF555555) : const Color(0xFFCC0000),
-              isDrawing ? const Color(0xFF333333) : const Color(0xFF990000),
+              state.isDrawing ? const Color(0xFF888888) : const Color(0xFFFF3333),
+              state.isDrawing ? const Color(0xFF555555) : const Color(0xFFCC0000),
+              state.isDrawing ? const Color(0xFF333333) : const Color(0xFF990000),
             ],
             stops: const [0.0, 0.5, 1.0],
           ),
           boxShadow: [
             // Outer glow
             BoxShadow(
-              color: (isDrawing ? Colors.grey : Colors.red).withValues(alpha: 0.5),
+              color: (state.isDrawing ? Colors.grey : Colors.red).withValues(alpha: 0.5),
               blurRadius: 20,
               spreadRadius: 5,
             ),
@@ -837,12 +706,12 @@ class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
               center: Alignment.topLeft,
               radius: 1.2,
               colors: [
-                isDrawing ? const Color(0xFF666666) : const Color(0xFFFF1111),
-                isDrawing ? const Color(0xFF444444) : const Color(0xFFBB0000),
+                state.isDrawing ? const Color(0xFF666666) : const Color(0xFFFF1111),
+                state.isDrawing ? const Color(0xFF444444) : const Color(0xFFBB0000),
               ],
             ),
             border: Border.all(
-              color: isDrawing ? const Color(0xFF222222) : const Color(0xFF880000),
+              color: state.isDrawing ? const Color(0xFF222222) : const Color(0xFF880000),
               width: 1.5,
             ),
           ),
