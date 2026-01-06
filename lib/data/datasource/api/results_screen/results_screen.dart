@@ -1,19 +1,22 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
+import 'package:lotto_app/core/network/dio_client.dart';
 
 class LotteryResultDetailsApiService {
+  final Dio _dio;
+
+  LotteryResultDetailsApiService({Dio? dio}) : _dio = dio ?? DioClient.instance;
+
   Future<Map<String, dynamic>> getLotteryResultDetails(String uniqueId) async {
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.resultDetails}'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _dio.post(
+        ApiConstants.resultDetails,
+        data: {
           'unique_id': uniqueId,
-        }),
+        },
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return response.data as Map<String, dynamic>;
       } else {
         throw Exception('Failed to get lottery result details: ${response.statusCode}');
       }

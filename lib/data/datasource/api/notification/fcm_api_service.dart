@@ -1,13 +1,14 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
+import 'package:lotto_app/core/network/dio_client.dart';
 import 'package:lotto_app/data/models/notification/fcm_registration_model.dart';
 import 'dart:developer' as developer;
 
 class FcmApiService {
-  final http.Client client;
+  final Dio _dio;
 
-  FcmApiService({http.Client? client}) : client = client ?? http.Client();
+  FcmApiService({Dio? dio}) : _dio = dio ?? DioClient.instance;
 
   Future<FcmRegistrationResponse> registerFcmToken({
     required String fcmToken,
@@ -15,7 +16,7 @@ class FcmApiService {
     required String name,
     required bool notificationsEnabled,
   }) async {
-    final url = ApiConstants.baseUrl + ApiConstants.fcmRegister;
+    final url = ApiConstants.fcmRegister;
 
     developer.log('Registering FCM token',
         name: 'FcmApiService',
@@ -36,36 +37,28 @@ class FcmApiService {
       developer.log('Request body: ${json.encode(requestBody)}',
           name: 'FcmApiService');
 
-      final response = await client.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(requestBody),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timeout after 30 seconds');
-        },
+      final response = await _dio.post(
+        url,
+        data: requestBody,
       );
 
       developer.log('Response status: ${response.statusCode}',
           name: 'FcmApiService');
-      developer.log('Response body: ${response.body}',
+      developer.log('Response body: ${response.data}',
           name: 'FcmApiService');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = FcmRegistrationResponse.fromJson(
-          json.decode(response.body)
-        );
+        final responseData = FcmRegistrationResponse.fromJson(response.data);
         developer.log('FCM token registered successfully',
             name: 'FcmApiService');
         return responseData;
       } else {
         developer.log('Failed to register FCM token: Status ${response.statusCode}',
             name: 'FcmApiService',
-            error: response.body);
-        throw Exception('Failed to register FCM token: ${response.statusCode} - ${response.body}');
+            error: response.data);
+        throw Exception('Failed to register FCM token: ${response.statusCode} - ${response.data}');
       }
-    } on http.ClientException catch (e) {
+    } on DioException catch (e) {
       developer.log('Network error during FCM registration',
           name: 'FcmApiService',
           error: e);

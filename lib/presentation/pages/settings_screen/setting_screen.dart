@@ -356,6 +356,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () => context.go('/how-to-use'),
                       ),
                       _buildListTile(
+                        'feedback'.tr(),
+                        Icons.feedback_outlined,
+                        onTap: () => context.go('/feedback'),
+                      ),
+                      _buildListTile(
                         'contact_us'.tr(),
                         Icons.contact_support_outlined,
                         onTap: () => _showContactSheet(context),

@@ -19,5 +19,6 @@ class RouteNames {
   static const String feedbackScreen = 'feedback_screen';
   static const String howToUseScreen = 'how_to_use_screen';
   static const String justMissScreen = 'just_miss_screen';
+  static const String lotteryDrawScreen = 'lottery_draw_screen';
   // Add more route names as needed
 }

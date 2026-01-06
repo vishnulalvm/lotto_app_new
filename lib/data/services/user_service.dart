@@ -1,9 +1,8 @@
 // lib/data/services/user_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
+import 'package:lotto_app/core/network/dio_client.dart';
 
 class UserService {
   static const String _userIdKey = 'user_id';
@@ -141,14 +140,14 @@ class UserService {
         return false;
       }
 
-      final response = await http.post(
-        Uri.parse(ApiConstants.baseUrl + ApiConstants.trackActivity),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
+      final dio = DioClient.instance;
+      final response = await dio.post(
+        ApiConstants.trackActivity,
+        data: {
           'unique_id': uniqueId,
           'phone_number': phoneNumber ?? '',
           'app_name': 'lotto',
-        }),
+        },
       );
       return response.statusCode == 200;
     } catch (e) {

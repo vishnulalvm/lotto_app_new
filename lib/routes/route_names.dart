@@ -15,9 +15,10 @@ import 'package:lotto_app/presentation/pages/save_result_screen/save_result_scre
 import 'package:lotto_app/presentation/pages/settings_screen/setting_screen.dart';
 import 'package:lotto_app/presentation/pages/splash_screen/splash_screen.dart';
 import 'package:lotto_app/presentation/pages/live_video_screen/live_video_screen.dart';
-import 'package:lotto_app/presentation/pages/feedback_screen/feedback_screen.dart';
 import 'package:lotto_app/presentation/pages/how_to_use_screen/how_to_use_screen.dart';
 import 'package:lotto_app/presentation/pages/just_miss_screen/just_miss_screen.dart';
+import 'package:lotto_app/presentation/pages/lottery_draw_screen/lottery_draw_screen.dart';
+import 'package:lotto_app/presentation/pages/feedback_screen/feedback_screen.dart';
 import 'package:lotto_app/routes/app_routes.dart';
 
 class AppRouter {
@@ -141,6 +142,11 @@ class AppRouter {
                 path: 'live_videos',
                 name: RouteNames.liveVideoScreen,
                 builder: (context, state) => const LiveVideoScreen(),
+              ),
+              GoRoute(
+                path: 'lottery_draw',
+                name: RouteNames.lotteryDrawScreen,
+                builder: (context, state) => const LotteryDrawScreen(),
               ),
               GoRoute(
                 path: 'feedback',

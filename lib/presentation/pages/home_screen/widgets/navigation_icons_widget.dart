@@ -54,9 +54,9 @@ class _NavigationIconsWidgetState extends State<NavigationIconsWidget> {
         'route': '/challenge_screen'
       },
       {
-        'icon': Icons.feedback_outlined,
-        'label': 'Feedback',
-        'route': '/feedback'
+        'icon': Icons.casino_outlined,
+        'label': 'Draw',
+        'route': '/lottery_draw'
       },
     ];
   }

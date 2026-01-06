@@ -1,24 +1,23 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
+import 'package:lotto_app/core/network/dio_client.dart';
 import 'package:lotto_app/data/models/auth_screen/user_model.dart';
 
 class AuthApiService {
-  final http.Client client;
+  final Dio _dio;
 
-  AuthApiService({http.Client? client}) : client = client ?? http.Client();
+  AuthApiService({Dio? dio}) : _dio = dio ?? DioClient.instance;
 
   Future<UserModel> login(String phoneNumber) async {
     try {
-      final response = await client.post(
-        Uri.parse(ApiConstants.baseUrl + ApiConstants.login),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'phone_number': phoneNumber}),
+      final response = await _dio.post(
+        ApiConstants.login,
+        data: {'phone_number': phoneNumber},
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return UserModel.fromJson(json.decode(response.body));
+        return UserModel.fromJson(response.data);
       } else {
-        throw Exception('Failed to login: ${response.body}');
+        throw Exception('Failed to login: ${response.data}');
       }
     } catch (e) {
       throw Exception('Failed to connect to server: $e');
@@ -27,19 +26,18 @@ class AuthApiService {
 
   Future<UserModel> register(String name, String phoneNumber) async {
     try {
-      final response = await client.post(
-        Uri.parse(ApiConstants.baseUrl + ApiConstants.register),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
+      final response = await _dio.post(
+        ApiConstants.register,
+        data: {
           'name': name,
           'phone_number': phoneNumber,
-        }),
+        },
       );
-      
+
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return UserModel.fromJson(json.decode(response.body));
+        return UserModel.fromJson(response.data);
       } else {
-        throw Exception('Failed to register: ${response.body}');
+        throw Exception('Failed to register: ${response.data}');
       }
     } catch (e) {
       throw Exception('Failed to connect to server: $e');

@@ -1,18 +1,18 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
+import 'package:lotto_app/core/network/dio_client.dart';
 import 'package:lotto_app/data/models/live_video_screen/live_video_model.dart';
 
 class LiveVideoApiService {
+  final Dio _dio;
+
+  LiveVideoApiService({Dio? dio}) : _dio = dio ?? DioClient.instance;
+
   Future<LiveVideoResponseModel> getLiveVideos() async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.liveVideos}'),
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await _dio.get(ApiConstants.liveVideos);
       if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-        return LiveVideoResponseModel.fromJson(jsonData);
+        return LiveVideoResponseModel.fromJson(response.data);
       } else {
         throw Exception('Failed to get live videos: ${response.statusCode}');
       }
