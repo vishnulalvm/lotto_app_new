@@ -50,10 +50,14 @@ class _RollingDigitState extends State<RollingDigit> {
 
     print('[RollingDigit] _animateToValue - target: $target, currentItem: $currentItem, diff: $diff, targetItem: $targetItem, duration: ${widget.duration.inMilliseconds}ms');
 
-    // Use jumpToItem for instant updates during rapid changes (creates spinning effect)
-    // This avoids animation conflicts when values change every 50ms
+    // Use animateToItem with easeOutBack curve for realistic slot machine physics
+    // The overshoot creates that satisfying "click into place" effect
     if (_controller.hasClients) {
-      _controller.jumpToItem(targetItem);
+      _controller.animateToItem(
+        targetItem,
+        duration: widget.duration,
+        curve: Curves.easeOutBack, // Mimics physical inertia with slight overshoot
+      );
     }
   }
 
@@ -68,15 +72,38 @@ class _RollingDigitState extends State<RollingDigit> {
     return SizedBox(
       height: (widget.style.fontSize ?? 24) * 1.5,
       width: (widget.style.fontSize ?? 24) * 0.8,
-      child: ListWheelScrollView.useDelegate(
-        controller: _controller,
-        itemExtent: (widget.style.fontSize ?? 24) * 1.2,
-        physics: const FixedExtentScrollPhysics(),
-        perspective: 0.005, // Adds subtle 3D curve
-        diameterRatio: 1.0,
-        childDelegate: ListWheelChildLoopingListDelegate(
-          children: _digits.map((d) => Center(child: Text('$d', style: widget.style))).toList(),
-        ),
+      child: Stack(
+        children: [
+          // The spinning reel
+          ListWheelScrollView.useDelegate(
+            controller: _controller,
+            itemExtent: (widget.style.fontSize ?? 24) * 1.2,
+            physics: const FixedExtentScrollPhysics(),
+            perspective: 0.005, // Adds subtle 3D curve
+            diameterRatio: 1.2, // Smaller drum = more aggressive curve (slot machine aesthetic)
+            childDelegate: ListWheelChildLoopingListDelegate(
+              children: _digits.map((d) => Center(child: Text('$d', style: widget.style))).toList(),
+            ),
+          ),
+          // Gradient overlay for depth effect (top/bottom shadows)
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.3), // Top shadow (numbers emerging from darkness)
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.2), // Bottom shadow (numbers disappearing)
+                  ],
+                  stops: const [0.0, 0.25, 0.75, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -132,10 +159,14 @@ class _RollingLetterState extends State<RollingLetter> {
 
     final targetItem = currentItem + diff;
 
-    // Use jumpToItem for instant updates during rapid changes (creates spinning effect)
-    // This avoids animation conflicts when values change every 50ms
+    // Use animateToItem with easeOutBack curve for realistic slot machine physics
+    // The overshoot creates that satisfying "click into place" effect
     if (_controller.hasClients) {
-      _controller.jumpToItem(targetItem);
+      _controller.animateToItem(
+        targetItem,
+        duration: widget.duration,
+        curve: Curves.easeOutBack, // Mimics physical inertia with slight overshoot
+      );
     }
   }
 
@@ -150,15 +181,38 @@ class _RollingLetterState extends State<RollingLetter> {
     return SizedBox(
       height: (widget.style.fontSize ?? 24) * 1.5,
       width: (widget.style.fontSize ?? 24) * 0.8,
-      child: ListWheelScrollView.useDelegate(
-        controller: _controller,
-        itemExtent: (widget.style.fontSize ?? 24) * 1.2,
-        physics: const FixedExtentScrollPhysics(),
-        perspective: 0.005, // Adds subtle 3D curve
-        diameterRatio: 1.0,
-        childDelegate: ListWheelChildLoopingListDelegate(
-          children: _lettersList.map((l) => Center(child: Text(l, style: widget.style))).toList(),
-        ),
+      child: Stack(
+        children: [
+          // The spinning reel
+          ListWheelScrollView.useDelegate(
+            controller: _controller,
+            itemExtent: (widget.style.fontSize ?? 24) * 1.2,
+            physics: const FixedExtentScrollPhysics(),
+            perspective: 0.005, // Adds subtle 3D curve
+            diameterRatio: 1.2, // Smaller drum = more aggressive curve (slot machine aesthetic)
+            childDelegate: ListWheelChildLoopingListDelegate(
+              children: _lettersList.map((l) => Center(child: Text(l, style: widget.style))).toList(),
+            ),
+          ),
+          // Gradient overlay for depth effect (top/bottom shadows)
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.3), // Top shadow (numbers emerging from darkness)
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.2), // Bottom shadow (numbers disappearing)
+                  ],
+                  stops: const [0.0, 0.25, 0.75, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -208,7 +208,7 @@ class _LotteryDrawScreenContentState extends State<_LotteryDrawScreenContent> {
 
   Widget _buildLetterBox(String letter, Duration duration) {
     return Container(
-      width: 42,
+      width: 30,
       height: 35,
       decoration: BoxDecoration(
         color: const Color(0xFFFFD700),
