@@ -35,8 +35,10 @@ class _RollingDigitState extends State<RollingDigit> {
     super.didUpdateWidget(oldWidget);
 
     if (widget.isSpinning && widget.digit != oldWidget.digit) {
-      // Animate to next position smoothly when digit changes during spinning
-      _counter++;
+      // Move 3 positions per tick for faster visual spinning
+      // This prevents animation queue collision where animations are cancelled
+      // before completing when tick rate is close to animation duration
+      _counter += 3;
       _controller.animateToItem(
         _counter,
         duration: widget.duration,
@@ -85,7 +87,8 @@ class _RollingDigitState extends State<RollingDigit> {
               physics: const FixedExtentScrollPhysics(),
               perspective: 0.005,
               diameterRatio: 1.2,
-              renderChildrenOutsideViewport: false, // Don't render off-screen items
+              renderChildrenOutsideViewport:
+                  false, // Don't render off-screen items
               clipBehavior: Clip.hardEdge, // More efficient clipping
               childDelegate: ListWheelChildLoopingListDelegate(
                 children: List.generate(
@@ -167,8 +170,10 @@ class _RollingLetterState extends State<RollingLetter> {
     super.didUpdateWidget(oldWidget);
 
     if (widget.isSpinning && widget.letter != oldWidget.letter) {
-      // Animate to next position smoothly when letter changes during spinning
-      _counter++;
+      // Move 3 positions per tick for faster visual spinning
+      // This prevents animation queue collision where animations are cancelled
+      // before completing when tick rate is close to animation duration
+      _counter += 3;
       _controller.animateToItem(
         _counter,
         duration: widget.duration,
@@ -217,22 +222,25 @@ class _RollingLetterState extends State<RollingLetter> {
               physics: const FixedExtentScrollPhysics(),
               perspective: 0.005,
               diameterRatio: 1.2,
-              renderChildrenOutsideViewport: false, // Don't render off-screen items
+              renderChildrenOutsideViewport:
+                  false, // Don't render off-screen items
               clipBehavior: Clip.hardEdge, // More efficient clipping
               childDelegate: ListWheelChildLoopingListDelegate(
-                children: _alphabet.map(
-                  (l) => Center(
-                    child: Text(
-                      l,
-                      style: widget.style.copyWith(
-                        // Motion blur simulation: fade slightly while spinning
-                        color: widget.style.color?.withValues(
-                          alpha: widget.isSpinning ? 0.6 : 1.0,
+                children: _alphabet
+                    .map(
+                      (l) => Center(
+                        child: Text(
+                          l,
+                          style: widget.style.copyWith(
+                            // Motion blur simulation: fade slightly while spinning
+                            color: widget.style.color?.withValues(
+                              alpha: widget.isSpinning ? 0.6 : 1.0,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ).toList(),
+                    )
+                    .toList(),
               ),
             ),
             // Simplified overlay - only show when stopped to reduce raster cost

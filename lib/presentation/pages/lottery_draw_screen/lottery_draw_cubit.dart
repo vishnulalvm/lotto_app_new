@@ -147,9 +147,14 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
   Duration getAnimationDuration() {
     if (!state.isDrawing) return const Duration(milliseconds: 600);
 
-    // Return a duration that matches the current deceleration curve
+    // Calculate tick delay based on current progress
     final progress = state.currentTick / 60.0;
-    final durationMs = 50 + (pow(progress, 4) * 550).toInt();
+    final tickDelayMs = 50 + (pow(progress, 4) * 550).toInt();
+
+    // CRITICAL FIX: Animation must complete BEFORE next tick arrives
+    // Using 70% of tick time prevents animation queue collision where
+    // new animations cancel ongoing ones before they finish
+    final durationMs = (tickDelayMs * 0.7).toInt().clamp(40, 500);
     return Duration(milliseconds: durationMs);
   }
 }
