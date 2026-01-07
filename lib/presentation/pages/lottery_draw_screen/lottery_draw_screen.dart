@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lottery_draw_cubit.dart';
 import 'rolling_digit_widget.dart';
+import 'lottery_series_selector.dart';
 
 class LotteryDrawScreen extends StatelessWidget {
   const LotteryDrawScreen({super.key});
@@ -51,6 +52,18 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
           letterSpacing: 0.5,
         ),
       ),
+      actions: [
+        IconButton(
+          onPressed: () {
+            // Copy functionality will be implemented later
+          },
+          icon: const Icon(
+            Icons.copy,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -65,6 +78,8 @@ class _LotteryBody extends StatelessWidget {
       decoration: const BoxDecoration(color: Color(0xFF000000)),
       child: Column(
         children: [
+          // Lottery and Series selector dropdowns
+          const LotterySeriesSelector(),
           Expanded(
             child: Center(
               child: SingleChildScrollView(

@@ -1,0 +1,184 @@
+import 'package:flutter/material.dart';
+
+/// Custom widget for selecting lottery and series
+/// Displays two dropdowns side by side below the app bar
+class LotterySeriesSelector extends StatefulWidget {
+  const LotterySeriesSelector({super.key});
+
+  @override
+  State<LotterySeriesSelector> createState() => _LotterySeriesSelectorState();
+}
+
+class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
+  // Lottery data with their unique letters
+  static const Map<String, String> lotteryLetters = {
+    'KARUNYA PLUS': 'P',
+    'SUVARNA KERALAM': 'R',
+    'KARUNYA': 'K',
+    'SAMRUDHI': 'M',
+    'BHAGYATHARA': 'B',
+    'STHREE SAKTHI': 'S',
+    'DHANALEKSHMI': 'D',
+  };
+
+  // Series types - mapped internally
+  static const List<String> seriesType1 = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M'
+  ];
+
+  static const List<String> seriesType2 = [
+    'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+  ];
+
+  // Series dropdown options
+  static const List<String> seriesOptions = ['Series 1', 'Series 2'];
+
+  String? selectedLottery;
+  String? selectedSeries;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set default values
+    selectedLottery = _getLotteryNameForToday();
+    selectedSeries = 'Series 1'; // Default to Series 1
+  }
+
+  /// Gets the lottery name based on the current day
+  String _getLotteryNameForToday() {
+    final now = DateTime.now();
+
+    // If it's before 3 PM, show today's lottery
+    // If it's after 3 PM, show tomorrow's lottery
+    final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
+    final weekday = targetDate.weekday;
+
+    switch (weekday) {
+      case DateTime.sunday:
+        return 'SAMRUDHI';
+      case DateTime.monday:
+        return 'BHAGYATHARA';
+      case DateTime.tuesday:
+        return 'STHREE SAKTHI';
+      case DateTime.wednesday:
+        return 'DHANALEKSHMI';
+      case DateTime.thursday:
+        return 'KARUNYA PLUS';
+      case DateTime.friday:
+        return 'SUVARNA KERALAM';
+      case DateTime.saturday:
+        return 'KARUNYA';
+      default:
+        return 'KARUNYA';
+    }
+  }
+
+  /// Gets the actual series letters based on the selected series
+  List<String> getSelectedSeriesLetters() {
+    if (selectedSeries == 'Series 1') {
+      return seriesType1;
+    } else {
+      return seriesType2;
+    }
+  }
+
+  /// Gets the lottery letter for the selected lottery
+  String? getSelectedLotteryLetter() {
+    return selectedLottery != null ? lotteryLetters[selectedLottery] : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: const Color(0xFF000000),
+      child: Row(
+        children: [
+          // Lottery dropdown
+          Expanded(
+            child: _buildDropdown(
+              value: selectedLottery,
+              items: lotteryLetters.keys.toList(),
+              hint: 'Select Lottery',
+              onChanged: (value) {
+                setState(() {
+                  selectedLottery = value;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Series dropdown
+          Expanded(
+            child: _buildDropdown(
+              value: selectedSeries,
+              items: seriesOptions,
+              hint: 'Select Series',
+              onChanged: (value) {
+                setState(() {
+                  selectedSeries = value;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String? value,
+    required List<String> items,
+    required String hint,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1a1a1a),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: const Color(0xFF2a2a2a),
+          width: 1,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          hint: Text(
+            hint,
+            style: const TextStyle(
+              color: Color(0xFF666666),
+              fontSize: 14,
+            ),
+          ),
+          isExpanded: true,
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            color: Colors.white,
+            size: 24,
+          ),
+          dropdownColor: const Color(0xFF1a1a1a),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
