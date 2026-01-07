@@ -24,7 +24,7 @@ class RollingDigit extends StatelessWidget {
     return SpriteDigitRoller(
       digit: digit,
       isSpinning: isSpinning,
-      width: (fontSize * 0.8).round(),
+      width: (fontSize * 1.2).round(), // Increased from 0.8 to 1.2 for better visibility
       cellHeight: (fontSize * 1.5).round(),
       textColor: style.color ?? Colors.black,
       fontSize: fontSize,
@@ -53,7 +53,7 @@ class RollingLetter extends StatelessWidget {
     return SpriteLetterRoller(
       letter: letter,
       isSpinning: isSpinning,
-      width: (fontSize * 0.8).round(),
+      width: (fontSize * 1.2).round(), // Increased from 0.8 to 1.2 for better visibility
       cellHeight: (fontSize * 1.5).round(),
       textColor: style.color ?? const Color(0xFF1a1a1a),
       fontSize: fontSize,

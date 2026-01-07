@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Ultra-high-performance sprite-based digit roller
-/// Uses pre-rendered textures and GPU blitting for 60fps with 80+ animations
+/// VERSION 3: GUARANTEED pixel-perfect snapping
+/// 
+/// The key insight: When not spinning, scrollPosition MUST be an exact integer.
+/// During spin: fractional positions are fine (shows motion blur effect)
+/// After spin: IMMEDIATELY snap to integer, then animate TO target integer
 class SpriteDigitRoller extends StatefulWidget {
   final String digit;
   final bool isSpinning;
   final int width;
-  final int cellHeight; // CRITICAL: Must be integer for pixel-perfect alignment
+  final int cellHeight;
   final Color textColor;
   final double fontSize;
 
@@ -28,98 +33,97 @@ class SpriteDigitRoller extends StatefulWidget {
 
 class _SpriteDigitRollerState extends State<SpriteDigitRoller>
     with SingleTickerProviderStateMixin {
-  static ui.Image? _cachedSpriteSheet;
-  static bool _isGenerating = false;
-  late AnimationController _slideController;
-  int _previousDigit = 0;
-  int _currentDigit = 0;
-  int _targetDigit = 0;
+  
+  // Sprite sheet cache
+  static final Map<String, ui.Image> _spriteCache = {};
+  static final Set<String> _generating = {};
+
+  // Animation
+  late AnimationController _snapController;
+  Animation<double>? _snapAnimation;
+  
+  // State
+  int _displayDigit = 0;        // Currently displayed digit (always integer!)
+  int _targetDigit = 0;         // Target digit to reach
+  int _previousDigit = 0;       // Previous digit (for transition)
+  double _transitionProgress = 0.0; // 0.0 = showing _previousDigit, 1.0 = showing _displayDigit
+  
+  // Spinning
   Timer? _spinTimer;
-  bool _isStopping = false; // Guard flag to prevent race conditions
-  static const _spinIntervalMs = 80; // Fast spinning speed
-  static const _finalSpinDelayMs = 150; // Delay before final snap
+  bool _isCurrentlySpinning = false;
+
+  String get _cacheKey => 'digit_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.value}';
 
   @override
   void initState() {
     super.initState();
-    _currentDigit = int.tryParse(widget.digit) ?? 0;
-    _targetDigit = _currentDigit;
-    _previousDigit = _currentDigit;
-
-    // CRITICAL: Duration must be < spinIntervalMs to prevent overlap
-    _slideController = AnimationController(
+    
+    _targetDigit = int.tryParse(widget.digit) ?? 0;
+    _displayDigit = _targetDigit;
+    _previousDigit = _targetDigit;
+    _transitionProgress = 0.0; // Static - showing _displayDigit at position 0
+    
+    _snapController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 70), // 70ms < 80ms interval
+      duration: const Duration(milliseconds: 80),
     );
-
-    // CRITICAL: Snap to final position when animation completes
-    _slideController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        // Reset to static state with current digit properly aligned
-        _previousDigit = _currentDigit;
-        _slideController.value = 0.0;
-        if (mounted) setState(() {});
-      }
-    });
-
-    _loadSpriteSheet();
+    
+    _generateSpriteSheet();
+    
+    if (widget.isSpinning) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _startSpinning();
+      });
+    }
   }
 
-  Future<void> _loadSpriteSheet() async {
-    if (_cachedSpriteSheet != null || _isGenerating) return;
+  Future<void> _generateSpriteSheet() async {
+    final key = _cacheKey;
+    if (_spriteCache.containsKey(key) || _generating.contains(key)) {
+      if (mounted) setState(() {});
+      return;
+    }
 
-    _isGenerating = true;
+    _generating.add(key);
 
-    // CRITICAL: Use integer cell height for pixel-perfect alignment
     final h = widget.cellHeight;
-
-    // Generate sprite sheet with all digits 0-9
+    final w = widget.width;
+    
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-
-    // CRITICAL: Fill background with transparent (will be replaced by Paint)
-    // The sprite sheet must have opaque text on transparent background
-    final backgroundPaint = Paint()..color = Colors.transparent;
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, widget.width.toDouble(), (h * 10).toDouble()),
-      backgroundPaint,
-    );
 
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
       textAlign: TextAlign.center,
     );
 
-    // Draw each digit into the sprite sheet - properly centered
+    // Draw digits 0-9
     for (int i = 0; i < 10; i++) {
       textPainter.text = TextSpan(
         text: '$i',
         style: TextStyle(
           fontSize: widget.fontSize,
           fontWeight: FontWeight.bold,
-          fontFamily: 'monospace', // Consistent width
+          fontFamily: 'monospace',
           color: widget.textColor,
-          height: 1.0, // Prevent extra line spacing
+          height: 1.0,
         ),
       );
-      // CRITICAL: Deterministic rendering (no scaling)
       textPainter.textScaler = TextScaler.noScaling;
-      textPainter.layout(minWidth: 0, maxWidth: widget.width.toDouble());
+      textPainter.layout(minWidth: 0, maxWidth: w.toDouble());
 
-      // Center the digit both horizontally and vertically in its slot
-      final xOffset = (widget.width - textPainter.width) / 2;
+      final xOffset = (w - textPainter.width) / 2;
       final yOffset = (i * h) + ((h - textPainter.height) / 2);
 
       textPainter.paint(canvas, Offset(xOffset, yOffset));
     }
 
     final picture = recorder.endRecording();
-    _cachedSpriteSheet = await picture.toImage(
-      widget.width,
-      h * 10,
-    );
-
-    _isGenerating = false;
+    final image = await picture.toImage(w, h * 10);
+    
+    _spriteCache[key] = image;
+    _generating.remove(key);
+    
     if (mounted) setState(() {});
   }
 
@@ -128,13 +132,10 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
     super.didUpdateWidget(oldWidget);
 
     final newTarget = int.tryParse(widget.digit) ?? 0;
-
-    // Target digit changed
     if (newTarget != _targetDigit) {
       _targetDigit = newTarget;
     }
 
-    // Spinning state changed
     if (widget.isSpinning != oldWidget.isSpinning) {
       if (widget.isSpinning) {
         _startSpinning();
@@ -144,60 +145,134 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
     }
   }
 
-  /// Starts autonomous spinning through random digits
   void _startSpinning() {
-    _isStopping = false;
+    if (_isCurrentlySpinning) return;
+    _isCurrentlySpinning = true;
+    
     _spinTimer?.cancel();
     _spinTimer = Timer.periodic(
-      const Duration(milliseconds: _spinIntervalMs),
-      (_) => _spinToNextDigit(),
+      const Duration(milliseconds: 70),
+      (_) => _spinStep(),
     );
   }
 
-  /// Stops spinning and snaps to target digit
-  void _stopSpinning() {
-    _isStopping = true;
-    _spinTimer?.cancel();
-    _spinTimer = null;
-
-    // Snap to target after a brief delay
-    Future.delayed(const Duration(milliseconds: _finalSpinDelayMs), () {
-      if (mounted && _currentDigit != _targetDigit) {
-        _animateToDigit(_targetDigit);
+  void _spinStep() {
+    if (!mounted || !_isCurrentlySpinning) return;
+    
+    // Move to next digit
+    _previousDigit = _displayDigit;
+    _displayDigit = (_displayDigit + 1) % 10;
+    
+    // Animate the transition
+    _transitionProgress = 0.0;
+    _snapController.duration = const Duration(milliseconds: 60);
+    _snapController.forward(from: 0.0);
+    
+    _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _snapController, curve: Curves.linear),
+    );
+    
+    _snapAnimation!.addListener(_onTransitionTick);
+    _snapController.forward(from: 0.0).then((_) {
+      _snapAnimation?.removeListener(_onTransitionTick);
+      if (mounted) {
+        setState(() {
+          _transitionProgress = 0.0; // Reset - now showing _displayDigit statically
+          _previousDigit = _displayDigit;
+        });
       }
     });
   }
 
-  /// Spins to next random digit (creates spinning effect)
-  void _spinToNextDigit() {
-    // Guard: Don't spin if we're stopping or already animating
-    if (!mounted || _isStopping || _slideController.isAnimating) return;
-
-    final nextDigit = (_currentDigit + 1) % 10;
-    _animateToDigit(nextDigit);
+  void _onTransitionTick() {
+    if (mounted && _snapAnimation != null) {
+      setState(() {
+        _transitionProgress = _snapAnimation!.value;
+      });
+    }
   }
 
-  /// Animates transition to a specific digit
-  void _animateToDigit(int digit) {
-    // Guard: Prevent animation overlap
-    if (!mounted || _slideController.isAnimating) return;
+  void _stopSpinning() {
+    _isCurrentlySpinning = false;
+    _spinTimer?.cancel();
+    _spinTimer = null;
+    
+    // Stop any in-progress animation
+    _snapController.stop();
+    _snapAnimation?.removeListener(_onTransitionTick);
+    
+    // CRITICAL: Immediately snap to current integer position
+    setState(() {
+      _transitionProgress = 0.0;
+      _previousDigit = _displayDigit;
+    });
+    
+    // Now animate from current position to target
+    _animateToTarget();
+  }
 
-    _previousDigit = _currentDigit;
-    _currentDigit = digit;
-    _slideController.forward(from: 0.0);
+  void _animateToTarget() {
+    if (!mounted) return;
+    if (_displayDigit == _targetDigit) return; // Already at target
+    
+    // Calculate steps needed (shortest path around the wheel)
+    int steps = _targetDigit - _displayDigit;
+    if (steps < 0) steps += 10;
+    if (steps > 5) steps = steps - 10; // Go backwards if shorter
+    
+    // Animate step by step to target
+    _animateSteps(steps.abs(), steps > 0);
+  }
+
+  void _animateSteps(int stepsRemaining, bool forward) {
+    if (!mounted || stepsRemaining == 0) return;
+    
+    _previousDigit = _displayDigit;
+    _displayDigit = forward 
+        ? (_displayDigit + 1) % 10 
+        : (_displayDigit - 1 + 10) % 10;
+    
+    _snapController.duration = const Duration(milliseconds: 100);
+    
+    _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _snapController, curve: Curves.easeOut),
+    );
+    
+    void listener() {
+      if (mounted) {
+        setState(() {
+          _transitionProgress = _snapAnimation!.value;
+        });
+      }
+    }
+    
+    _snapAnimation!.addListener(listener);
+    _snapController.forward(from: 0.0).then((_) {
+      _snapAnimation?.removeListener(listener);
+      if (mounted) {
+        setState(() {
+          _transitionProgress = 0.0;
+          _previousDigit = _displayDigit;
+        });
+        // Continue to next step
+        _animateSteps(stepsRemaining - 1, forward);
+      }
+    });
   }
 
   @override
   void dispose() {
     _spinTimer?.cancel();
-    _slideController.dispose();
+    _snapAnimation?.removeListener(_onTransitionTick);
+    _snapController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_cachedSpriteSheet == null) {
-      // Show placeholder while loading
+    final sprite = _spriteCache[_cacheKey];
+    
+    if (sprite == null) {
       return SizedBox(
         width: widget.width.toDouble(),
         height: widget.cellHeight.toDouble(),
@@ -218,121 +293,99 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
       child: SizedBox(
         width: widget.width.toDouble(),
         height: widget.cellHeight.toDouble(),
-        child: AnimatedBuilder(
-          animation: _slideController,
-          builder: (context, child) {
-            return CustomPaint(
-              painter: _SpriteDigitPainter(
-                spriteSheet: _cachedSpriteSheet!,
-                previousDigit: _previousDigit,
-                currentDigit: _currentDigit,
-                slideProgress: _slideController.value,
-                isSpinning: widget.isSpinning,
-                digitHeight: widget.cellHeight,
-              ),
-            );
-          },
+        child: CustomPaint(
+          painter: _DigitPainterV3(
+            spriteSheet: sprite,
+            previousDigit: _previousDigit,
+            currentDigit: _displayDigit,
+            transitionProgress: _transitionProgress,
+            cellHeight: widget.cellHeight,
+          ),
+          size: Size(widget.width.toDouble(), widget.cellHeight.toDouble()),
         ),
       ),
     );
   }
 }
 
-/// Custom painter that performs ultra-fast GPU texture blitting
-class _SpriteDigitPainter extends CustomPainter {
+class _DigitPainterV3 extends CustomPainter {
   final ui.Image spriteSheet;
   final int previousDigit;
   final int currentDigit;
-  final double slideProgress;
-  final bool isSpinning;
-  final int digitHeight; // CRITICAL: Integer for pixel-perfect alignment
+  final double transitionProgress; // 0.0 = show previous, 1.0 = show current
+  final int cellHeight;
 
-  _SpriteDigitPainter({
+  _DigitPainterV3({
     required this.spriteSheet,
     required this.previousDigit,
     required this.currentDigit,
-    required this.slideProgress,
-    required this.isSpinning,
-    required this.digitHeight,
+    required this.transitionProgress,
+    required this.cellHeight,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..filterQuality = FilterQuality.medium
-      ..isAntiAlias = true;
+      ..filterQuality = FilterQuality.none // Pixel-perfect, no interpolation
+      ..isAntiAlias = false;
 
-    // CRITICAL: Use integer digitHeight for pixel-perfect calculations
-    final slideOffset = slideProgress * digitHeight;
-
-    // Clip to prevent overflow
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    if (slideProgress > 0.0 && slideProgress < 1.0) {
-      // During transition: show previous digit sliding out
-      final prevSrcY = (previousDigit * digitHeight).toDouble();
-      final prevSrcRect = Rect.fromLTWH(
-        0,
-        prevSrcY,
-        spriteSheet.width.toDouble(),
-        digitHeight.toDouble(),
-      );
-      // CRITICAL: Map to visible area (0,0 to size)
-      final prevDstRect = Rect.fromLTWH(
-        0,
-        -slideOffset,
-        size.width,
-        digitHeight.toDouble(),
-      );
-      canvas.drawImageRect(spriteSheet, prevSrcRect, prevDstRect, paint);
-
-      // Show current digit sliding in from below
-      final currSrcY = (currentDigit * digitHeight).toDouble();
-      final currSrcRect = Rect.fromLTWH(
-        0,
-        currSrcY,
-        spriteSheet.width.toDouble(),
-        digitHeight.toDouble(),
-      );
-      final currDstRect = Rect.fromLTWH(
-        0,
-        digitHeight - slideOffset,
-        size.width,
-        digitHeight.toDouble(),
-      );
-      canvas.drawImageRect(spriteSheet, currSrcRect, currDstRect, paint);
+    // CRITICAL: Only show transition if progress is meaningfully > 0
+    // This prevents any "in-between" rendering
+    if (transitionProgress < 0.01) {
+      // Static: show previous digit perfectly centered
+      _drawDigit(canvas, size, paint, previousDigit, 0.0);
+    } else if (transitionProgress > 0.99) {
+      // Static: show current digit perfectly centered  
+      _drawDigit(canvas, size, paint, currentDigit, 0.0);
     } else {
-      // Static: just show current digit - no transparency, pixel-perfect alignment
-      final srcY = (currentDigit * digitHeight).toDouble();
-      final srcRect = Rect.fromLTWH(
-        0,
-        srcY,
-        spriteSheet.width.toDouble(),
-        digitHeight.toDouble(),
-      );
-      // CRITICAL: Destination must exactly match widget size
-      final dstRect = Rect.fromLTWH(0, 0, size.width, size.height);
-      canvas.drawImageRect(spriteSheet, srcRect, dstRect, paint);
+      // Transitioning: show both digits sliding
+      final offset = transitionProgress * cellHeight;
+      
+      // Previous digit sliding up/out
+      _drawDigit(canvas, size, paint, previousDigit, -offset);
+      
+      // Current digit sliding in from below
+      _drawDigit(canvas, size, paint, currentDigit, cellHeight - offset);
     }
 
     canvas.restore();
   }
 
+  void _drawDigit(Canvas canvas, Size size, Paint paint, int digit, double yOffset) {
+    final srcY = (digit * cellHeight).toDouble();
+    final srcRect = Rect.fromLTWH(
+      0,
+      srcY,
+      spriteSheet.width.toDouble(),
+      cellHeight.toDouble(),
+    );
+    final dstRect = Rect.fromLTWH(
+      0,
+      yOffset,
+      size.width,
+      cellHeight.toDouble(),
+    );
+    canvas.drawImageRect(spriteSheet, srcRect, dstRect, paint);
+  }
+
   @override
-  bool shouldRepaint(_SpriteDigitPainter oldDelegate) {
-    return currentDigit != oldDelegate.currentDigit ||
-        slideProgress != oldDelegate.slideProgress ||
-        isSpinning != oldDelegate.isSpinning;
+  bool shouldRepaint(_DigitPainterV3 oldDelegate) {
+    return previousDigit != oldDelegate.previousDigit ||
+        currentDigit != oldDelegate.currentDigit ||
+        transitionProgress != oldDelegate.transitionProgress;
   }
 }
 
-/// Sprite-based letter roller (A-Z)
+
+/// Sprite-based letter roller (A-Z) - VERSION 3
 class SpriteLetterRoller extends StatefulWidget {
   final String letter;
   final bool isSpinning;
   final int width;
-  final int cellHeight; // CRITICAL: Must be integer for pixel-perfect alignment
+  final int cellHeight;
   final Color textColor;
   final double fontSize;
 
@@ -352,64 +405,63 @@ class SpriteLetterRoller extends StatefulWidget {
 
 class _SpriteLetterRollerState extends State<SpriteLetterRoller>
     with SingleTickerProviderStateMixin {
-  static ui.Image? _cachedSpriteSheet;
-  static bool _isGenerating = false;
+  
   static const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  
+  static final Map<String, ui.Image> _spriteCache = {};
+  static final Set<String> _generating = {};
 
-  late AnimationController _slideController;
-  int _previousLetterIndex = 0;
-  int _currentLetterIndex = 0;
-  int _targetLetterIndex = 0;
+  late AnimationController _snapController;
+  Animation<double>? _snapAnimation;
+  
+  int _displayIndex = 0;
+  int _targetIndex = 0;
+  int _previousIndex = 0;
+  double _transitionProgress = 0.0;
+  
   Timer? _spinTimer;
-  bool _isStopping = false; // Guard flag to prevent race conditions
-  static const _spinIntervalMs = 80; // Fast spinning speed
-  static const _finalSpinDelayMs = 150; // Delay before final snap
+  bool _isCurrentlySpinning = false;
+
+  String get _cacheKey => 'letter_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.value}';
 
   @override
   void initState() {
     super.initState();
-    _currentLetterIndex = alphabet.indexOf(widget.letter.toUpperCase());
-    if (_currentLetterIndex == -1) _currentLetterIndex = 0;
-    _targetLetterIndex = _currentLetterIndex;
-    _previousLetterIndex = _currentLetterIndex;
-
-    // CRITICAL: Duration must be < spinIntervalMs to prevent overlap
-    _slideController = AnimationController(
+    
+    _targetIndex = alphabet.indexOf(widget.letter.toUpperCase());
+    if (_targetIndex == -1) _targetIndex = 0;
+    _displayIndex = _targetIndex;
+    _previousIndex = _targetIndex;
+    _transitionProgress = 0.0;
+    
+    _snapController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 70), // 70ms < 80ms interval
+      duration: const Duration(milliseconds: 80),
     );
-
-    // CRITICAL: Snap to final position when animation completes
-    _slideController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        // Reset to static state with current letter properly aligned
-        _previousLetterIndex = _currentLetterIndex;
-        _slideController.value = 0.0;
-        if (mounted) setState(() {});
-      }
-    });
-
-    _loadSpriteSheet();
+    
+    _generateSpriteSheet();
+    
+    if (widget.isSpinning) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _startSpinning();
+      });
+    }
   }
 
-  Future<void> _loadSpriteSheet() async {
-    if (_cachedSpriteSheet != null || _isGenerating) return;
+  Future<void> _generateSpriteSheet() async {
+    final key = _cacheKey;
+    if (_spriteCache.containsKey(key) || _generating.contains(key)) {
+      if (mounted) setState(() {});
+      return;
+    }
 
-    _isGenerating = true;
+    _generating.add(key);
 
-    // CRITICAL: Use integer cell height for pixel-perfect alignment
     final h = widget.cellHeight;
-
+    final w = widget.width;
+    
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-
-    // CRITICAL: Fill background with transparent (will be replaced by Paint)
-    // The sprite sheet must have opaque text on transparent background
-    final backgroundPaint = Paint()..color = Colors.transparent;
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, widget.width.toDouble(), (h * 26).toDouble()),
-      backgroundPaint,
-    );
 
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
@@ -422,29 +474,26 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
         style: TextStyle(
           fontSize: widget.fontSize,
           fontWeight: FontWeight.w900,
-          fontFamily: 'monospace', // Consistent width
+          fontFamily: 'monospace',
           color: widget.textColor,
-          height: 1.0, // Prevent extra line spacing
+          height: 1.0,
         ),
       );
-      // CRITICAL: Deterministic rendering (no scaling)
       textPainter.textScaler = TextScaler.noScaling;
-      textPainter.layout(minWidth: 0, maxWidth: widget.width.toDouble());
+      textPainter.layout(minWidth: 0, maxWidth: w.toDouble());
 
-      // Center the letter both horizontally and vertically in its slot
-      final xOffset = (widget.width - textPainter.width) / 2;
+      final xOffset = (w - textPainter.width) / 2;
       final yOffset = (i * h) + ((h - textPainter.height) / 2);
 
       textPainter.paint(canvas, Offset(xOffset, yOffset));
     }
 
     final picture = recorder.endRecording();
-    _cachedSpriteSheet = await picture.toImage(
-      widget.width,
-      h * 26,
-    );
-
-    _isGenerating = false;
+    final image = await picture.toImage(w, h * alphabet.length);
+    
+    _spriteCache[key] = image;
+    _generating.remove(key);
+    
     if (mounted) setState(() {});
   }
 
@@ -453,14 +502,12 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
     super.didUpdateWidget(oldWidget);
 
     final newTargetIndex = alphabet.indexOf(widget.letter.toUpperCase());
-    final validTargetIndex = newTargetIndex == -1 ? 0 : newTargetIndex;
-
-    // Target letter changed
-    if (validTargetIndex != _targetLetterIndex) {
-      _targetLetterIndex = validTargetIndex;
+    final validTarget = newTargetIndex == -1 ? 0 : newTargetIndex;
+    
+    if (validTarget != _targetIndex) {
+      _targetIndex = validTarget;
     }
 
-    // Spinning state changed
     if (widget.isSpinning != oldWidget.isSpinning) {
       if (widget.isSpinning) {
         _startSpinning();
@@ -470,60 +517,125 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
     }
   }
 
-  /// Starts autonomous spinning through letters
   void _startSpinning() {
-    _isStopping = false;
+    if (_isCurrentlySpinning) return;
+    _isCurrentlySpinning = true;
+    
     _spinTimer?.cancel();
     _spinTimer = Timer.periodic(
-      const Duration(milliseconds: _spinIntervalMs),
-      (_) => _spinToNextLetter(),
+      const Duration(milliseconds: 70),
+      (_) => _spinStep(),
     );
   }
 
-  /// Stops spinning and snaps to target letter
-  void _stopSpinning() {
-    _isStopping = true;
-    _spinTimer?.cancel();
-    _spinTimer = null;
-
-    // Snap to target after a brief delay
-    Future.delayed(const Duration(milliseconds: _finalSpinDelayMs), () {
-      if (mounted && _currentLetterIndex != _targetLetterIndex) {
-        debugPrint('Snapping to target letter: ${alphabet[_targetLetterIndex]} (current: ${alphabet[_currentLetterIndex]})');
-        _animateToLetter(_targetLetterIndex);
+  void _spinStep() {
+    if (!mounted || !_isCurrentlySpinning) return;
+    
+    _previousIndex = _displayIndex;
+    _displayIndex = (_displayIndex + 1) % 26;
+    
+    _transitionProgress = 0.0;
+    _snapController.duration = const Duration(milliseconds: 60);
+    
+    _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _snapController, curve: Curves.linear),
+    );
+    
+    _snapAnimation!.addListener(_onTransitionTick);
+    _snapController.forward(from: 0.0).then((_) {
+      _snapAnimation?.removeListener(_onTransitionTick);
+      if (mounted) {
+        setState(() {
+          _transitionProgress = 0.0;
+          _previousIndex = _displayIndex;
+        });
       }
     });
   }
 
-  /// Spins to next letter (creates spinning effect)
-  void _spinToNextLetter() {
-    // Guard: Don't spin if we're stopping or already animating
-    if (!mounted || _isStopping || _slideController.isAnimating) return;
-
-    final nextLetterIndex = (_currentLetterIndex + 1) % alphabet.length;
-    _animateToLetter(nextLetterIndex);
+  void _onTransitionTick() {
+    if (mounted && _snapAnimation != null) {
+      setState(() {
+        _transitionProgress = _snapAnimation!.value;
+      });
+    }
   }
 
-  /// Animates transition to a specific letter
-  void _animateToLetter(int letterIndex) {
-    // Guard: Prevent animation overlap
-    if (!mounted || _slideController.isAnimating) return;
+  void _stopSpinning() {
+    _isCurrentlySpinning = false;
+    _spinTimer?.cancel();
+    _spinTimer = null;
+    
+    _snapController.stop();
+    _snapAnimation?.removeListener(_onTransitionTick);
+    
+    setState(() {
+      _transitionProgress = 0.0;
+      _previousIndex = _displayIndex;
+    });
+    
+    _animateToTarget();
+  }
 
-    _previousLetterIndex = _currentLetterIndex;
-    _currentLetterIndex = letterIndex;
-    _slideController.forward(from: 0.0);
+  void _animateToTarget() {
+    if (!mounted) return;
+    if (_displayIndex == _targetIndex) return;
+    
+    int steps = _targetIndex - _displayIndex;
+    if (steps < 0) steps += 26;
+    if (steps > 13) steps = steps - 26;
+    
+    _animateSteps(steps.abs(), steps > 0);
+  }
+
+  void _animateSteps(int stepsRemaining, bool forward) {
+    if (!mounted || stepsRemaining == 0) return;
+    
+    _previousIndex = _displayIndex;
+    _displayIndex = forward 
+        ? (_displayIndex + 1) % 26 
+        : (_displayIndex - 1 + 26) % 26;
+    
+    _snapController.duration = const Duration(milliseconds: 100);
+    
+    _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _snapController, curve: Curves.easeOut),
+    );
+    
+    void listener() {
+      if (mounted) {
+        setState(() {
+          _transitionProgress = _snapAnimation!.value;
+        });
+      }
+    }
+    
+    _snapAnimation!.addListener(listener);
+    _snapController.forward(from: 0.0).then((_) {
+      _snapAnimation?.removeListener(listener);
+      if (mounted) {
+        setState(() {
+          _transitionProgress = 0.0;
+          _previousIndex = _displayIndex;
+        });
+        _animateSteps(stepsRemaining - 1, forward);
+      }
+    });
   }
 
   @override
   void dispose() {
     _spinTimer?.cancel();
-    _slideController.dispose();
+    _snapAnimation?.removeListener(_onTransitionTick);
+    _snapController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_cachedSpriteSheet == null) {
+    final sprite = _spriteCache[_cacheKey];
+    
+    if (sprite == null) {
       return SizedBox(
         width: widget.width.toDouble(),
         height: widget.cellHeight.toDouble(),
@@ -544,109 +656,79 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
       child: SizedBox(
         width: widget.width.toDouble(),
         height: widget.cellHeight.toDouble(),
-        child: AnimatedBuilder(
-          animation: _slideController,
-          builder: (context, child) {
-            return CustomPaint(
-              painter: _SpriteLetterPainter(
-                spriteSheet: _cachedSpriteSheet!,
-                previousLetterIndex: _previousLetterIndex,
-                currentLetterIndex: _currentLetterIndex,
-                slideProgress: _slideController.value,
-                isSpinning: widget.isSpinning,
-                letterHeight: widget.cellHeight,
-              ),
-            );
-          },
+        child: CustomPaint(
+          painter: _LetterPainterV3(
+            spriteSheet: sprite,
+            previousIndex: _previousIndex,
+            currentIndex: _displayIndex,
+            transitionProgress: _transitionProgress,
+            cellHeight: widget.cellHeight,
+          ),
+          size: Size(widget.width.toDouble(), widget.cellHeight.toDouble()),
         ),
       ),
     );
   }
 }
 
-class _SpriteLetterPainter extends CustomPainter {
+class _LetterPainterV3 extends CustomPainter {
   final ui.Image spriteSheet;
-  final int previousLetterIndex;
-  final int currentLetterIndex;
-  final double slideProgress;
-  final bool isSpinning;
-  final int letterHeight; // CRITICAL: Integer for pixel-perfect alignment
+  final int previousIndex;
+  final int currentIndex;
+  final double transitionProgress;
+  final int cellHeight;
 
-  _SpriteLetterPainter({
+  _LetterPainterV3({
     required this.spriteSheet,
-    required this.previousLetterIndex,
-    required this.currentLetterIndex,
-    required this.slideProgress,
-    required this.isSpinning,
-    required this.letterHeight,
+    required this.previousIndex,
+    required this.currentIndex,
+    required this.transitionProgress,
+    required this.cellHeight,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..filterQuality = FilterQuality.medium
-      ..isAntiAlias = true;
-
-    // CRITICAL: Use integer letterHeight for pixel-perfect calculations
-    final slideOffset = slideProgress * letterHeight;
+      ..filterQuality = FilterQuality.none
+      ..isAntiAlias = false;
 
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    if (slideProgress > 0.0 && slideProgress < 1.0) {
-      // Previous letter sliding out
-      final prevSrcY = (previousLetterIndex * letterHeight).toDouble();
-      final prevSrcRect = Rect.fromLTWH(
-        0,
-        prevSrcY,
-        spriteSheet.width.toDouble(),
-        letterHeight.toDouble(),
-      );
-      // CRITICAL: Map to visible area (0,0 to size)
-      final prevDstRect = Rect.fromLTWH(
-        0,
-        -slideOffset,
-        size.width,
-        letterHeight.toDouble(),
-      );
-      canvas.drawImageRect(spriteSheet, prevSrcRect, prevDstRect, paint);
-
-      // Current letter sliding in
-      final currSrcY = (currentLetterIndex * letterHeight).toDouble();
-      final currSrcRect = Rect.fromLTWH(
-        0,
-        currSrcY,
-        spriteSheet.width.toDouble(),
-        letterHeight.toDouble(),
-      );
-      final currDstRect = Rect.fromLTWH(
-        0,
-        letterHeight - slideOffset,
-        size.width,
-        letterHeight.toDouble(),
-      );
-      canvas.drawImageRect(spriteSheet, currSrcRect, currDstRect, paint);
+    if (transitionProgress < 0.01) {
+      _drawLetter(canvas, size, paint, previousIndex, 0.0);
+    } else if (transitionProgress > 0.99) {
+      _drawLetter(canvas, size, paint, currentIndex, 0.0);
     } else {
-      // Static: just show current letter - no transparency, pixel-perfect alignment
-      final srcY = (currentLetterIndex * letterHeight).toDouble();
-      final srcRect = Rect.fromLTWH(
-        0,
-        srcY,
-        spriteSheet.width.toDouble(),
-        letterHeight.toDouble(),
-      );
-      // CRITICAL: Destination must exactly match widget size
-      final dstRect = Rect.fromLTWH(0, 0, size.width, size.height);
-      canvas.drawImageRect(spriteSheet, srcRect, dstRect, paint);
+      final offset = transitionProgress * cellHeight;
+      _drawLetter(canvas, size, paint, previousIndex, -offset);
+      _drawLetter(canvas, size, paint, currentIndex, cellHeight - offset);
     }
 
     canvas.restore();
   }
 
+  void _drawLetter(Canvas canvas, Size size, Paint paint, int index, double yOffset) {
+    final srcY = (index * cellHeight).toDouble();
+    final srcRect = Rect.fromLTWH(
+      0,
+      srcY,
+      spriteSheet.width.toDouble(),
+      cellHeight.toDouble(),
+    );
+    final dstRect = Rect.fromLTWH(
+      0,
+      yOffset,
+      size.width,
+      cellHeight.toDouble(),
+    );
+    canvas.drawImageRect(spriteSheet, srcRect, dstRect, paint);
+  }
+
   @override
-  bool shouldRepaint(_SpriteLetterPainter oldDelegate) {
-    return currentLetterIndex != oldDelegate.currentLetterIndex ||
-        slideProgress != oldDelegate.slideProgress ||
-        isSpinning != oldDelegate.isSpinning;
+  bool shouldRepaint(_LetterPainterV3 oldDelegate) {
+    return previousIndex != oldDelegate.previousIndex ||
+        currentIndex != oldDelegate.currentIndex ||
+        transitionProgress != oldDelegate.transitionProgress;
   }
 }
