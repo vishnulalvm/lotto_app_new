@@ -6,6 +6,7 @@ import 'lottery_draw_cubit.dart';
 import 'rolling_digit_widget.dart';
 import 'lottery_series_selector.dart';
 import 'static_lottery_letter_box.dart';
+import 'series_letter_box.dart';
 
 class LotteryDrawScreen extends StatelessWidget {
   const LotteryDrawScreen({super.key});
@@ -218,7 +219,7 @@ class _LiveMainWindow extends StatelessWidget {
                   children: [
                     const StaticLotteryLetterBox(), // Static lottery letter from dropdown
                     const SizedBox(width: 3),
-                    _buildLetterBox(state.mainLetter2, duration, isSpinning: state.isDrawing),
+                    SeriesLetterBox(duration: duration, isSpinning: state.isDrawing), // Series-specific letter
                     const SizedBox(width: 6),
                     _buildMainDigitBox(state.mainDigits[0].toString(), duration, isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
@@ -241,74 +242,6 @@ class _LiveMainWindow extends StatelessWidget {
     );
   }
 
-  Widget _buildLetterBox(String letter, Duration duration, {bool isSpinning = false}) {
-    return RepaintBoundary(
-      child: Container(
-        width: 30,
-        height: 35,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFD700),
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 3,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.4),
-                      Colors.transparent,
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(1),
-                    topRight: Radius.circular(1),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              bottom: 0,
-              child: Container(
-                width: 3,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Center(
-              child: RollingLetter(
-                letter: letter,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1a1a1a),
-                ),
-                duration: duration,
-                isSpinning: isSpinning,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildMainDigitBox(String digit, Duration duration, {bool isSpinning = false}) {
     return RepaintBoundary(

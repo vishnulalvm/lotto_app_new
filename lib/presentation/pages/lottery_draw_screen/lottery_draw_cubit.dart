@@ -12,6 +12,7 @@ class LotteryDrawState extends Equatable {
   final List<int> mainDigits;
   final String timerValue;
   final Map<int, List<int>> windowDigits;
+  final List<String> seriesLetters; // Available letters for the selected series
 
   const LotteryDrawState({
     required this.isDrawing,
@@ -21,16 +22,21 @@ class LotteryDrawState extends Equatable {
     required this.mainDigits,
     required this.timerValue,
     required this.windowDigits,
+    required this.seriesLetters,
   });
 
   factory LotteryDrawState.initial({String? initialLotteryLetter}) {
+    // Default to Series 1 letters
+    const defaultSeriesLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M'];
+
     return LotteryDrawState(
       isDrawing: false,
       currentTick: 0,
       mainLetter1: initialLotteryLetter ?? 'B',
-      mainLetter2: 'V',
+      mainLetter2: 'A', // Default to first letter of series 1
       mainDigits: [8, 5, 6, 2, 8, 1],
       timerValue: '30239',
+      seriesLetters: defaultSeriesLetters,
       windowDigits: {
         1: [2, 7, 9, 4],
         2: [9, 7, 5, 5],
@@ -62,6 +68,7 @@ class LotteryDrawState extends Equatable {
     List<int>? mainDigits,
     String? timerValue,
     Map<int, List<int>>? windowDigits,
+    List<String>? seriesLetters,
   }) {
     return LotteryDrawState(
       isDrawing: isDrawing ?? this.isDrawing,
@@ -71,6 +78,7 @@ class LotteryDrawState extends Equatable {
       mainDigits: mainDigits ?? this.mainDigits,
       timerValue: timerValue ?? this.timerValue,
       windowDigits: windowDigits ?? this.windowDigits,
+      seriesLetters: seriesLetters ?? this.seriesLetters,
     );
   }
 
@@ -83,6 +91,7 @@ class LotteryDrawState extends Equatable {
         mainDigits,
         timerValue,
         windowDigits,
+        seriesLetters,
       ];
 }
 
@@ -93,13 +102,26 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
   LotteryDrawCubit() : super(LotteryDrawState.initial());
 
   String _getRandomLetter() {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    return letters[_random.nextInt(letters.length)];
+    // Get random letter from the selected series
+    if (state.seriesLetters.isEmpty) {
+      return 'A';
+    }
+    return state.seriesLetters[_random.nextInt(state.seriesLetters.length)];
   }
 
   /// Updates the lottery letter (from dropdown selection)
   void updateLotteryLetter(String letter) {
     emit(state.copyWith(mainLetter1: letter));
+  }
+
+  /// Updates the available series letters (from series dropdown selection)
+  void updateSeriesLetters(List<String> letters) {
+    // Also update mainLetter2 to a letter from the new series
+    final newLetter2 = letters.isNotEmpty ? letters[_random.nextInt(letters.length)] : 'A';
+    emit(state.copyWith(
+      seriesLetters: letters,
+      mainLetter2: newLetter2,
+    ));
   }
 
   /// Starts the draw by generating FINAL target numbers once

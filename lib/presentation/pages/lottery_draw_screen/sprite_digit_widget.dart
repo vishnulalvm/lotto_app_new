@@ -732,3 +732,305 @@ class _LetterPainterV3 extends CustomPainter {
         transitionProgress != oldDelegate.transitionProgress;
   }
 }
+
+// Custom Series Letter Roller - accepts a custom alphabet
+class CustomSeriesLetterRoller extends StatefulWidget {
+  final String letter;
+  final bool isSpinning;
+  final int width;
+  final int cellHeight;
+  final Color textColor;
+  final double fontSize;
+  final List<String> customAlphabet; // Custom alphabet for series
+
+  const CustomSeriesLetterRoller({
+    super.key,
+    required this.letter,
+    required this.isSpinning,
+    required this.width,
+    required this.cellHeight,
+    required this.textColor,
+    required this.customAlphabet,
+    this.fontSize = 24,
+  });
+
+  @override
+  State<CustomSeriesLetterRoller> createState() => _CustomSeriesLetterRollerState();
+}
+
+class _CustomSeriesLetterRollerState extends State<CustomSeriesLetterRoller>
+    with SingleTickerProviderStateMixin {
+
+  static final Map<String, ui.Image> _spriteCache = {};
+  static final Set<String> _generating = {};
+
+  late AnimationController _snapController;
+
+  int _displayIndex = 0;
+  int _targetIndex = 0;
+  int _previousIndex = 0;
+  double _transitionProgress = 0.0;
+
+  Timer? _spinTimer;
+  bool _isCurrentlySpinning = false;
+
+  String get _alphabet => widget.customAlphabet.join();
+  String get _cacheKey => 'custom_letter_${_alphabet}_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.toARGB32()}';
+
+  @override
+  void initState() {
+    super.initState();
+
+    _targetIndex = widget.customAlphabet.indexOf(widget.letter.toUpperCase());
+    if (_targetIndex == -1) _targetIndex = 0;
+    _displayIndex = _targetIndex;
+    _previousIndex = _targetIndex;
+    _transitionProgress = 0.0;
+
+    _snapController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+    );
+
+    _generateSpriteSheet();
+
+    if (widget.isSpinning) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _startSpinning();
+      });
+    }
+  }
+
+  Future<void> _generateSpriteSheet() async {
+    final key = _cacheKey;
+    if (_spriteCache.containsKey(key) || _generating.contains(key)) {
+      if (mounted) setState(() {});
+      return;
+    }
+
+    _generating.add(key);
+
+    final h = widget.cellHeight;
+    final w = widget.width;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    );
+
+    for (int i = 0; i < widget.customAlphabet.length; i++) {
+      textPainter.text = TextSpan(
+        text: widget.customAlphabet[i],
+        style: TextStyle(
+          fontSize: widget.fontSize,
+          fontWeight: FontWeight.w900,
+          color: widget.textColor,
+        ),
+      );
+      textPainter.layout();
+
+      final x = (w - textPainter.width) / 2;
+      final y = (h - textPainter.height) / 2 + (i * h);
+      textPainter.paint(canvas, Offset(x, y));
+    }
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(w, h * widget.customAlphabet.length);
+
+    _spriteCache[key] = img;
+    _generating.remove(key);
+
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(CustomSeriesLetterRoller oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final newTargetIndex = widget.customAlphabet.indexOf(widget.letter.toUpperCase());
+    final validTarget = newTargetIndex == -1 ? 0 : newTargetIndex;
+
+    if (validTarget != _targetIndex) {
+      _targetIndex = validTarget;
+    }
+
+    if (widget.isSpinning != oldWidget.isSpinning) {
+      if (widget.isSpinning) {
+        _startSpinning();
+      } else {
+        _stopSpinning();
+      }
+    }
+
+    // Regenerate sprite if alphabet changed
+    if (widget.customAlphabet != oldWidget.customAlphabet) {
+      _spriteCache.remove(_cacheKey);
+      _generateSpriteSheet();
+      _targetIndex = widget.customAlphabet.indexOf(widget.letter.toUpperCase());
+      if (_targetIndex == -1) _targetIndex = 0;
+      _displayIndex = _targetIndex;
+      _previousIndex = _targetIndex;
+    }
+  }
+
+  @override
+  void dispose() {
+    _spinTimer?.cancel();
+    _snapController.dispose();
+    super.dispose();
+  }
+
+  void _startSpinning() {
+    if (_isCurrentlySpinning) return;
+    _isCurrentlySpinning = true;
+
+    _spinTimer?.cancel();
+    _spinTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted) return;
+      setState(() {
+        _previousIndex = _displayIndex;
+        _displayIndex = (_displayIndex + 1) % widget.customAlphabet.length;
+        _transitionProgress = 0.0;
+      });
+    });
+  }
+
+  void _stopSpinning() {
+    _isCurrentlySpinning = false;
+    _spinTimer?.cancel();
+    _spinTimer = null;
+
+    if (!mounted) return;
+
+    setState(() {
+      _previousIndex = _displayIndex;
+    });
+
+    _animateToTarget();
+  }
+
+  void _animateToTarget() {
+    if (!mounted) return;
+    if (_displayIndex == _targetIndex) return;
+
+    int steps = _targetIndex - _displayIndex;
+    if (steps < 0) steps += widget.customAlphabet.length;
+
+    if (steps <= widget.customAlphabet.length ~/ 2) {
+      _spinForward();
+    } else {
+      _displayIndex = _targetIndex;
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _spinForward() {
+    if (!mounted) return;
+
+    _spinTimer?.cancel();
+    _spinTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted) {
+        _spinTimer?.cancel();
+        return;
+      }
+
+      setState(() {
+        _previousIndex = _displayIndex;
+        _displayIndex = (_displayIndex + 1) % widget.customAlphabet.length;
+        _transitionProgress = 0.0;
+      });
+
+      if (_displayIndex == _targetIndex) {
+        _spinTimer?.cancel();
+        _spinTimer = null;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spriteSheet = _spriteCache[_cacheKey];
+
+    if (spriteSheet == null) {
+      return SizedBox(
+        width: widget.width.toDouble(),
+        height: widget.cellHeight.toDouble(),
+        child: Center(
+          child: Text(
+            widget.letter,
+            style: TextStyle(
+              fontSize: widget.fontSize,
+              fontWeight: FontWeight.w900,
+              color: widget.textColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: widget.width.toDouble(),
+      height: widget.cellHeight.toDouble(),
+      child: CustomPaint(
+        painter: _CustomLetterPainter(
+          spriteSheet: spriteSheet,
+          previousIndex: _previousIndex,
+          currentIndex: _displayIndex,
+          transitionProgress: _transitionProgress,
+          cellHeight: widget.cellHeight,
+          alphabetLength: widget.customAlphabet.length,
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomLetterPainter extends CustomPainter {
+  final ui.Image spriteSheet;
+  final int previousIndex;
+  final int currentIndex;
+  final double transitionProgress;
+  final int cellHeight;
+  final int alphabetLength;
+
+  _CustomLetterPainter({
+    required this.spriteSheet,
+    required this.previousIndex,
+    required this.currentIndex,
+    required this.transitionProgress,
+    required this.cellHeight,
+    required this.alphabetLength,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..isAntiAlias = false;
+
+    final yOffset = (currentIndex * cellHeight).toDouble();
+
+    final srcRect = Rect.fromLTWH(
+      0,
+      yOffset,
+      size.width,
+      cellHeight.toDouble(),
+    );
+
+    final dstRect = Rect.fromLTWH(
+      0,
+      0,
+      size.width,
+      cellHeight.toDouble(),
+    );
+    canvas.drawImageRect(spriteSheet, srcRect, dstRect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_CustomLetterPainter oldDelegate) {
+    return previousIndex != oldDelegate.previousIndex ||
+        currentIndex != oldDelegate.currentIndex ||
+        transitionProgress != oldDelegate.transitionProgress;
+  }
+}

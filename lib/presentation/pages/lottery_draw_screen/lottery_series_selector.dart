@@ -45,12 +45,14 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
     selectedLottery = _getLotteryNameForToday();
     selectedSeries = 'Series 1'; // Default to Series 1
 
-    // Update the cubit with the initial lottery letter after the first frame
+    // Update the cubit with the initial lottery letter and series after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final letter = lotteryLetters[selectedLottery];
       if (letter != null) {
         context.read<LotteryDrawCubit>().updateLotteryLetter(letter);
       }
+      // Set initial series letters (Series 1)
+      context.read<LotteryDrawCubit>().updateSeriesLetters(seriesType1);
     });
   }
 
@@ -135,6 +137,11 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
                 setState(() {
                   selectedSeries = value;
                 });
+                // Update the cubit with the new series letters
+                if (value != null) {
+                  final letters = value == 'Series 1' ? seriesType1 : seriesType2;
+                  context.read<LotteryDrawCubit>().updateSeriesLetters(letters);
+                }
               },
             ),
           ),
