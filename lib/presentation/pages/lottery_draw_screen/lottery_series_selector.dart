@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'lottery_draw_cubit.dart';
 
 /// Custom widget for selecting lottery and series
 /// Displays two dropdowns side by side below the app bar
@@ -42,6 +44,14 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
     // Set default values
     selectedLottery = _getLotteryNameForToday();
     selectedSeries = 'Series 1'; // Default to Series 1
+
+    // Update the cubit with the initial lottery letter after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final letter = lotteryLetters[selectedLottery];
+      if (letter != null) {
+        context.read<LotteryDrawCubit>().updateLotteryLetter(letter);
+      }
+    });
   }
 
   /// Gets the lottery name based on the current day
@@ -104,6 +114,13 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
                 setState(() {
                   selectedLottery = value;
                 });
+                // Update the cubit with the new lottery letter
+                if (value != null) {
+                  final letter = lotteryLetters[value];
+                  if (letter != null) {
+                    context.read<LotteryDrawCubit>().updateLotteryLetter(letter);
+                  }
+                }
               },
             ),
           ),

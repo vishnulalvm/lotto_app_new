@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lottery_draw_cubit.dart';
 import 'rolling_digit_widget.dart';
 import 'lottery_series_selector.dart';
+import 'static_lottery_letter_box.dart';
 
 class LotteryDrawScreen extends StatelessWidget {
   const LotteryDrawScreen({super.key});
@@ -215,7 +216,7 @@ class _LiveMainWindow extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildLetterBox(state.mainLetter1, duration, isSpinning: state.isDrawing),
+                    const StaticLotteryLetterBox(), // Static lottery letter from dropdown
                     const SizedBox(width: 3),
                     _buildLetterBox(state.mainLetter2, duration, isSpinning: state.isDrawing),
                     const SizedBox(width: 6),

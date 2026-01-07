@@ -23,11 +23,11 @@ class LotteryDrawState extends Equatable {
     required this.windowDigits,
   });
 
-  factory LotteryDrawState.initial() {
+  factory LotteryDrawState.initial({String? initialLotteryLetter}) {
     return LotteryDrawState(
       isDrawing: false,
       currentTick: 0,
-      mainLetter1: 'B',
+      mainLetter1: initialLotteryLetter ?? 'B',
       mainLetter2: 'V',
       mainDigits: [8, 5, 6, 2, 8, 1],
       timerValue: '30239',
@@ -97,6 +97,11 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     return letters[_random.nextInt(letters.length)];
   }
 
+  /// Updates the lottery letter (from dropdown selection)
+  void updateLotteryLetter(String letter) {
+    emit(state.copyWith(mainLetter1: letter));
+  }
+
   /// Starts the draw by generating FINAL target numbers once
   /// The reels will spin autonomously until they reach these targets
   void startDraw() {
@@ -104,7 +109,8 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
 
     // Generate final target digits (not random per tick!)
     final finalMainDigits = List.generate(6, (_) => _random.nextInt(10));
-    final finalMainLetter1 = _getRandomLetter();
+    // Keep the selected lottery letter, only randomize the second letter
+    final finalMainLetter1 = state.mainLetter1; // Use the selected lottery letter
     final finalMainLetter2 = _getRandomLetter();
     final finalTimerValue = _random.nextInt(99999).toString().padLeft(5, '0');
 
