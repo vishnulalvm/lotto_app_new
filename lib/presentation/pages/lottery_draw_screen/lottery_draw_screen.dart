@@ -183,7 +183,7 @@ class _LotteryBody extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    // const SizedBox(height: 24),
                     const _LivePressButton(),
                     const SizedBox(height: 24),
                   ],
@@ -566,61 +566,28 @@ class _FooterSection extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 32,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFE8E8E8),
-                      Color(0xFFF5F5F5),
-                      Color(0xFFDDDDDD),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(3),
-                  border: Border.all(color: const Color(0xFF888888), width: 1),
-                ),
-                child: const Center(
-                  child: Text(
-                    '1',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF000000),
-                    ),
-                  ),
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFFFFF),
+                  Color(0xFFF0F0F0),
+                ],
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFFFFFFF),
-                      Color(0xFFF0F0F0),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: const Text(
-                  'PRIZE',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF000000),
-                    letterSpacing: 1,
-                  ),
-                ),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: const Text(
+              'PRIZE',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF000000),
+                letterSpacing: 1,
               ),
-            ],
+            ),
           ),
           Container(
             width: 16,
@@ -663,7 +630,7 @@ class _FooterSection extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              // const SizedBox(width: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(

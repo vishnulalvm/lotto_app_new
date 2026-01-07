@@ -105,7 +105,9 @@ class _SplashScreenState extends State<SplashScreen> {
       unawaited(Future.delayed(const Duration(milliseconds: 400), () {
         try {
           CacheManager.initialize();
-        } catch (e) {}
+        } catch (e) {
+          // Ignore cache initialization errors - non-critical background task
+        }
       }));
 
       // Phase 7: User activity tracking - 500ms delay (least critical)

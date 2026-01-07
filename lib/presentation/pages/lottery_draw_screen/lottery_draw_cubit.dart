@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flame_audio/flame_audio.dart';
 
 // State
 class LotteryDrawState extends Equatable {
@@ -131,6 +132,9 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
   void startDraw() {
     if (state.isDrawing) return;
 
+    // Play spinning sound with reduced volume (0.3 = 30% volume)
+    FlameAudio.play('audios/spining_sound.mp3', volume: 0.3);
+
     // Haptic feedback when rotation starts
     HapticFeedback.lightImpact();
 
@@ -180,8 +184,8 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
 
   /// Waits for reels to finish spinning, then marks draw as complete
   void _scheduleDrawEnd() async {
-    // Total spin duration: ~3 seconds (typical slot machine feel)
-    await Future.delayed(const Duration(milliseconds: 3000));
+    // Total spin duration: 2 seconds
+    await Future.delayed(const Duration(milliseconds: 2000));
 
     if (!isClosed) {
       // Stop periodic haptic feedback
