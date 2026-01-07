@@ -21,13 +21,39 @@ class RollingDigit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontSize = style.fontSize ?? 22;
-    return SpriteDigitRoller(
-      digit: digit,
-      isSpinning: isSpinning,
-      width: (fontSize * 1.2).round(), // Increased from 0.8 to 1.2 for better visibility
-      cellHeight: (fontSize * 1.5).round(),
-      textColor: style.color ?? Colors.black,
-      fontSize: fontSize,
+    return Stack(
+      children: [
+        SpriteDigitRoller(
+          digit: digit,
+          isSpinning: isSpinning,
+          width: (fontSize * 1.2).round(), // Increased from 0.8 to 1.2 for better visibility
+          cellHeight: (fontSize * 1.5).round(),
+          textColor: style.color ?? Colors.black,
+          fontSize: fontSize,
+        ),
+        // OVERLAY: This adds the "Cylindrical" shadow effect
+        _buildGradientOverlay(),
+      ],
+    );
+  }
+
+  Widget _buildGradientOverlay() {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.3),
+              Colors.transparent,
+              Colors.transparent,
+              Colors.black.withOpacity(0.3),
+            ],
+            stops: const [0.0, 0.2, 0.8, 1.0],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -50,13 +76,39 @@ class RollingLetter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontSize = style.fontSize ?? 24;
-    return SpriteLetterRoller(
-      letter: letter,
-      isSpinning: isSpinning,
-      width: (fontSize * 1.2).round(), // Increased from 0.8 to 1.2 for better visibility
-      cellHeight: (fontSize * 1.5).round(),
-      textColor: style.color ?? const Color(0xFF1a1a1a),
-      fontSize: fontSize,
+    return Stack(
+      children: [
+        SpriteLetterRoller(
+          letter: letter,
+          isSpinning: isSpinning,
+          width: (fontSize * 1.2).round(), // Increased from 0.8 to 1.2 for better visibility
+          cellHeight: (fontSize * 1.5).round(),
+          textColor: style.color ?? const Color(0xFF1a1a1a),
+          fontSize: fontSize,
+        ),
+        // OVERLAY: This adds the "Cylindrical" shadow effect
+        _buildGradientOverlay(),
+      ],
+    );
+  }
+
+  Widget _buildGradientOverlay() {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.3),
+              Colors.transparent,
+              Colors.transparent,
+              Colors.black.withOpacity(0.3),
+            ],
+            stops: const [0.0, 0.2, 0.8, 1.0],
+          ),
+        ),
+      ),
     );
   }
 }
