@@ -147,7 +147,8 @@ class _LiveMainWindow extends StatelessWidget {
           prev.mainLetter2 != current.mainLetter2 ||
           prev.isDrawing != current.isDrawing,
       builder: (context, state) {
-        final duration = context.read<LotteryDrawCubit>().getAnimationDuration();
+        // Duration is now controlled autonomously by individual reels
+        const duration = Duration(milliseconds: 100);
 
         return Container(
           width: double.infinity,
@@ -374,7 +375,8 @@ class _LiveWindowsGrid extends StatelessWidget {
           prev.windowDigits != current.windowDigits ||
           prev.isDrawing != current.isDrawing,
       builder: (context, state) {
-        final duration = context.read<LotteryDrawCubit>().getAnimationDuration();
+        // Duration is now controlled autonomously by individual reels
+        const duration = Duration(milliseconds: 100);
         final windows = List.generate(18, (index) => index + 1);
         final rows = <List<int>>[];
         for (int i = 0; i < windows.length; i += 3) {

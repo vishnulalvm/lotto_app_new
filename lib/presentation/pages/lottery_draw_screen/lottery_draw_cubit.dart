@@ -97,64 +97,50 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     return letters[_random.nextInt(letters.length)];
   }
 
+  /// Starts the draw by generating FINAL target numbers once
+  /// The reels will spin autonomously until they reach these targets
   void startDraw() {
     if (state.isDrawing) return;
 
-    emit(state.copyWith(isDrawing: true, currentTick: 0));
-    _tick(); // Start the recursive deceleration loop
-  }
+    // Generate final target digits (not random per tick!)
+    final finalMainDigits = List.generate(6, (_) => _random.nextInt(10));
+    final finalMainLetter1 = _getRandomLetter();
+    final finalMainLetter2 = _getRandomLetter();
+    final finalTimerValue = _random.nextInt(99999).toString().padLeft(5, '0');
 
-  void _tick() async {
-    if (state.currentTick >= 60) {
-      emit(state.copyWith(isDrawing: false));
-      return;
-    }
-
-    // 1. Calculate the next delay based on progress
-    // Progress goes from 0.0 to 1.0
-    double progress = state.currentTick / 60.0;
-
-    // Exponential slowing: The delay starts at 50ms and ends around 600ms
-    // Formula: base_delay + (progress^4 * total_slowdown)
-    // This keeps it fast for the first 70%, then rapidly slows in the final 30%
-    int delayMs = 50 + (pow(progress, 4) * 550).toInt();
-
-    // 2. Wait for the calculated duration
-    await Future.delayed(Duration(milliseconds: delayMs));
-
-    // 3. Generate new random data on EVERY tick for smooth animation
-    // The performance is handled by RepaintBoundary and buildWhen optimizations
-    final newWindowDigits = <int, List<int>>{};
+    final finalWindowDigits = <int, List<int>>{};
     for (int i = 1; i <= 18; i++) {
-      newWindowDigits[i] = List.generate(4, (_) => _random.nextInt(10));
+      finalWindowDigits[i] = List.generate(4, (_) => _random.nextInt(10));
     }
 
-    // 4. Update state and trigger next tick
-    if (!isClosed) {
-      emit(state.copyWith(
-        currentTick: state.currentTick + 1,
-        mainLetter1: _getRandomLetter(),
-        mainLetter2: _getRandomLetter(),
-        mainDigits: List.generate(6, (_) => _random.nextInt(10)),
-        timerValue: _random.nextInt(99999).toString().padLeft(5, '0'),
-        windowDigits: newWindowDigits,
-      ));
+    // Emit ONCE with final targets - reels will spin themselves
+    emit(state.copyWith(
+      isDrawing: true,
+      currentTick: 0,
+      mainLetter1: finalMainLetter1,
+      mainLetter2: finalMainLetter2,
+      mainDigits: finalMainDigits,
+      timerValue: finalTimerValue,
+      windowDigits: finalWindowDigits,
+    ));
 
-      _tick(); // Recurse!
+    // Schedule the end of the draw (when reels should stop)
+    _scheduleDrawEnd();
+  }
+
+  /// Waits for reels to finish spinning, then marks draw as complete
+  void _scheduleDrawEnd() async {
+    // Total spin duration: ~3 seconds (typical slot machine feel)
+    await Future.delayed(const Duration(milliseconds: 3000));
+
+    if (!isClosed) {
+      emit(state.copyWith(isDrawing: false));
     }
   }
 
+  /// No longer needed - keeping for backward compatibility
+  @Deprecated('Animation duration is now controlled by individual reels')
   Duration getAnimationDuration() {
-    if (!state.isDrawing) return const Duration(milliseconds: 600);
-
-    // Calculate tick delay based on current progress
-    final progress = state.currentTick / 60.0;
-    final tickDelayMs = 50 + (pow(progress, 4) * 550).toInt();
-
-    // CRITICAL FIX: Animation must complete BEFORE next tick arrives
-    // Using 70% of tick time prevents animation queue collision where
-    // new animations cancel ongoing ones before they finish
-    final durationMs = (tickDelayMs * 0.7).toInt().clamp(40, 500);
-    return Duration(milliseconds: durationMs);
+    return const Duration(milliseconds: 100);
   }
 }

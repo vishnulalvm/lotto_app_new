@@ -43,6 +43,7 @@ dependencies:
   typewritertext: ^3.0.9
   url_launcher: ^6.3.1
   intl: ^0.20.2
+  animated_digit: ^3.3.2
 
 dev_dependencies:
   build_runner: ^2.4.13
