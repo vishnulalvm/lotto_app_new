@@ -85,20 +85,6 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
     }
   }
 
-  /// Gets the actual series letters based on the selected series
-  List<String> getSelectedSeriesLetters() {
-    if (selectedSeries == 'Series 1') {
-      return seriesType1;
-    } else {
-      return seriesType2;
-    }
-  }
-
-  /// Gets the lottery letter for the selected lottery
-  String? getSelectedLotteryLetter() {
-    return selectedLottery != null ? lotteryLetters[selectedLottery] : null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(

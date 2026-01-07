@@ -5,12 +5,10 @@ import 'sprite_digit_widget.dart';
 
 /// Series-specific letter box that only rotates through the selected series letters
 class SeriesLetterBox extends StatelessWidget {
-  final Duration duration;
   final bool isSpinning;
 
   const SeriesLetterBox({
     super.key,
-    required this.duration,
     required this.isSpinning,
   });
 

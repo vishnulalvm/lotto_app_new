@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,18 +56,54 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        IconButton(
-          onPressed: () {
-            // Copy functionality will be implemented later
+        BlocBuilder<LotteryDrawCubit, LotteryDrawState>(
+          builder: (context, state) {
+            return IconButton(
+              onPressed: () => _copyToClipboard(context, state),
+              icon: const Icon(
+                Icons.copy,
+                color: Colors.white,
+                size: 24,
+              ),
+            );
           },
-          icon: const Icon(
-            Icons.copy,
-            color: Colors.white,
-            size: 24,
-          ),
         ),
       ],
     );
+  }
+
+  void _copyToClipboard(BuildContext context, LotteryDrawState state) async {
+    // Format main number: Letter1 + Letter2 + 6 digits
+    final mainNumber = '${state.mainLetter1}${state.mainLetter2}${state.mainDigits.join()}';
+
+    // Format window numbers: Window1: 1234, Window2: 5678, etc.
+    final windowNumbers = <String>[];
+    for (int i = 1; i <= 18; i++) {
+      final digits = state.windowDigits[i]?.join() ?? '0000';
+      windowNumbers.add('Window $i: $digits');
+    }
+
+    // Combine all into clipboard text
+    final clipboardText = '''
+Main Number: $mainNumber
+
+Window Numbers:
+${windowNumbers.join('\n')}
+''';
+
+    // Copy to clipboard
+    await Clipboard.setData(ClipboardData(text: clipboardText));
+
+    // Show confirmation snackbar
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Copied to clipboard!'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 }
 
@@ -219,7 +256,7 @@ class _LiveMainWindow extends StatelessWidget {
                   children: [
                     const StaticLotteryLetterBox(), // Static lottery letter from dropdown
                     const SizedBox(width: 3),
-                    SeriesLetterBox(duration: duration, isSpinning: state.isDrawing), // Series-specific letter
+                    SeriesLetterBox(isSpinning: state.isDrawing), // Series-specific letter
                     const SizedBox(width: 6),
                     _buildMainDigitBox(state.mainDigits[0].toString(), duration, isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
@@ -950,7 +987,7 @@ class _LiveTimerSectionState extends State<_LiveTimerSection> {
                 color: Color(0xFFFF0000),
                 fontFamily: 'Courier',
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: 12,
                 height: 1.1,
                 letterSpacing: 1,
                 shadows: [
@@ -968,9 +1005,9 @@ class _LiveTimerSectionState extends State<_LiveTimerSection> {
                 color: Color(0xFFFF0000),
                 fontFamily: 'Courier',
                 fontWeight: FontWeight.bold,
-                fontSize: 9,
+                fontSize: 12,
                 height: 1.1,
-                letterSpacing: 0.5,
+                letterSpacing: 1,
                 shadows: [
                   Shadow(
                     color: Color(0xFFFF0000),
