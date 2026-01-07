@@ -343,12 +343,12 @@ class _DigitPainterV3 extends CustomPainter {
     } else {
       // Transitioning: show both digits sliding
       final offset = transitionProgress * cellHeight;
-      
-      // Previous digit sliding up/out
-      _drawDigit(canvas, size, paint, previousDigit, -offset);
-      
-      // Current digit sliding in from below
-      _drawDigit(canvas, size, paint, currentDigit, cellHeight - offset);
+
+      // Previous digit sliding down/out
+      _drawDigit(canvas, size, paint, previousDigit, offset);
+
+      // Current digit sliding in from above
+      _drawDigit(canvas, size, paint, currentDigit, -cellHeight + offset);
     }
 
     canvas.restore();
@@ -701,8 +701,8 @@ class _LetterPainterV3 extends CustomPainter {
       _drawLetter(canvas, size, paint, currentIndex, 0.0);
     } else {
       final offset = transitionProgress * cellHeight;
-      _drawLetter(canvas, size, paint, previousIndex, -offset);
-      _drawLetter(canvas, size, paint, currentIndex, cellHeight - offset);
+      _drawLetter(canvas, size, paint, previousIndex, offset);
+      _drawLetter(canvas, size, paint, currentIndex, -cellHeight + offset);
     }
 
     canvas.restore();
