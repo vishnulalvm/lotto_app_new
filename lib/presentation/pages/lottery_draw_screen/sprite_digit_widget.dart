@@ -52,7 +52,7 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
   Timer? _spinTimer;
   bool _isCurrentlySpinning = false;
 
-  String get _cacheKey => 'digit_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.value}';
+  String get _cacheKey => 'digit_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.toARGB32()}';
 
   @override
   void initState() {
@@ -422,7 +422,7 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
   Timer? _spinTimer;
   bool _isCurrentlySpinning = false;
 
-  String get _cacheKey => 'letter_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.value}';
+  String get _cacheKey => 'letter_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.toARGB32()}';
 
   @override
   void initState() {

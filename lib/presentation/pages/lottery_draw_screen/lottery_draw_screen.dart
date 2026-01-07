@@ -377,10 +377,16 @@ class _LiveWindowsGrid extends StatelessWidget {
       builder: (context, state) {
         // Duration is now controlled autonomously by individual reels
         const duration = Duration(milliseconds: 100);
-        final windows = List.generate(18, (index) => index + 1);
+
+        // Create 6 rows × 3 columns layout where numbers go down first
         final rows = <List<int>>[];
-        for (int i = 0; i < windows.length; i += 3) {
-          rows.add(windows.sublist(i, i + 3));
+        for (int row = 0; row < 6; row++) {
+          final rowWindows = <int>[];
+          for (int col = 0; col < 3; col++) {
+            final windowNum = row + 1 + (col * 6); // 1,2,3,4,5,6 | 7,8,9,10,11,12 | 13,14,15,16,17,18
+            rowWindows.add(windowNum);
+          }
+          rows.add(rowWindows);
         }
 
         return Column(
@@ -536,13 +542,16 @@ class _LiveWindowsGrid extends StatelessWidget {
   }
 }
 
-// Static Footer Section
+// Footer Section with live indicator
 class _FooterSection extends StatelessWidget {
   const _FooterSection();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return BlocBuilder<LotteryDrawCubit, LotteryDrawState>(
+      buildWhen: (prev, current) => prev.isDrawing != current.isDrawing,
+      builder: (context, state) {
+        return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -623,10 +632,12 @@ class _FooterSection extends StatelessWidget {
             height: 16,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFFF0000),
+              color: state.isDrawing ? const Color(0xFF00FF00) : const Color(0xFFFF0000),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withValues(alpha: 0.6),
+                  color: state.isDrawing
+                      ? Colors.green.withValues(alpha: 0.6)
+                      : Colors.red.withValues(alpha: 0.6),
                   blurRadius: 6,
                   spreadRadius: 2,
                 ),
@@ -685,6 +696,8 @@ class _FooterSection extends StatelessWidget {
           ),
         ],
       ),
+        );
+      },
     );
   }
 }
@@ -740,10 +753,20 @@ class _LivePressButton extends StatelessWidget {
                       ],
               ),
               child: Center(
-                child: Icon(
-                  state.isDrawing ? Icons.autorenew : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 40,
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.6),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.8),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
