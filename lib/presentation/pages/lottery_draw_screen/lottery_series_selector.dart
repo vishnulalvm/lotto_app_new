@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lottery_draw_cubit.dart';
 
@@ -99,6 +100,9 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
               items: lotteryLetters.keys.toList(),
               hint: 'Select Lottery',
               onChanged: (value) {
+                // Haptic feedback on selection
+                HapticFeedback.selectionClick();
+
                 setState(() {
                   selectedLottery = value;
                 });
@@ -120,6 +124,9 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
               items: seriesOptions,
               hint: 'Select Series',
               onChanged: (value) {
+                // Haptic feedback on selection
+                HapticFeedback.selectionClick();
+
                 setState(() {
                   selectedSeries = value;
                 });

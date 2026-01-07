@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:equatable/equatable.dart';
 
 // State
@@ -98,6 +99,7 @@ class LotteryDrawState extends Equatable {
 // Cubit
 class LotteryDrawCubit extends Cubit<LotteryDrawState> {
   final Random _random = Random();
+  Timer? _hapticTimer;
 
   LotteryDrawCubit() : super(LotteryDrawState.initial());
 
@@ -129,6 +131,12 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
   void startDraw() {
     if (state.isDrawing) return;
 
+    // Haptic feedback when rotation starts
+    HapticFeedback.lightImpact();
+
+    // Start periodic haptic feedback during rotation (every 150ms for slot machine feel)
+    _startRotationHaptics();
+
     // Generate final target digits (not random per tick!)
     final finalMainDigits = List.generate(6, (_) => _random.nextInt(10));
     // Keep the selected lottery letter, only randomize the second letter
@@ -156,14 +164,39 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     _scheduleDrawEnd();
   }
 
+  /// Starts periodic haptic feedback during rotation
+  void _startRotationHaptics() {
+    _hapticTimer?.cancel();
+    _hapticTimer = Timer.periodic(const Duration(milliseconds: 150), (_) {
+      HapticFeedback.selectionClick();
+    });
+  }
+
+  /// Stops the periodic haptic feedback
+  void _stopRotationHaptics() {
+    _hapticTimer?.cancel();
+    _hapticTimer = null;
+  }
+
   /// Waits for reels to finish spinning, then marks draw as complete
   void _scheduleDrawEnd() async {
     // Total spin duration: ~3 seconds (typical slot machine feel)
     await Future.delayed(const Duration(milliseconds: 3000));
 
     if (!isClosed) {
+      // Stop periodic haptic feedback
+      _stopRotationHaptics();
+
+      // Final haptic feedback when rotation stops
+      HapticFeedback.mediumImpact();
       emit(state.copyWith(isDrawing: false));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _hapticTimer?.cancel();
+    return super.close();
   }
 
   /// No longer needed - keeping for backward compatibility

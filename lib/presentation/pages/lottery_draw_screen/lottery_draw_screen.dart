@@ -39,9 +39,12 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          Navigator.of(context).pop();
+        },
         icon: const Icon(
-          Icons.close,
+          Icons.arrow_back,
           color: Colors.white,
           size: 28,
         ),
@@ -73,6 +76,9 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _copyToClipboard(BuildContext context, LotteryDrawState state) async {
+    // Haptic feedback on copy
+    HapticFeedback.mediumImpact();
+
     // Format main number: Letter1 + Letter2 + 6 digits
     final mainNumber = '${state.mainLetter1}${state.mainLetter2}${state.mainDigits.join()}';
 
@@ -93,6 +99,9 @@ ${windowNumbers.join('\n')}
 
     // Copy to clipboard
     await Clipboard.setData(ClipboardData(text: clipboardText));
+
+    // Haptic feedback on success
+    HapticFeedback.lightImpact();
 
     // Show confirmation snackbar
     if (context.mounted) {
@@ -700,6 +709,8 @@ class _LivePressButton extends StatelessWidget {
         return GestureDetector(
           onTapDown: (_) {
             if (!state.isDrawing) {
+              // Haptic feedback on button press
+              HapticFeedback.heavyImpact();
               context.read<LotteryDrawCubit>().startDraw();
             }
           },
