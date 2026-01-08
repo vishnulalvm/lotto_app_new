@@ -20,6 +20,8 @@ import 'package:lotto_app/presentation/blocs/rate_us/rate_us_state.dart';
 import 'package:lotto_app/presentation/pages/contact_us/contact_us.dart';
 import 'package:lotto_app/data/services/analytics_service.dart';
 import 'package:lotto_app/core/widgets/rate_us_dialog.dart';
+import 'package:lotto_app/presentation/pages/settings_screen/widgets/color_theme_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -135,8 +137,44 @@ class _HomeScreenState extends State<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         await FirstTimeLanguageDialog.show(context);
+        // After language dialog, check if we should show color scheme feature announcement
+        _showColorSchemeDialogIfNeeded();
       }
     });
+  }
+
+  /// Show color scheme dialog once to existing users to announce the new feature
+  void _showColorSchemeDialogIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Check if user has seen the color scheme feature announcement
+    final hasSeenColorSchemeAnnouncement =
+        prefs.getBool('has_seen_color_scheme_announcement') ?? false;
+
+    // Check if user is an existing user (has selected language before)
+    final isExistingUser = prefs.getBool('language_selected') ?? false;
+
+    // Show dialog only if:
+    // 1. User is an existing user (has used the app before)
+    // 2. Has not seen the color scheme announcement yet
+    if (isExistingUser && !hasSeenColorSchemeAnnouncement && mounted) {
+      // Add a small delay to avoid showing multiple dialogs at once
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      if (mounted) {
+        // Add haptic feedback
+        HapticFeedback.lightImpact();
+
+        // Show the color scheme dialog directly
+        await showDialog(
+          context: context,
+          builder: (context) => const ColorThemeDialog(),
+        );
+
+        // Mark as seen so it won't show again
+        await prefs.setBool('has_seen_color_scheme_announcement', true);
+      }
+    }
   }
 
   void _onScroll() {
@@ -527,9 +565,9 @@ class _HomeScreenState extends State<HomeScreen>
               context, // Pass context
             ),
             _buildPopupMenuItem(
-              'community_value', // The actual value returned when selected
-              Icons.group,
-              'community', // This is the translation key
+              'color_scheme_value', // The actual value returned when selected
+              Icons.palette_outlined,
+              'color_scheme', // This is the translation key
               Theme.of(context),
               context, // Pass context
             ),
@@ -566,8 +604,11 @@ class _HomeScreenState extends State<HomeScreen>
               case 'settings_value': // Match the actual returned value
                 context.push('/settings');
                 break;
-              case 'community_value': // Match the actual returned value
-                _launchWhatsAppGroup();
+              case 'color_scheme_value': // Match the actual returned value
+                showDialog(
+                  context: context,
+                  builder: (context) => const ColorThemeDialog(),
+                );
                 break;
               case 'contact_value': // Match the actual returned value
                 showContactSheet(context);
