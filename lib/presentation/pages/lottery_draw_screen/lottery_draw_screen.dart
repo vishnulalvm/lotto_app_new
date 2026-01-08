@@ -50,7 +50,7 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       title: const Text(
-        'Virtual Draw Machine',
+        'LOTTERY DRAW MACHINE',
         style: TextStyle(
           color: Colors.white,
           fontSize: 18,
@@ -185,7 +185,7 @@ class _LotteryBody extends StatelessWidget {
                     ),
                     // const SizedBox(height: 24),
                     const _LivePressButton(),
-                    const SizedBox(height: 24),
+                     SizedBox(height: MediaQuery.of(context).padding.bottom + 75), // Extra bottom padding
                   ],
                 ),
               ),

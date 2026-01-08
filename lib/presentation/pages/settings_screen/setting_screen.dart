@@ -235,163 +235,177 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSection(
-                    'about'.tr(),
-                    [
-                      _buildListTile(
-                        'terms_of_use'.tr(),
-                        Icons.description_outlined,
-                        onTap: () => _launchUrl(
-                            'https://lotto-app-f3440.web.app/terms-conditions.html'),
-                      ),
-                      _buildListTile(
-                        'privacy_policy'.tr(),
-                        Icons.privacy_tip_outlined,
-                        onTap: () => _launchUrl(
-                            'https://lotto-app-f3440.web.app/privacy-policy.html'),
-                      ),
-                      _buildListTile(
-                        'disclaimer'.tr(),
-                        Icons.warning_amber_outlined,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const DisclaimerScreen()),
-                        ),
-                      ),
-                      FutureBuilder<PackageInfo>(
-                        future: PackageInfo.fromPlatform(),
-                        builder: (context, snapshot) {
-                          final version = snapshot.data?.version ?? 'loading'.tr();
-                          final buildNumber = snapshot.data?.buildNumber ?? '';
-                          final versionText = buildNumber.isNotEmpty ? '$version($buildNumber)' : version;
-                          
-                          return _buildListTile(
-                            'check_for_updates'.tr(),
-                            Icons.update,
-                            trailing: Text(
-                              versionText,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            onTap: _checkForUpdate,
-                          );
-                        },
-                      ),
-                    ],
-                    theme,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              _buildSection(
+                'about'.tr(),
+                [
+                  _buildListTile(
+                    'terms_of_use'.tr(),
+                    Icons.description_outlined,
+                    onTap: () => _launchUrl(
+                        'https://lotto-app-f3440.web.app/terms-conditions.html'),
+                    isFirst: true,
                   ),
-                  _buildSection(
-                    'app'.tr(),
-                    [
-                      BlocBuilder<ThemeCubit, ThemeState>(
-                        builder: (context, themeState) {
-                          return _buildListTile(
-                            'color_scheme'.tr(),
-                            Icons.palette_outlined,
-                            trailing: Text(
-                              _getThemeModeName(themeState.themeMode, context),
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (context) => const ColorThemeDialog(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildListTile(
-                        'app_language'.tr(),
-                        Icons.language,
-                        trailing: Text(
-                          _getCurrentLanguageName(context),
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        onTap: () => _showLanguageDialog(context),
-                      ),
-                      _buildListTile(
-                        'notifications'.tr(),
-                        Icons.notifications_outlined,
-                        trailing: Switch(
-                          value: _notificationsEnabled,
-                          onChanged: _toggleNotifications,
-                          activeThumbColor: theme.primaryColor,
-                        ),
-                        showArrow: false,
-                        onTap: () => _toggleNotifications(!_notificationsEnabled),
-                      ),
-                      _buildListTile(
-                        'sound_effects'.tr(),
-                        Icons.volume_up_outlined,
-                        trailing: Switch(
-                          value: _soundEffectsEnabled,
-                          onChanged: _toggleSoundEffects,
-                          activeThumbColor: theme.primaryColor,
-                        ),
-                        showArrow: false,
-                        onTap: () => _toggleSoundEffects(!_soundEffectsEnabled),
-                      ),
-                    ],
-                    theme,
+                  _buildListTile(
+                    'privacy_policy'.tr(),
+                    Icons.privacy_tip_outlined,
+                    onTap: () => _launchUrl(
+                        'https://lotto-app-f3440.web.app/privacy-policy.html'),
                   ),
-                  _buildSection(
-                    'lottery'.tr(),
-                    [
-                      _buildListTile(
-                        'claim_lottery'.tr(),
-                        Icons.emoji_events_outlined,
-                        onTap: () => context.go('/claim'),
-                      ),
-                    ],
-                    theme,
-                  ),
-                  _buildSection(
-                    'support'.tr(),
-                    [
-                      _buildListTile(
-                        'how_to_use'.tr(),
-                        Icons.help_outline,
-                        onTap: () => context.go('/how-to-use'),
-                      ),
-                      _buildListTile(
-                        'feedback'.tr(),
-                        Icons.feedback_outlined,
-                        onTap: () => context.go('/feedback'),
-                      ),
-                      _buildListTile(
-                        'contact_us'.tr(),
-                        Icons.contact_support_outlined,
-                        onTap: () => _showContactSheet(context),
-                      ),
-                    ],
-                    theme,
-                  ),
-                                    // Company name at bottom center
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 24, top: 16),
-                      child: Text(
-                        'SOLID APPS',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: theme.primaryColor,
-                        ),
-                      ),
+                  _buildListTile(
+                    'disclaimer'.tr(),
+                    Icons.warning_amber_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DisclaimerScreen()),
                     ),
                   ),
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.data?.version ?? 'loading'.tr();
+                      final buildNumber = snapshot.data?.buildNumber ?? '';
+                      final versionText = buildNumber.isNotEmpty
+                          ? '$version($buildNumber)'
+                          : version;
 
-
-                  SizedBox(
-                    height: MediaQuery.of(context).padding.bottom + 16,
-                  ), // Add padding for bottom navigation
-
-
+                      return _buildListTile(
+                        'check_for_updates'.tr(),
+                        Icons.update,
+                        trailing: Text(
+                          versionText,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        onTap: _checkForUpdate,
+                        isLast: true,
+                      );
+                    },
+                  ),
                 ],
+                theme,
               ),
-            ),
+              const SizedBox(height: 24),
+              _buildSection(
+                'app'.tr(),
+                [
+                  BlocBuilder<ThemeCubit, ThemeState>(
+                    builder: (context, themeState) {
+                      return _buildListTile(
+                        'color_scheme'.tr(),
+                        Icons.palette_outlined,
+                        trailing: Text(
+                          _getThemeModeName(themeState.themeMode, context),
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        onTap: () => showDialog(
+                          context: context,
+                          builder: (context) => const ColorThemeDialog(),
+                        ),
+                        isFirst: true,
+                      );
+                    },
+                  ),
+                  _buildListTile(
+                    'app_language'.tr(),
+                    Icons.language,
+                    trailing: Text(
+                      _getCurrentLanguageName(context),
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    onTap: () => _showLanguageDialog(context),
+                  ),
+                  _buildListTile(
+                    'notifications'.tr(),
+                    Icons.notifications_outlined,
+                    trailing: Switch(
+                      value: _notificationsEnabled,
+                      onChanged: _toggleNotifications,
+                      activeThumbColor: theme.primaryColor,
+                    ),
+                    showArrow: false,
+                    onTap: () => _toggleNotifications(!_notificationsEnabled),
+                  ),
+                  _buildListTile(
+                    'sound_effects'.tr(),
+                    Icons.volume_up_outlined,
+                    trailing: Switch(
+                      value: _soundEffectsEnabled,
+                      onChanged: _toggleSoundEffects,
+                      activeThumbColor: theme.primaryColor,
+                    ),
+                    showArrow: false,
+                    onTap: () => _toggleSoundEffects(!_soundEffectsEnabled),
+                    isLast: true,
+                  ),
+                ],
+                theme,
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                'lottery'.tr(),
+                [
+                  _buildListTile(
+                    'claim_lottery'.tr(),
+                    Icons.emoji_events_outlined,
+                    onTap: () => context.go('/claim'),
+                    isFirst: true,
+                    isLast: true,
+                  ),
+                ],
+                theme,
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                'support'.tr(),
+                [
+                  _buildListTile(
+                    'how_to_use'.tr(),
+                    Icons.help_outline,
+                    onTap: () => context.go('/how-to-use'),
+                    isFirst: true,
+                  ),
+                  _buildListTile(
+                    'feedback'.tr(),
+                    Icons.feedback_outlined,
+                    onTap: () => context.go('/feedback'),
+                  ),
+                  _buildListTile(
+                    'contact_us'.tr(),
+                    Icons.contact_support_outlined,
+                    onTap: () => _showContactSheet(context),
+                    isLast: true,
+                  ),
+                ],
+                theme,
+              ),
+              const SizedBox(height: 32),
+              // Company name at bottom center
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Text(
+                    'SOLID APPS',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: theme.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).padding.bottom + 16,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -503,22 +517,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
+              fontSize: 14,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
             color: theme.cardColor,
-            border: Border(
-              top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-              bottom:
-                  BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-            ),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(children: children),
         ),
@@ -532,20 +543,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String? subtitle,
     Widget? trailing,
     bool showArrow = true,
+    bool isFirst = false,
+    bool isLast = false,
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: trailing ??
-          (showArrow ? const Icon(Icons.arrow_forward_ios, size: 16) : null),
-      onTap: onTap != null
-          ? () {
-              FeedbackHelper.lightClick();
-              onTap();
-            }
-          : null,
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap != null
+            ? () {
+                FeedbackHelper.lightClick();
+                onTap();
+              }
+            : null,
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(16) : Radius.zero,
+          bottom: isLast ? const Radius.circular(16) : Radius.zero,
+        ),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: !isLast
+                ? Border(
+                    bottom: BorderSide(
+                      color: theme.scaffoldBackgroundColor,
+                      width: 4,
+                    ),
+                  )
+                : null,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: theme.iconTheme.color,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing,
+              if (trailing == null && showArrow)
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey[600],
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

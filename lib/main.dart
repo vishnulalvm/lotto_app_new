@@ -24,6 +24,7 @@ import 'package:lotto_app/data/services/connectivity_service.dart';
 import 'package:lotto_app/core/services/theme_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/predict_cache_service.dart';
+import 'package:lotto_app/data/services/audio_service.dart';
 import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
 import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
 import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
@@ -87,6 +88,10 @@ void main() async {
     EasyLocalization.ensureInitialized(),
     Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
   ]);
+
+  // Initialize audio service early for instant playback (must be sequential for warm-up)
+  await AudioService().initialize();
+  await AudioService().ensureWarmedUp();
 
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

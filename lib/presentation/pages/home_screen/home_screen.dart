@@ -400,69 +400,91 @@ class _HomeScreenState extends State<HomeScreen>
           },
         ),
       ],
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _buildAppBar(theme),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            HapticFeedback.mediumImpact();
-            context
-                .read<HomeScreenResultsBloc>()
-                .add(RefreshLotteryResultsEvent());
-          },
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                // Replace _buildCarousel() with the custom widget
-                RepaintBoundary(
-                  child: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-                    buildWhen: (previous, current) {
-                      // Only rebuild if images actually changed
-                      if (previous is HomeScreenResultsLoaded &&
-                          current is HomeScreenResultsLoaded) {
-                        return previous.data.updates.allImages !=
-                            current.data.updates.allImages;
-                      }
-                      return previous.runtimeType != current.runtimeType;
-                    },
-                    builder: (context, state) {
-                      List<String> carouselImages = [];
+      child: Stack(
+        children: [
+          // Scaffold with AppBar and body
+          Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            appBar: _buildAppBar(theme),
+            body: RefreshIndicator(
+              onRefresh: () async {
+                HapticFeedback.mediumImpact();
+                context
+                    .read<HomeScreenResultsBloc>()
+                    .add(RefreshLotteryResultsEvent());
+              },
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Replace _buildCarousel() with the custom widget
+                    RepaintBoundary(
+                      child: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+                        buildWhen: (previous, current) {
+                          // Only rebuild if images actually changed
+                          if (previous is HomeScreenResultsLoaded &&
+                              current is HomeScreenResultsLoaded) {
+                            return previous.data.updates.allImages !=
+                                current.data.updates.allImages;
+                          }
+                          return previous.runtimeType != current.runtimeType;
+                        },
+                        builder: (context, state) {
+                          List<String> carouselImages = [];
 
-                      // Get images from API response
-                      if (state is HomeScreenResultsLoaded) {
-                        carouselImages = state.data.updates.allImages;
-                      }
+                          // Get images from API response
+                          if (state is HomeScreenResultsLoaded) {
+                            carouselImages = state.data.updates.allImages;
+                          }
 
-                      return SimpleCarouselWidget(
-                        images: carouselImages,
-                        onImageTap: () => _launchWebsite(),
-                        // Optional: Customize colors to match your theme
-                        gradientStartColor: Colors.pink.shade100,
-                        gradientEndColor: Colors.pink.shade300,
-                        // Optional: Custom settings
+                          return SimpleCarouselWidget(
+                            images: carouselImages,
+                            onImageTap: () => _launchWebsite(),
+                            // Optional: Customize colors to match your theme
+                            gradientStartColor: Colors.pink.shade100,
+                            gradientEndColor: Colors.pink.shade300,
+                            // Optional: Custom settings
 
-                        autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 6),
-                      );
-                    },
-                  ),
+                            autoPlay: true,
+                            autoPlayInterval: const Duration(seconds: 6),
+                          );
+                        },
+                      ),
+                    ),
+                    // SizedBox(height: AppResponsive.spacing(context, 5)),
+                    const NavigationIconsWidget(),
+                    SizedBox(height: AppResponsive.spacing(context, 10)),
+                    LotteryResultsSection(
+                      onLoadLotteryResults: _loadLotteryResults,
+                      onShowDatePicker: _showDatePicker,
+                      blinkAnimation: _blinkAnimation,
+                      formatDateForDisplay: DateFormatter.formatDateForDisplay,
+                    ),
+                    SizedBox(height: AppResponsive.spacing(context, 100)),
+                  ],
                 ),
-                // SizedBox(height: AppResponsive.spacing(context, 5)),
-                const NavigationIconsWidget(),
-                SizedBox(height: AppResponsive.spacing(context, 10)),
-                LotteryResultsSection(
-                  onLoadLotteryResults: _loadLotteryResults,
-                  onShowDatePicker: _showDatePicker,
-                  blinkAnimation: _blinkAnimation,
-                  formatDateForDisplay: DateFormatter.formatDateForDisplay,
-                ),
-                SizedBox(height: AppResponsive.spacing(context, 100)),
-              ],
+              ),
             ),
           ),
-        ),
+          // Radial gradient glow overlay at the top (behind and above AppBar)
+          IgnorePointer(
+            child: Container(
+              height: 220,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 1.1,
+                  colors: [
+                    theme.primaryColor.withValues(alpha: 0.3),
+                    theme.primaryColor.withValues(alpha: 0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -532,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen>
             style: TextStyle(
               fontSize: AppResponsive.fontSize(context, 22),
               fontWeight: FontWeight.bold,
-              color: theme.appBarTheme.titleTextStyle?.color,
+              color: theme.textTheme.bodyLarge?.color,
             ),
           );
         },
