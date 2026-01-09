@@ -220,8 +220,8 @@ class _SplashScreenState extends State<SplashScreen> {
                     // App logo
                     SvgPicture.asset(
                       'assets/icons/LOTTOSVG.svg',
-                      width: 180,
-                      height: 180,
+                      width: 150,
+                      height: 150,
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 24),

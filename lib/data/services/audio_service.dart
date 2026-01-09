@@ -109,23 +109,17 @@ class AudioService {
   }
 
   /// Perform audio warm-up to eliminate first-play latency
-  /// This actually plays sounds at very low (but audible) volume to activate
-  /// the native audio pipeline
+  /// Pools are already created and ready - no need to play sounds
   Future<void> _performWarmUp() async {
     if (_isWarmedUp) return;
-    
+
     try {
       // Wait a tiny bit for the pools to be fully ready
       await Future.delayed(const Duration(milliseconds: 50));
-      
-      // Play at VERY low volume (0.01) - inaudible but activates the pipeline
-      // This is the key fix - zero volume doesn't always activate native audio
-      _clickSoundPool?.start(volume: 0.01);
-      
-      // Small delay then warm up celebration too
-      await Future.delayed(const Duration(milliseconds: 100));
-      _celebrationSoundPool?.start(volume: 0.01);
-      
+
+      // Pools are already initialized and ready for instant playback
+      // No need to play sounds - the AudioPool creation already activates the pipeline
+
       _isWarmedUp = true;
       debugPrint('AudioService: Warm-up complete - ready for instant playback');
     } catch (e) {

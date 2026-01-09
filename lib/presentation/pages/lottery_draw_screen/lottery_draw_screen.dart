@@ -20,6 +20,8 @@ class LotteryDrawScreen extends StatelessWidget {
         backgroundColor: Color(0xFF000000),
         appBar: _StaticAppBar(),
         body: _LotteryBody(),
+        floatingActionButton: _LivePressButton(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
@@ -83,19 +85,29 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
     final mainNumber =
         '${state.mainLetter1}${state.mainLetter2}${state.mainDigits.join()}';
 
-    // Format window numbers: Window1: 1234, Window2: 5678, etc.
-    final windowNumbers = <String>[];
-    for (int i = 1; i <= 18; i++) {
-      final digits = state.windowDigits[i]?.join() ?? '0000';
-      windowNumbers.add('Window $i: $digits');
+    // Format window numbers in compact rows (3 per row)
+    final windowRows = <String>[];
+    for (int i = 0; i < 18; i += 3) {
+      final w1 = state.windowDigits[i + 1]?.join() ?? '0000';
+      final w2 = state.windowDigits[i + 2]?.join() ?? '0000';
+      final w3 = state.windowDigits[i + 3]?.join() ?? '0000';
+      windowRows.add('$w1 | $w2 | $w3');
     }
 
-    // Combine all into clipboard text
+    // Combine all into WhatsApp-friendly format
     final clipboardText = '''
-Main Number: $mainNumber
+🎰 Kerala Lottery Guess 🎰
 
-Window Numbers:
-${windowNumbers.join('\n')}
+🎯 ${state.lotteryName} Lucky Number:
+   $mainNumber
+
+💰 Consolation Numbers:
+${windowRows.join('\n')}
+
+📲 Get the App:
+https://play.google.com/store/apps/details?id=app.solidapps.lotto
+
+🍀 Good Luck! 🍀
 ''';
 
     // Copy to clipboard
@@ -205,11 +217,9 @@ class _LotteryBody extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // const SizedBox(height: 24),
-                    const _LivePressButton(),
                     SizedBox(
                         height: MediaQuery.of(context).padding.bottom +
-                            75), // Extra bottom padding
+                            100), // Extra bottom padding for floating button
                   ],
                 ),
               ),

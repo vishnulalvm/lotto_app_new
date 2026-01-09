@@ -155,21 +155,26 @@ class _SimpleCarouselWidgetState extends State<SimpleCarouselWidget>
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildShimmerEffect(),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-              color: Colors.white.withAlpha(204),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Loading...',
-                style: TextStyle(
-                  color: endColor.withAlpha(204),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+            Flexible(
+              child: _buildShimmerEffect(),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                color: Colors.white.withAlpha(204),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Loading...',
+                  style: TextStyle(
+                    color: endColor.withAlpha(204),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
