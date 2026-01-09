@@ -33,8 +33,10 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
     'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
   ];
 
-  // Series dropdown options
-  static const List<String> seriesOptions = ['Series 1', 'Series 2'];
+  // Series display strings (show actual letters)
+  static const String series1Display = 'A B C D E F G H J K L M';
+  static const String series2Display = 'N O P R S T U V W X Y Z';
+  static const List<String> seriesOptions = [series1Display, series2Display];
 
   String? selectedLottery;
   String? selectedSeries;
@@ -44,13 +46,16 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
     super.initState();
     // Set default values
     selectedLottery = _getLotteryNameForToday();
-    selectedSeries = 'Series 1'; // Default to Series 1
+    selectedSeries = series1Display; // Default to Series 1
 
     // Update the cubit with the initial lottery letter and series after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final letter = lotteryLetters[selectedLottery];
-      if (letter != null) {
-        context.read<LotteryDrawCubit>().updateLotteryLetter(letter);
+      if (letter != null && selectedLottery != null) {
+        context.read<LotteryDrawCubit>().updateLotteryLetter(
+          letter,
+          lotteryName: selectedLottery!,
+        );
       }
       // Set initial series letters (Series 1)
       context.read<LotteryDrawCubit>().updateSeriesLetters(seriesType1);
@@ -106,11 +111,14 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
                 setState(() {
                   selectedLottery = value;
                 });
-                // Update the cubit with the new lottery letter
+                // Update the cubit with the new lottery letter and name
                 if (value != null) {
                   final letter = lotteryLetters[value];
                   if (letter != null) {
-                    context.read<LotteryDrawCubit>().updateLotteryLetter(letter);
+                    context.read<LotteryDrawCubit>().updateLotteryLetter(
+                      letter,
+                      lotteryName: value,
+                    );
                   }
                 }
               },
@@ -132,7 +140,7 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
                 });
                 // Update the cubit with the new series letters
                 if (value != null) {
-                  final letters = value == 'Series 1' ? seriesType1 : seriesType2;
+                  final letters = value == series1Display ? seriesType1 : seriesType2;
                   context.read<LotteryDrawCubit>().updateSeriesLetters(letters);
                 }
               },
@@ -168,6 +176,7 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
               color: Color(0xFF666666),
               fontSize: 14,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
           isExpanded: true,
           icon: const Icon(
@@ -181,6 +190,23 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
+          selectedItemBuilder: (BuildContext context) {
+            return items.map<Widget>((String item) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  item,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              );
+            }).toList();
+          },
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
@@ -190,6 +216,8 @@ class _LotterySeriesSelectorState extends State<LotterySeriesSelector> {
                   color: Colors.white,
                   fontSize: 14,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             );
           }).toList(),

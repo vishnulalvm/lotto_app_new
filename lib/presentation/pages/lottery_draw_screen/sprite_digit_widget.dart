@@ -51,6 +51,8 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
   // Spinning
   Timer? _spinTimer;
   bool _isCurrentlySpinning = false;
+  bool _isDecelerating = false;
+  int _spinInterval = 50; // Current spin speed
 
   String get _cacheKey => 'digit_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.toARGB32()}';
 
@@ -148,10 +150,12 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
   void _startSpinning() {
     if (_isCurrentlySpinning) return;
     _isCurrentlySpinning = true;
-    
+    _isDecelerating = false;
+    _spinInterval = 50; // Reset to fast speed
+
     _spinTimer?.cancel();
     _spinTimer = Timer.periodic(
-      const Duration(milliseconds: 50),
+      Duration(milliseconds: _spinInterval),
       (_) => _spinStep(),
     );
   }
@@ -163,15 +167,35 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
     _previousDigit = _displayDigit;
     _displayDigit = (_displayDigit + 1) % 10;
 
+    // If decelerating, gradually slow down
+    if (_isDecelerating) {
+      _spinInterval += 25; // Slow down by 25ms each step (faster deceleration)
+      _spinTimer?.cancel();
+
+      if (_spinInterval > 150) {
+        // Stop spinning when too slow
+        _stopSpinningImmediately();
+        return;
+      }
+
+      _spinTimer = Timer.periodic(
+        Duration(milliseconds: _spinInterval),
+        (_) => _spinStep(),
+      );
+    }
+
     // Animate the transition
     _transitionProgress = 0.0;
-    _snapController.duration = const Duration(milliseconds: 50);
+    final animDuration = _isDecelerating
+        ? _spinInterval.clamp(35, 100)
+        : 50;
+    _snapController.duration = Duration(milliseconds: animDuration);
     _snapController.forward(from: 0.0);
-    
+
     _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _snapController, curve: Curves.linear),
     );
-    
+
     _snapAnimation!.addListener(_onTransitionTick);
     _snapController.forward(from: 0.0).then((_) {
       _snapAnimation?.removeListener(_onTransitionTick);
@@ -193,20 +217,27 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
   }
 
   void _stopSpinning() {
+    // Start smooth deceleration instead of immediate stop
+    _isDecelerating = true;
+    // The _spinStep will handle gradual slowdown
+  }
+
+  void _stopSpinningImmediately() {
     _isCurrentlySpinning = false;
+    _isDecelerating = false;
     _spinTimer?.cancel();
     _spinTimer = null;
-    
+
     // Stop any in-progress animation
     _snapController.stop();
     _snapAnimation?.removeListener(_onTransitionTick);
-    
+
     // CRITICAL: Immediately snap to current integer position
     setState(() {
       _transitionProgress = 0.0;
       _previousDigit = _displayDigit;
     });
-    
+
     // Now animate from current position to target
     _animateToTarget();
   }
@@ -418,9 +449,11 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
   int _targetIndex = 0;
   int _previousIndex = 0;
   double _transitionProgress = 0.0;
-  
+
   Timer? _spinTimer;
   bool _isCurrentlySpinning = false;
+  bool _isDecelerating = false;
+  int _spinInterval = 50;
 
   String get _cacheKey => 'letter_${widget.width}_${widget.cellHeight}_${widget.fontSize}_${widget.textColor.toARGB32()}';
 
@@ -520,10 +553,12 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
   void _startSpinning() {
     if (_isCurrentlySpinning) return;
     _isCurrentlySpinning = true;
+    _isDecelerating = false;
+    _spinInterval = 50;
 
     _spinTimer?.cancel();
     _spinTimer = Timer.periodic(
-      const Duration(milliseconds: 50),
+      Duration(milliseconds: _spinInterval),
       (_) => _spinStep(),
     );
   }
@@ -534,8 +569,25 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
     _previousIndex = _displayIndex;
     _displayIndex = (_displayIndex + 1) % 26;
 
+    // If decelerating, gradually slow down
+    if (_isDecelerating) {
+      _spinInterval += 25; // Slow down by 25ms each step (faster deceleration)
+      _spinTimer?.cancel();
+
+      if (_spinInterval > 150) {
+        _stopSpinningImmediately();
+        return;
+      }
+
+      _spinTimer = Timer.periodic(
+        Duration(milliseconds: _spinInterval),
+        (_) => _spinStep(),
+      );
+    }
+
     _transitionProgress = 0.0;
-    _snapController.duration = const Duration(milliseconds: 50);
+    final animDuration = _isDecelerating ? _spinInterval.clamp(35, 100) : 50;
+    _snapController.duration = Duration(milliseconds: animDuration);
     
     _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _snapController, curve: Curves.linear),
@@ -562,18 +614,24 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
   }
 
   void _stopSpinning() {
+    // Start smooth deceleration
+    _isDecelerating = true;
+  }
+
+  void _stopSpinningImmediately() {
     _isCurrentlySpinning = false;
+    _isDecelerating = false;
     _spinTimer?.cancel();
     _spinTimer = null;
-    
+
     _snapController.stop();
     _snapAnimation?.removeListener(_onTransitionTick);
-    
+
     setState(() {
       _transitionProgress = 0.0;
       _previousIndex = _displayIndex;
     });
-    
+
     _animateToTarget();
   }
 

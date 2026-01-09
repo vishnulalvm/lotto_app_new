@@ -80,7 +80,8 @@ class _StaticAppBar extends StatelessWidget implements PreferredSizeWidget {
     HapticFeedback.mediumImpact();
 
     // Format main number: Letter1 + Letter2 + 6 digits
-    final mainNumber = '${state.mainLetter1}${state.mainLetter2}${state.mainDigits.join()}';
+    final mainNumber =
+        '${state.mainLetter1}${state.mainLetter2}${state.mainDigits.join()}';
 
     // Format window numbers: Window1: 1234, Window2: 5678, etc.
     final windowNumbers = <String>[];
@@ -137,7 +138,8 @@ class _LotteryBody extends StatelessWidget {
                     // RepaintBoundary caches the heavy gradient container
                     RepaintBoundary(
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 16),
                         constraints: const BoxConstraints(maxWidth: 600),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
@@ -163,29 +165,51 @@ class _LotteryBody extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Column(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            LotteryDrawHeader(
-                              lotteryName: 'കേരള് ലോട്ടറി',
-                              drawNumber: 'BT 36',
+                            BlocBuilder<LotteryDrawCubit, LotteryDrawState>(
+                              buildWhen: (prev, current) =>
+                                  prev.lotteryName != current.lotteryName ||
+                                  prev.mainDigits != current.mainDigits,
+                              builder: (context, state) {
+                                // Extract first 2 letters from lottery name (same as footer)
+                                final words = state.lotteryName.split(' ');
+                                final lotteryLetters = words.length > 1
+                                    ? '${words[0][0]}${words[1][0]}' // Multi-word: first letter of each word
+                                    : state.lotteryName.substring(
+                                        0, 2); // Single word: first 2 letters
+
+                                // Generate draw number: Lottery letters + 2 random digits
+                                final firstTwoDigits =
+                                    state.mainDigits.take(2).join();
+                                final drawNumber =
+                                    '$lotteryLetters $firstTwoDigits';
+
+                                return LotteryDrawHeader(
+                                  lotteryName: 'കേരള് ലോട്ടറി',
+                                  drawNumber: drawNumber,
+                                );
+                              },
                             ),
-                            SizedBox(height: 10),
-                            _LiveMainWindow(),
-                            SizedBox(height: 24),
-                            Padding(
+                            const SizedBox(height: 10),
+                            const _LiveMainWindow(),
+                            const SizedBox(height: 24),
+                            const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8),
                               child: _LiveWindowsGrid(),
                             ),
-                            SizedBox(height: 16),
-                            _FooterSection(),
+                            const SizedBox(height: 16),
+                            const _FooterSection(),
                           ],
                         ),
                       ),
                     ),
                     // const SizedBox(height: 24),
                     const _LivePressButton(),
-                     SizedBox(height: MediaQuery.of(context).padding.bottom + 75), // Extra bottom padding
+                    SizedBox(
+                        height: MediaQuery.of(context).padding.bottom +
+                            75), // Extra bottom padding
                   ],
                 ),
               ),
@@ -239,7 +263,8 @@ class _LiveMainWindow extends StatelessWidget {
                 border: Border.all(color: const Color(0xFF666666), width: 0.5),
               ),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
@@ -265,19 +290,26 @@ class _LiveMainWindow extends StatelessWidget {
                   children: [
                     const StaticLotteryLetterBox(), // Static lottery letter from dropdown
                     const SizedBox(width: 3),
-                    SeriesLetterBox(isSpinning: state.isDrawing), // Series-specific letter
+                    SeriesLetterBox(
+                        isSpinning: state.isDrawing), // Series-specific letter
                     const SizedBox(width: 6),
-                    _buildMainDigitBox(state.mainDigits[0].toString(), duration, isSpinning: state.isDrawing),
+                    _buildMainDigitBox(state.mainDigits[0].toString(), duration,
+                        isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
-                    _buildMainDigitBox(state.mainDigits[1].toString(), duration, isSpinning: state.isDrawing),
+                    _buildMainDigitBox(state.mainDigits[1].toString(), duration,
+                        isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
-                    _buildMainDigitBox(state.mainDigits[2].toString(), duration, isSpinning: state.isDrawing),
+                    _buildMainDigitBox(state.mainDigits[2].toString(), duration,
+                        isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
-                    _buildMainDigitBox(state.mainDigits[3].toString(), duration, isSpinning: state.isDrawing),
+                    _buildMainDigitBox(state.mainDigits[3].toString(), duration,
+                        isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
-                    _buildMainDigitBox(state.mainDigits[4].toString(), duration, isSpinning: state.isDrawing),
+                    _buildMainDigitBox(state.mainDigits[4].toString(), duration,
+                        isSpinning: state.isDrawing),
                     const SizedBox(width: 3),
-                    _buildMainDigitBox(state.mainDigits[5].toString(), duration, isSpinning: state.isDrawing),
+                    _buildMainDigitBox(state.mainDigits[5].toString(), duration,
+                        isSpinning: state.isDrawing),
                   ],
                 ),
               ),
@@ -288,8 +320,8 @@ class _LiveMainWindow extends StatelessWidget {
     );
   }
 
-
-  Widget _buildMainDigitBox(String digit, Duration duration, {bool isSpinning = false}) {
+  Widget _buildMainDigitBox(String digit, Duration duration,
+      {bool isSpinning = false}) {
     return RepaintBoundary(
       child: Container(
         width: 28,
@@ -383,7 +415,9 @@ class _LiveWindowsGrid extends StatelessWidget {
         for (int row = 0; row < 6; row++) {
           final rowWindows = <int>[];
           for (int col = 0; col < 3; col++) {
-            final windowNum = row + 1 + (col * 6); // 1,2,3,4,5,6 | 7,8,9,10,11,12 | 13,14,15,16,17,18
+            final windowNum = row +
+                1 +
+                (col * 6); // 1,2,3,4,5,6 | 7,8,9,10,11,12 | 13,14,15,16,17,18
             rowWindows.add(windowNum);
           }
           rows.add(rowWindows);
@@ -398,7 +432,8 @@ class _LiveWindowsGrid extends StatelessWidget {
                 children: row.map((windowNum) {
                   return Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       child: _buildWindowItem(
                         windowNum,
                         state.windowDigits[windowNum]!,
@@ -416,7 +451,8 @@ class _LiveWindowsGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildWindowItem(int number, List<int> digits, Duration duration, {bool isSpinning = false}) {
+  Widget _buildWindowItem(int number, List<int> digits, Duration duration,
+      {bool isSpinning = false}) {
     return RepaintBoundary(
       child: Row(
         children: [
@@ -481,10 +517,14 @@ class _LiveWindowsGrid extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildDigitBox(digits[0].toString(), duration, isSpinning: isSpinning),
-                  _buildDigitBox(digits[1].toString(), duration, isSpinning: isSpinning),
-                  _buildDigitBox(digits[2].toString(), duration, isSpinning: isSpinning),
-                  _buildDigitBox(digits[3].toString(), duration, isSpinning: isSpinning),
+                  _buildDigitBox(digits[0].toString(), duration,
+                      isSpinning: isSpinning),
+                  _buildDigitBox(digits[1].toString(), duration,
+                      isSpinning: isSpinning),
+                  _buildDigitBox(digits[2].toString(), duration,
+                      isSpinning: isSpinning),
+                  _buildDigitBox(digits[3].toString(), duration,
+                      isSpinning: isSpinning),
                 ],
               ),
             ),
@@ -494,7 +534,8 @@ class _LiveWindowsGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildDigitBox(String digit, Duration duration, {bool isSpinning = false}) {
+  Widget _buildDigitBox(String digit, Duration duration,
+      {bool isSpinning = false}) {
     return Flexible(
       child: RepaintBoundary(
         child: Container(
@@ -516,13 +557,15 @@ class _LiveWindowsGrid extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
             border: Border.all(color: const Color(0xFF888888), width: 0.8),
             // Disable shadows during spinning to reduce raster cost
-            boxShadow: isSpinning ? null : [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            boxShadow: isSpinning
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
           ),
           child: Center(
             child: RollingDigit(
@@ -549,95 +592,41 @@ class _FooterSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LotteryDrawCubit, LotteryDrawState>(
-      buildWhen: (prev, current) => prev.isDrawing != current.isDrawing,
+      buildWhen: (prev, current) =>
+          prev.isDrawing != current.isDrawing ||
+          prev.lotteryName != current.lotteryName ||
+          prev.mainDigits != current.mainDigits,
       builder: (context, state) {
+        // Extract first 2 letters from lottery name (e.g., "KARUNYA" -> "KA", "KARUNYA PLUS" -> "KP")
+        final words = state.lotteryName.split(' ');
+        final footerLetters = words.length > 1
+            ? '${words[0][0]}${words[1][0]}' // Multi-word: first letter of each word
+            : state.lotteryName.substring(0, 2); // Single word: first 2 letters
+        final footerDigits = state.mainDigits.take(2).join();
+
         return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFD0D0D0),
-            Color(0xFFB0B0B0),
-            Color(0xFF909090),
-          ],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(4),
-          bottomRight: Radius.circular(4),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFFFFF),
-                  Color(0xFFF0F0F0),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: const Text(
-              'PRIZE',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF000000),
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: state.isDrawing ? const Color(0xFF00FF00) : const Color(0xFFFF0000),
-              boxShadow: [
-                BoxShadow(
-                  color: state.isDrawing
-                      ? Colors.green.withValues(alpha: 0.6)
-                      : Colors.red.withValues(alpha: 0.6),
-                  blurRadius: 6,
-                  spreadRadius: 2,
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFD0D0D0),
+                Color(0xFFB0B0B0),
+                Color(0xFF909090),
               ],
             ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(4),
+              bottomRight: Radius.circular(4),
+            ),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2a2a2a),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: const Text(
-                  'BT',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFFFFFFFF),
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              // const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
@@ -650,7 +639,7 @@ class _FooterSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: const Text(
-                  '36',
+                  'PRIZE',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -659,10 +648,79 @@ class _FooterSection extends StatelessWidget {
                   ),
                 ),
               ),
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: state.isDrawing
+                      ? const Color(0xFF00FF00)
+                      : const Color(0xFFFF0000),
+                  boxShadow: [
+                    BoxShadow(
+                      color: state.isDrawing
+                          ? Colors.green.withValues(alpha: 0.6)
+                          : Colors.red.withValues(alpha: 0.6),
+                      blurRadius: 6,
+                      spreadRadius: 2,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2a2a2a),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      footerLetters, // Dynamic letters
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFFFFFFF),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  // const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFF0F0F0),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      footerDigits, // Dynamic digits
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF000000),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
         );
       },
     );
@@ -698,8 +756,12 @@ class _LivePressButton extends StatelessWidget {
                   center: const Alignment(-0.2, -0.2),
                   radius: 0.8,
                   colors: [
-                    state.isDrawing ? const Color(0xFF999999) : const Color(0xFFFF5555),
-                    state.isDrawing ? const Color(0xFF555555) : const Color(0xFF990000),
+                    state.isDrawing
+                        ? const Color(0xFF999999)
+                        : const Color(0xFFFF5555),
+                    state.isDrawing
+                        ? const Color(0xFF555555)
+                        : const Color(0xFF990000),
                   ],
                 ),
                 border: Border.all(
@@ -920,7 +982,8 @@ class _LiveTimerSectionState extends State<_LiveTimerSection> {
     _timeFormat = DateFormat('HH:mm:ss');
     _dateFormat = DateFormat('dd.MM.yy');
     _updateDateTime();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
+    _timer =
+        Timer.periodic(const Duration(seconds: 1), (_) => _updateDateTime());
   }
 
   void _updateDateTime() {

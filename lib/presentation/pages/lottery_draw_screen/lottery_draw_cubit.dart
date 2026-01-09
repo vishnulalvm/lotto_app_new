@@ -15,6 +15,7 @@ class LotteryDrawState extends Equatable {
   final String timerValue;
   final Map<int, List<int>> windowDigits;
   final List<String> seriesLetters; // Available letters for the selected series
+  final String lotteryName; // Full lottery name (e.g., "KARUNYA", "KARUNYA PLUS")
 
   const LotteryDrawState({
     required this.isDrawing,
@@ -25,6 +26,7 @@ class LotteryDrawState extends Equatable {
     required this.timerValue,
     required this.windowDigits,
     required this.seriesLetters,
+    required this.lotteryName,
   });
 
   factory LotteryDrawState.initial({String? initialLotteryLetter}) {
@@ -55,6 +57,7 @@ class LotteryDrawState extends Equatable {
       timerValue: randomTimerValue, // Random timer instead of hardcoded
       seriesLetters: defaultSeriesLetters,
       windowDigits: randomWindowDigits, // Random window digits
+      lotteryName: 'BHAGYATHARA', // Default lottery name
     );
   }
 
@@ -67,6 +70,7 @@ class LotteryDrawState extends Equatable {
     String? timerValue,
     Map<int, List<int>>? windowDigits,
     List<String>? seriesLetters,
+    String? lotteryName,
   }) {
     return LotteryDrawState(
       isDrawing: isDrawing ?? this.isDrawing,
@@ -77,6 +81,7 @@ class LotteryDrawState extends Equatable {
       timerValue: timerValue ?? this.timerValue,
       windowDigits: windowDigits ?? this.windowDigits,
       seriesLetters: seriesLetters ?? this.seriesLetters,
+      lotteryName: lotteryName ?? this.lotteryName,
     );
   }
 
@@ -90,6 +95,7 @@ class LotteryDrawState extends Equatable {
         timerValue,
         windowDigits,
         seriesLetters,
+        lotteryName,
       ];
 }
 
@@ -108,9 +114,12 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     return state.seriesLetters[_random.nextInt(state.seriesLetters.length)];
   }
 
-  /// Updates the lottery letter (from dropdown selection)
-  void updateLotteryLetter(String letter) {
-    emit(state.copyWith(mainLetter1: letter));
+  /// Updates the lottery letter and name (from dropdown selection)
+  void updateLotteryLetter(String letter, {String? lotteryName}) {
+    emit(state.copyWith(
+      mainLetter1: letter,
+      lotteryName: lotteryName,
+    ));
   }
 
   /// Updates the available series letters (from series dropdown selection)
