@@ -151,21 +151,21 @@ class _SpriteDigitRollerState extends State<SpriteDigitRoller>
     
     _spinTimer?.cancel();
     _spinTimer = Timer.periodic(
-      const Duration(milliseconds: 70),
+      const Duration(milliseconds: 50),
       (_) => _spinStep(),
     );
   }
 
   void _spinStep() {
     if (!mounted || !_isCurrentlySpinning) return;
-    
+
     // Move to next digit
     _previousDigit = _displayDigit;
     _displayDigit = (_displayDigit + 1) % 10;
-    
+
     // Animate the transition
     _transitionProgress = 0.0;
-    _snapController.duration = const Duration(milliseconds: 60);
+    _snapController.duration = const Duration(milliseconds: 50);
     _snapController.forward(from: 0.0);
     
     _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -520,22 +520,22 @@ class _SpriteLetterRollerState extends State<SpriteLetterRoller>
   void _startSpinning() {
     if (_isCurrentlySpinning) return;
     _isCurrentlySpinning = true;
-    
+
     _spinTimer?.cancel();
     _spinTimer = Timer.periodic(
-      const Duration(milliseconds: 70),
+      const Duration(milliseconds: 50),
       (_) => _spinStep(),
     );
   }
 
   void _spinStep() {
     if (!mounted || !_isCurrentlySpinning) return;
-    
+
     _previousIndex = _displayIndex;
     _displayIndex = (_displayIndex + 1) % 26;
-    
+
     _transitionProgress = 0.0;
-    _snapController.duration = const Duration(milliseconds: 60);
+    _snapController.duration = const Duration(milliseconds: 50);
     
     _snapAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _snapController, curve: Curves.linear),
