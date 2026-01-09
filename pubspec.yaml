@@ -2,7 +2,7 @@ name: lotto_app
 description: "A Lottery Result App"
 publish_to: "none"
 
-version: 2.2.05+73
+version: 2.3.01+74
 
 environment:
   sdk: ^3.6.0
@@ -13,6 +13,7 @@ dependencies:
   carousel_slider: ^5.0.0
   confetti: ^0.8.0
   connectivity_plus: ^7.0.0
+  dio_smart_retry: ^6.0.0
   easy_localization: ^3.0.7+1
   equatable: ^2.0.7
   firebase_analytics: ^12.0.1
@@ -23,6 +24,7 @@ dependencies:
     sdk: flutter
   flutter_bloc: ^9.1.1
   flutter_local_notifications: ^19.4.1
+  flutter_svg: ^2.0.10
   fluttertoast: ^9.0.0
   go_router: ^16.2.1
   google_mobile_ads: ^6.0.0

@@ -31,34 +31,30 @@ class LotteryDrawState extends Equatable {
     // Default to Series 1 letters
     const defaultSeriesLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M'];
 
+    // Create Random instance for initial state (one-time use)
+    final random = Random();
+
+    // Generate random initial values for better UX
+    // Users will see different numbers each time they open the screen
+    final randomMainDigits = List.generate(6, (_) => random.nextInt(10));
+    final randomTimerValue = random.nextInt(99999).toString().padLeft(5, '0');
+    final randomLetter2 = defaultSeriesLetters[random.nextInt(defaultSeriesLetters.length)];
+
+    // Generate random window digits (18 windows, 4 digits each)
+    final randomWindowDigits = <int, List<int>>{};
+    for (int i = 1; i <= 18; i++) {
+      randomWindowDigits[i] = List.generate(4, (_) => random.nextInt(10));
+    }
+
     return LotteryDrawState(
       isDrawing: false,
       currentTick: 0,
       mainLetter1: initialLotteryLetter ?? 'B',
-      mainLetter2: 'A', // Default to first letter of series 1
-      mainDigits: [8, 5, 6, 2, 8, 1],
-      timerValue: '30239',
+      mainLetter2: randomLetter2, // Random letter from series
+      mainDigits: randomMainDigits, // Random digits instead of hardcoded
+      timerValue: randomTimerValue, // Random timer instead of hardcoded
       seriesLetters: defaultSeriesLetters,
-      windowDigits: {
-        1: [2, 7, 9, 4],
-        2: [9, 7, 5, 5],
-        3: [4, 3, 5, 5],
-        4: [9, 9, 0, 1],
-        5: [1, 4, 6, 8],
-        6: [5, 8, 9, 2],
-        7: [1, 0, 4, 7],
-        8: [4, 2, 5, 3],
-        9: [7, 8, 0, 3],
-        10: [1, 2, 7, 8],
-        11: [8, 0, 2, 5],
-        12: [2, 5, 9, 4],
-        13: [0, 4, 7, 9],
-        14: [5, 1, 5, 1],
-        15: [8, 5, 4, 6],
-        16: [8, 9, 8, 3],
-        17: [1, 8, 2, 1],
-        18: [6, 8, 5, 7],
-      },
+      windowDigits: randomWindowDigits, // Random window digits
     );
   }
 

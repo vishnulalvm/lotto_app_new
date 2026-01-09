@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:lotto_app/core/utils/responsive_helper.dart';
 import 'package:lotto_app/data/models/live_video_screen/live_video_model.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
@@ -598,34 +599,149 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
   }
 
   Widget _buildLoadingState(ThemeData theme) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(32),
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 3, // Show 3 shimmer placeholders
+      itemBuilder: (context, index) {
+        return _buildShimmerCard(theme);
+      },
+    );
+  }
+
+  Widget _buildShimmerCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
+    return Card(
+      color: theme.cardTheme.color,
+      margin: AppResponsive.margin(context, horizontal: 16, vertical: 8),
+      elevation: theme.brightness == Brightness.dark ? 3.0 : 1.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppResponsive.spacing(context, 8)),
+        side: BorderSide(
+          color: isDark
+              ? Colors.grey.withValues(alpha: 0.2)
+              : Colors.grey.withValues(alpha: 0.08),
+          width: isDark ? 0.8 : 0.3,
+        ),
+      ),
+      child: Shimmer.fromColors(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Beautiful animated loading indicator
-            CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                theme.colorScheme.primary,
+            // Thumbnail placeholder
+            ClipRRect(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppResponsive.spacing(context, 8)),
+              ),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: Colors.white,
+                ),
               ),
             ),
 
-            const SizedBox(height: 24),
-
-            // Loading text with better styling
-            Text(
-              'loading_videos'.tr(),
-              style: TextStyle(
-                color:
-                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                fontSize: AppResponsive.fontSize(context, 16),
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
+            // Content placeholder
+            Padding(
+              padding:
+                  AppResponsive.padding(context, horizontal: 14, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 3,
+                        height: AppResponsive.spacing(context, 45),
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: AppResponsive.spacing(context, 12)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title lines
+                            Container(
+                              width: double.infinity,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            SizedBox(height: AppResponsive.spacing(context, 8)),
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.6,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            SizedBox(height: AppResponsive.spacing(context, 8)),
+                            // Date placeholder
+                            Container(
+                              width: 100,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 10)),
+                  // Description lines
+                  Container(
+                    width: double.infinity,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 6)),
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: AppResponsive.spacing(context, 12)),
+                  // Bottom row with status and button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      Container(
+                        width: 100,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

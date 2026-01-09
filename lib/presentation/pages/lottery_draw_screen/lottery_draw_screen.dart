@@ -327,7 +327,7 @@ class _LiveMainWindow extends StatelessWidget {
               left: 0,
               bottom: 0,
               child: Container(
-                width: 3,
+                width: 4,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
@@ -340,16 +340,21 @@ class _LiveMainWindow extends StatelessWidget {
                 ),
               ),
             ),
-            Center(
-              child: RollingDigit(
-                digit: digit,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF000000),
+            Align(
+              alignment: Alignment.center,
+              child: Transform.translate(
+                offset: const Offset(0, 0), // Perfectly centered
+                child: RollingDigit(
+                  digit: digit,
+                  style: const TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF000000),
+                    height: 1.0, // Tighter line height for better centering
+                  ),
+                  duration: duration,
+                  isSpinning: isSpinning,
                 ),
-                duration: duration,
-                isSpinning: isSpinning,
               ),
             ),
           ],

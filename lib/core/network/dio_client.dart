@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:lotto_app/core/constants/api_constants/api_constants.dart';
 
 class DioClient {
@@ -9,9 +10,10 @@ class DioClient {
       _instance = Dio(
         BaseOptions(
           baseUrl: ApiConstants.baseUrl,
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-          sendTimeout: const Duration(seconds: 30),
+          // Longer timeouts for slow connections (15 seconds as recommended)
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -19,22 +21,18 @@ class DioClient {
         ),
       );
 
-      // Add retry interceptor for network errors
+      // Add dio_smart_retry for automatic retries with exponential backoff
       _instance!.interceptors.add(
-        InterceptorsWrapper(
-          onError: (DioException error, ErrorInterceptorHandler handler) async {
-            if (_shouldRetry(error)) {
-              try {
-                // Retry the request
-                final response = await _instance!.fetch(error.requestOptions);
-                handler.resolve(response);
-              } catch (e) {
-                handler.next(error);
-              }
-            } else {
-              handler.next(error);
-            }
-          },
+        RetryInterceptor(
+          dio: _instance!,
+          logPrint: print, // Show retry logs
+          retries: 3, // Retry up to 3 times
+          retryDelays: const [
+            Duration(seconds: 1),  // 1st retry after 1 second
+            Duration(seconds: 2),  // 2nd retry after 2 seconds
+            Duration(seconds: 4),  // 3rd retry after 4 seconds (exponential backoff)
+          ],
+          retryableExtraStatuses: {408, 502, 503, 504}, // Also retry these HTTP status codes
         ),
       );
 
@@ -52,14 +50,6 @@ class DioClient {
       );
     }
     return _instance!;
-  }
-
-  // Determine if we should retry the request
-  static bool _shouldRetry(DioException error) {
-    return error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.sendTimeout ||
-        error.type == DioExceptionType.receiveTimeout ||
-        error.type == DioExceptionType.connectionError;
   }
 
   // Reset instance (useful for testing or configuration changes)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lotto_app/data/services/hive_service.dart';
 import 'package:lotto_app/data/services/connectivity_service.dart';
@@ -25,30 +26,10 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  bool _hasPreloadedImages = false;
-
   @override
   void initState() {
     super.initState();
     _initializeApp();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Move precache to didChangeDependencies where MediaQuery is available
-    if (!_hasPreloadedImages) {
-      _precacheImages();
-      _hasPreloadedImages = true;
-    }
-  }
-
-  void _precacheImages() {
-    // Precache logo to improve initial loading
-    precacheImage(
-      const AssetImage('assets/icons/logo_foreground.png'),
-      context,
-    );
   }
 
 
@@ -237,15 +218,11 @@ class _SplashScreenState extends State<SplashScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // App logo
-                    Image.asset(
-                      'assets/icons/logo_foreground.png',
-                      width: 200,
-                      height: 200,
-                      cacheWidth: 400, // 2x for better quality on high DPI
-                      cacheHeight: 400,
-                      filterQuality: FilterQuality.low, // Faster loading
+                    SvgPicture.asset(
+                      'assets/icons/LOTTOSVG.svg',
+                      width: 180,
+                      height: 180,
                       fit: BoxFit.contain,
-                      isAntiAlias: true,
                     ),
                     const SizedBox(height: 24),
                     Text(
