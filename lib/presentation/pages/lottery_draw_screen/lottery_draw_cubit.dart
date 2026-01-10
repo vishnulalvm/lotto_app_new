@@ -128,6 +128,7 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
   final Random _random = Random();
   Timer? _hapticTimer;
   final LotteryDrawStorageService _storageService;
+  AudioPlayer? _audioPlayer;
 
   /// IMPORTANT: Use this static method to create the cubit
   /// This ensures saved state is loaded BEFORE the cubit emits anything
@@ -219,13 +220,23 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     _saveCurrentState();
   }
 
-  void startDraw() {
+  /// Starts the lottery draw - called when user PRESSES button
+  void startDraw() async {
     if (state.isDrawing) return;
 
-    FlameAudio.play('audios/spining_sound.mp3', volume: 0.3);
+    // Start controllable audio playback
+    try {
+      await _audioPlayer?.dispose(); // Clean up any existing player
+      _audioPlayer = AudioPlayer();
+      await _audioPlayer!.play(AssetSource('audios/spining_sound.mp3'), volume: 0.3);
+    } catch (e) {
+      // If audio fails, continue without it
+    }
+
     HapticFeedback.lightImpact();
     _startRotationHaptics();
 
+    // Generate random final values
     final finalMainDigits = List.generate(6, (_) => _random.nextInt(10));
     final finalMainLetter1 = state.mainLetter1;
     final finalMainLetter2 = _getRandomLetter();
@@ -247,7 +258,7 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
       windowDigits: finalWindowDigits,
     ));
 
-    _scheduleDrawEnd();
+    // NOTE: No auto-stop! User controls when to stop by releasing button
   }
 
   void _startRotationHaptics() {
@@ -262,23 +273,50 @@ class LotteryDrawCubit extends Cubit<LotteryDrawState> {
     _hapticTimer = null;
   }
 
-  void _scheduleDrawEnd() async {
-    await Future.delayed(const Duration(milliseconds: 2000));
+  /// Stops the lottery draw - called when user RELEASES button
+  void stopDraw() async {
+    if (!state.isDrawing) return;
 
+    // Immediately set isDrawing to false to prevent double-calls
+    // and start UI deceleration animation right away
+    emit(state.copyWith(isDrawing: false));
+
+    // Stop haptic feedback and provide final feedback
+    _stopRotationHaptics();
+    HapticFeedback.mediumImpact();
+
+    // Fade out and stop audio (runs in parallel with deceleration)
+    try {
+      if (_audioPlayer != null) {
+        // Fade out over 300ms
+        await _audioPlayer!.setVolume(0.2);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _audioPlayer!.setVolume(0.1);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _audioPlayer!.setVolume(0.0);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _audioPlayer!.stop();
+        await _audioPlayer!.dispose();
+        _audioPlayer = null;
+      }
+    } catch (e) {
+      // Silently handle audio errors
+    }
+
+    // Wait for deceleration animation to complete (~1 second)
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    // Save the final state
     if (!isClosed) {
-      _stopRotationHaptics();
-      HapticFeedback.mediumImpact();
-
-      emit(state.copyWith(isDrawing: false));
-
-      // CRITICAL: Save the result after spin completes
       await _saveCurrentState();
     }
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     _hapticTimer?.cancel();
+    await _audioPlayer?.dispose();
+    _audioPlayer = null;
     return super.close();
   }
 

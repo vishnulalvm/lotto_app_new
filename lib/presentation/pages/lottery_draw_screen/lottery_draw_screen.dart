@@ -805,7 +805,7 @@ class _FooterSection extends StatelessWidget {
   }
 }
 
-// Live Press Button - Only rebuilds on button state change
+// Live Press Button - Press and hold to spin, release to stop
 class _LivePressButton extends StatelessWidget {
   const _LivePressButton();
 
@@ -814,12 +814,27 @@ class _LivePressButton extends StatelessWidget {
     return BlocBuilder<LotteryDrawCubit, LotteryDrawState>(
       buildWhen: (prev, current) => prev.isDrawing != current.isDrawing,
       builder: (context, state) {
-        return GestureDetector(
-          onTapDown: (_) {
-            if (!state.isDrawing) {
-              // Haptic feedback on button press
+        return Listener(
+          onPointerDown: (_) {
+            // Read current state directly from cubit, not from closure
+            final cubit = context.read<LotteryDrawCubit>();
+            if (!cubit.state.isDrawing) {
               HapticFeedback.heavyImpact();
-              context.read<LotteryDrawCubit>().startDraw();
+              cubit.startDraw();
+            }
+          },
+          onPointerUp: (_) {
+            // Read current state directly from cubit
+            final cubit = context.read<LotteryDrawCubit>();
+            if (cubit.state.isDrawing) {
+              cubit.stopDraw();
+            }
+          },
+          onPointerCancel: (_) {
+            // Read current state directly from cubit
+            final cubit = context.read<LotteryDrawCubit>();
+            if (cubit.state.isDrawing) {
+              cubit.stopDraw();
             }
           },
           child: AnimatedScale(
