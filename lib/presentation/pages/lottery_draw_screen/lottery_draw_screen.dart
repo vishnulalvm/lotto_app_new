@@ -9,20 +9,88 @@ import 'lottery_series_selector.dart';
 import 'static_lottery_letter_box.dart';
 import 'series_letter_box.dart';
 
-class LotteryDrawScreen extends StatelessWidget {
+class LotteryDrawScreen extends StatefulWidget {
   const LotteryDrawScreen({super.key});
 
   @override
+  State<LotteryDrawScreen> createState() => _LotteryDrawScreenState();
+}
+
+class _LotteryDrawScreenState extends State<LotteryDrawScreen> {
+  late Future<LotteryDrawCubit> _cubitFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Create cubit asynchronously to load saved state
+    _cubitFuture = LotteryDrawCubit.create();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => LotteryDrawCubit(),
-      child: const Scaffold(
-        backgroundColor: Color(0xFF000000),
-        appBar: _StaticAppBar(),
-        body: _LotteryBody(),
-        floatingActionButton: _LivePressButton(),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      ),
+    return FutureBuilder<LotteryDrawCubit>(
+      future: _cubitFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Show loading state while cubit is being created
+          return const Scaffold(
+            backgroundColor: Color(0xFF000000),
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFFFF0000),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          // If error occurs, show error screen
+          return Scaffold(
+            backgroundColor: const Color(0xFF000000),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Color(0xFFFF0000),
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Failed to load lottery data',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _cubitFuture = LotteryDrawCubit.create();
+                      });
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Cubit loaded successfully
+        return BlocProvider.value(
+          value: snapshot.data!,
+          child: const Scaffold(
+            backgroundColor: Color(0xFF000000),
+            appBar: _StaticAppBar(),
+            body: _LotteryBody(),
+            floatingActionButton: _LivePressButton(),
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          ),
+        );
+      },
     );
   }
 }
