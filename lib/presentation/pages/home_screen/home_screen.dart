@@ -347,66 +347,66 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return MultiBlocListener(
-      listeners: [
-        // HomeScreen results listener
-        BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
-          listener: (context, state) {
-            // Clear any existing snackbars first
-            ScaffoldMessenger.of(context).clearSnackBars();
+    return Stack(
+      children: [
+        // Scaffold with AppBar and body
+        Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: _buildAppBar(theme),
+          body: MultiBlocListener(
+            listeners: [
+              // HomeScreen results listener
+              BlocListener<HomeScreenResultsBloc, HomeScreenResultsState>(
+                listener: (context, state) {
+                  // Clear any existing snackbars first
+                  ScaffoldMessenger.of(context).clearSnackBars();
 
-            if (state is HomeScreenResultsError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${'error_prefix'.tr()}${state.message}'),
-                  backgroundColor: Colors.red,
-                  action: SnackBarAction(
-                    label: 'retry'.tr(),
-                    textColor: Colors.white,
-                    onPressed: _loadLotteryResults,
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-        // Rate Us BLoC listener
-        BlocListener<RateUsBloc, RateUsState>(
-          listener: (context, state) {
-            if (state is RateUsShowDialog) {
-              // Capture context before async gap
-              final navigator = Navigator.of(context);
-              final rateUsBloc = context.read<RateUsBloc>();
+                  if (state is HomeScreenResultsError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${'error_prefix'.tr()}${state.message}'),
+                        backgroundColor: Colors.red,
+                        action: SnackBarAction(
+                          label: 'retry'.tr(),
+                          textColor: Colors.white,
+                          onPressed: _loadLotteryResults,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              // Rate Us BLoC listener
+              BlocListener<RateUsBloc, RateUsState>(
+                listener: (context, state) {
+                  if (state is RateUsShowDialog) {
+                    // Capture context before async gap
+                    final navigator = Navigator.of(context);
+                    final rateUsBloc = context.read<RateUsBloc>();
 
-              // Small delay to ensure UI is ready
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  HapticFeedback.lightImpact();
-                  showDialog(
-                    context: navigator.context,
-                    barrierDismissible: false,
-                    builder: (dialogContext) => RateUsDialog(
-                      onNotNow: () {
-                        rateUsBloc.add(RateUsNotNowEvent());
-                      },
-                      onContinue: () {
-                        rateUsBloc.add(RateUsContinueEvent());
-                      },
-                    ),
-                  );
-                }
-              });
-            }
-          },
-        ),
-      ],
-      child: Stack(
-        children: [
-          // Scaffold with AppBar and body
-          Scaffold(
-            backgroundColor: theme.scaffoldBackgroundColor,
-            appBar: _buildAppBar(theme),
-            body: RefreshIndicator(
+                    // Small delay to ensure UI is ready
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        HapticFeedback.lightImpact();
+                        showDialog(
+                          context: navigator.context,
+                          barrierDismissible: false,
+                          builder: (dialogContext) => RateUsDialog(
+                            onNotNow: () {
+                              rateUsBloc.add(RateUsNotNowEvent());
+                            },
+                            onContinue: () {
+                              rateUsBloc.add(RateUsContinueEvent());
+                            },
+                          ),
+                        );
+                      }
+                    });
+                  }
+                },
+              ),
+            ],
+            child: RefreshIndicator(
               onRefresh: () async {
                 HapticFeedback.mediumImpact();
                 context
@@ -418,15 +418,27 @@ class _HomeScreenState extends State<HomeScreen>
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    // Replace _buildCarousel() with the custom widget
+                    // Carousel with optimized rebuild logic
                     RepaintBoundary(
                       child: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
                         buildWhen: (previous, current) {
                           // Only rebuild if images actually changed
                           if (previous is HomeScreenResultsLoaded &&
                               current is HomeScreenResultsLoaded) {
-                            return previous.data.updates.allImages !=
-                                current.data.updates.allImages;
+                            // Deep comparison of image lists
+                            final prevImages = previous.data.updates.allImages;
+                            final currImages = current.data.updates.allImages;
+
+                            // Check if lists are different
+                            if (prevImages.length != currImages.length) return true;
+
+                            // Check if content is different
+                            for (int i = 0; i < prevImages.length; i++) {
+                              if (prevImages[i] != currImages[i]) return true;
+                            }
+
+                            // Images are identical, don't rebuild
+                            return false;
                           }
                           return previous.runtimeType != current.runtimeType;
                         },
@@ -467,25 +479,25 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ),
-          // Radial gradient glow overlay at the top (behind and above AppBar)
-          IgnorePointer(
-            child: Container(
-              height: 220,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.topCenter,
-                  radius: 1.1,
-                  colors: [
-                    theme.primaryColor.withValues(alpha: 0.3),
-                    theme.primaryColor.withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
-                ),
+        ),
+        // Radial gradient glow overlay at the top (behind and above AppBar)
+        IgnorePointer(
+          child: Container(
+            height: 220,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topCenter,
+                radius: 1.1,
+                colors: [
+                  theme.primaryColor.withValues(alpha: 0.3),
+                  theme.primaryColor.withValues(alpha: 0.15),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -504,61 +516,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
       ),
-      title: BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
-        buildWhen: (previous, current) {
-          // Only rebuild when offline status changes
-          if (previous is HomeScreenResultsLoaded &&
-              current is HomeScreenResultsLoaded) {
-            return previous.isOffline != current.isOffline;
-          }
-          return previous.runtimeType != current.runtimeType;
-        },
-        builder: (context, state) {
-          // Show offline indicator when offline
-          if (state is HomeScreenResultsLoaded && state.isOffline) {
-            return Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppResponsive.spacing(context, 10),
-                vertical: AppResponsive.spacing(context, 6),
-              ),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius:
-                    BorderRadius.circular(AppResponsive.spacing(context, 20)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.wifi_off,
-                    size: AppResponsive.fontSize(context, 16),
-                    color: Colors.white,
-                  ),
-                  SizedBox(width: AppResponsive.spacing(context, 8)),
-                  Text(
-                    'offline'.tr(),
-                    style: TextStyle(
-                      fontSize: AppResponsive.fontSize(context, 16),
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Show app title with refresh indicator when background refreshing
-          return Text(
-            'LOTTO',
-            style: TextStyle(
-              fontSize: AppResponsive.fontSize(context, 22),
-              fontWeight: FontWeight.bold,
-              color: theme.textTheme.bodyLarge?.color,
-            ),
-          );
-        },
-      ),
+      title: const _AppBarTitle(),
       actions: [
         PopupMenuButton<String>(
           icon: Icon(
@@ -571,89 +529,69 @@ class _HomeScreenState extends State<HomeScreen>
             borderRadius:
                 BorderRadius.circular(AppResponsive.spacing(context, 12)),
           ),
-          itemBuilder: (BuildContext context) => [
-            _buildPopupMenuItem(
-              'settings_value', // The actual value returned when selected
-              Icons.settings,
-              'settings', // This is the translation key
-              Theme.of(context),
-              context, // Pass context
-            ),
-            _buildPopupMenuItem(
-              'saved_value', // The actual value returned when selected
-              Icons.bookmark,
-              'saved', // This is the translation key
-              Theme.of(context),
-              context, // Pass context
-            ),
-            _buildPopupMenuItem(
-              'color_scheme_value', // The actual value returned when selected
-              Icons.palette_outlined,
-              'color_scheme', // This is the translation key
-              Theme.of(context),
-              context, // Pass context
-            ),
-            _buildPopupMenuItem(
-              'contact_value', // The actual value returned when selected
-              Icons.contact_support,
-              'contact_us', // This is the translation key
-              Theme.of(context),
-              context, // Pass context
-            ),
-            _buildPopupMenuItem(
-              'rate_us_value', // The actual value returned when selected
-              Icons.star,
-              'rate_us_title', // This is the translation key
-              Theme.of(context),
-              context, // Pass context
-            ),
-            _buildPopupMenuItem(
-              'how_to_use_value', // The actual value returned when selected
-              Icons.video_library,
-              'how_to_use', // This is the translation key
-              Theme.of(context),
-              context, // Pass context
-            ),
-          ],
+          itemBuilder: (BuildContext menuContext) => _buildMenuItems(menuContext, theme),
           onSelected: (value) {
-            // Add haptic feedback for menu selection
-            HapticFeedback.selectionClick();
-
-            switch (value) {
-              case 'saved_value': // Match the actual returned value
-                context.push('/saved-results');
-                break;
-              case 'settings_value': // Match the actual returned value
-                context.push('/settings');
-                break;
-              case 'color_scheme_value': // Match the actual returned value
-                showDialog(
-                  context: context,
-                  builder: (context) => const ColorThemeDialog(),
-                );
-                break;
-              case 'contact_value': // Match the actual returned value
-                showContactSheet(context);
-                break;
-              case 'rate_us_value': // Match the actual returned value
-                _showRateUsDialog(context);
-                break;
-              case 'how_to_use_value': // Match the actual returned value
-                context.push('/how-to-use');
-                break;
-            }
+            _handleMenuSelection(value);
           },
         ),
       ],
     );
   }
 
+  // Extracted menu items builder for better organization
+  List<PopupMenuItem<String>> _buildMenuItems(BuildContext menuContext, ThemeData theme) {
+    // Static menu definition - structure doesn't change
+    const menuItems = [
+      ('settings_value', Icons.settings, 'settings'),
+      ('saved_value', Icons.bookmark, 'saved'),
+      ('color_scheme_value', Icons.palette_outlined, 'color_scheme'),
+      ('contact_value', Icons.contact_support, 'contact_us'),
+      ('rate_us_value', Icons.star, 'rate_us_title'),
+      ('how_to_use_value', Icons.video_library, 'how_to_use'),
+    ];
+
+    return menuItems.map((item) {
+      final (value, icon, textKey) = item;
+      return _buildPopupMenuItem(value, icon, textKey, theme, menuContext);
+    }).toList();
+  }
+
+  // Extracted menu selection handler
+  void _handleMenuSelection(String value) {
+    // Add haptic feedback for menu selection
+    HapticFeedback.selectionClick();
+
+    switch (value) {
+      case 'saved_value':
+        context.push('/saved-results');
+        break;
+      case 'settings_value':
+        context.push('/settings');
+        break;
+      case 'color_scheme_value':
+        showDialog(
+          context: context,
+          builder: (context) => const ColorThemeDialog(),
+        );
+        break;
+      case 'contact_value':
+        showContactSheet(context);
+        break;
+      case 'rate_us_value':
+        _showRateUsDialog(context);
+        break;
+      case 'how_to_use_value':
+        context.push('/how-to-use');
+        break;
+    }
+  }
+
   PopupMenuItem<String> _buildPopupMenuItem(
     String value,
     IconData icon,
-    String textKey, // Renamed to textKey to clarify its purpose
+    String textKey,
     ThemeData theme,
-    BuildContext context, // Added context to access AppResponsive
+    BuildContext context,
   ) {
     return PopupMenuItem<String>(
       value: value,
@@ -667,8 +605,7 @@ class _HomeScreenState extends State<HomeScreen>
           SizedBox(width: AppResponsive.spacing(context, 12)),
           Expanded(
             child: Text(
-              textKey
-                  .tr(), // Call .tr() on the textKey to get the translated string
+              textKey.tr(),
               style: TextStyle(
                 fontSize: AppResponsive.fontSize(context, 14),
               ),
@@ -678,6 +615,72 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Separate widget for AppBar title - improves performance by preventing full AppBar rebuilds
+class _AppBarTitle extends StatelessWidget {
+  const _AppBarTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return BlocBuilder<HomeScreenResultsBloc, HomeScreenResultsState>(
+      buildWhen: (previous, current) {
+        // Only rebuild when offline status changes
+        if (previous is HomeScreenResultsLoaded &&
+            current is HomeScreenResultsLoaded) {
+          return previous.isOffline != current.isOffline;
+        }
+        return previous.runtimeType != current.runtimeType;
+      },
+      builder: (context, state) {
+        // Show offline indicator when offline
+        if (state is HomeScreenResultsLoaded && state.isOffline) {
+          return Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppResponsive.spacing(context, 10),
+              vertical: AppResponsive.spacing(context, 6),
+            ),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius:
+                  BorderRadius.circular(AppResponsive.spacing(context, 20)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.wifi_off,
+                  size: AppResponsive.fontSize(context, 16),
+                  color: Colors.white,
+                ),
+                SizedBox(width: AppResponsive.spacing(context, 8)),
+                Text(
+                  'offline'.tr(),
+                  style: TextStyle(
+                    fontSize: AppResponsive.fontSize(context, 16),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show app title
+        return Text(
+          'LOTTO',
+          style: TextStyle(
+            fontSize: AppResponsive.fontSize(context, 22),
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color,
+          ),
+        );
+      },
     );
   }
 }
