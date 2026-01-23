@@ -39,6 +39,11 @@ class _PredictScreenState extends State<PredictScreen>
   final _predictionMatchCardKey = GlobalKey<PredictionMatchCardState>();
   bool _isFabVisible = true;
 
+  // State for Number Variants Generator
+  late TextEditingController _variantsInputController;
+  final List<String> _generatedVariants =
+      List.generate(16, (index) => "1256"); // Mock data for UI
+
   // Interstitial ad cooldown tracking (stored in memory, resets on app restart)
   static DateTime? _lastAdShowTime;
   static const Duration _adCooldownDuration = Duration(seconds: 30);
@@ -56,6 +61,7 @@ class _PredictScreenState extends State<PredictScreen>
     );
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _variantsInputController = TextEditingController();
 
     // Consolidated post-frame callback for all initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -91,6 +97,7 @@ class _PredictScreenState extends State<PredictScreen>
     _scrollController.dispose();
     _typewriterController.dispose();
     _fabAnimationController.dispose();
+    _variantsInputController.dispose();
     super.dispose();
   }
 
@@ -333,7 +340,13 @@ class _PredictScreenState extends State<PredictScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  RepaintBoundary(child: _buildMostRepeatedCard(theme, data.repeatedNumbers)),
+                  const SizedBox(height: 12),
+                  RepaintBoundary(
+                      child:
+                          _buildMostRepeatedCard(theme, data.repeatedNumbers)),
+                  const SizedBox(height: 12),
+                  RepaintBoundary(
+                      child: _buildNumberVariantsGeneratorCard(theme)),
                   const SizedBox(height: 12),
                   const RepaintBoundary(child: WeeklyFancyNumberCard()),
                   const SizedBox(height: 12),
@@ -343,7 +356,9 @@ class _PredictScreenState extends State<PredictScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  RepaintBoundary(child: _buildPeoplePredictionsCard(theme, data.peoplesPredictions)),
+                  RepaintBoundary(
+                      child: _buildPeoplePredictionsCard(
+                          theme, data.peoplesPredictions)),
                   const SizedBox(height: 12),
                   RepaintBoundary(
                     child: _buildMostRepeatedLast7DaysCard(
@@ -1004,6 +1019,172 @@ class _PredictScreenState extends State<PredictScreen>
                 Colors.orange),
           ],
         ),
+      ),
+    );
+  }
+
+  // Number Variants Generator Card
+  Widget _buildNumberVariantsGeneratorCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border.all(
+          color: theme.primaryColor,
+          width: .5,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.auto_fix_high,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Number Combinations",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.copy,
+                    color: theme.colorScheme.onSurface,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Input Row
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _variantsInputController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: "Enter numbers Eg: 1256",
+                      hintStyle: TextStyle(
+                        color: theme.hintColor.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                height: 48,
+                width: 70, // Adjust based on visual preference
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6EDC65), // Green color from image
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    // Logic to generate variants will go here
+                    HapticFeedback.lightImpact();
+                  },
+                  icon: const Icon(
+                    Icons.auto_fix_high,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Results Grid
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Wrap(
+                spacing: 8, // Gap between chips
+                runSpacing: 8, // Gap between lines
+                children: _generatedVariants.map((variant) {
+                  // Calculate width for 4 items per row accounting for spacing
+                  // (Total Width - (3 * spacing)) / 4
+                  final double itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
+
+                  return Container(
+                    width: itemWidth,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.scaffoldBackgroundColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.2)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      variant,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+
+          const SizedBox(height: 20),
+
+          // Total Count Footer
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                border: Border.all(
+                  color: theme.primaryColor,
+                  width: .5,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Total ${_generatedVariants.length} Combinations',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
