@@ -1070,8 +1070,54 @@ class _PredictScreenState extends State<PredictScreen>
                     color: theme.colorScheme.onSurface,
                     size: 20,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     HapticFeedback.lightImpact();
+
+                    // Check if there are any generated variants
+                    if (_generatedVariants.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                              'No combinations to copy. Generate some first!'),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.orange[700],
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Format for WhatsApp with heading and 4 digits per row
+                    StringBuffer copyText = StringBuffer();
+                    copyText.writeln('🎰 Lotto Combination 🎰');
+                    copyText.writeln();
+
+                    // Group variants into rows of 4
+                    for (int i = 0; i < _generatedVariants.length; i += 4) {
+                      final row = _generatedVariants.skip(i).take(4).join(', ');
+                      copyText.writeln(row);
+                    }
+
+                    copyText.writeln();
+                    copyText.writeln(
+                        'Total ${_generatedVariants.length} Combinations');
+
+                    // Copy to clipboard
+                    await Clipboard.setData(
+                        ClipboardData(text: copyText.toString()));
+
+                    // Show success feedback
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              '${_generatedVariants.length} combinations copied to clipboard!'),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.green[700],
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -1425,13 +1471,13 @@ class _PredictScreenState extends State<PredictScreen>
     }
   }
 
-  /// Generates a list of unique random 2-digit numbers (10-99)
-  List<int> _generateRandomTwoDigitNumbers(int count) {
+  /// Generates a list of unique random 3-digit numbers (100-999)
+  List<int> _generateRandomThreeDigitNumbers(int count) {
     final random = Random();
     final Set<int> numbers = {};
 
     while (numbers.length < count) {
-      numbers.add(random.nextInt(90) + 10); // Generate 10-99
+      numbers.add(random.nextInt(900) + 100); // Generate 100-999
     }
 
     return numbers.toList();
@@ -1439,9 +1485,9 @@ class _PredictScreenState extends State<PredictScreen>
 
   /// Generates a random prediction line with the given prefix and 6 unique numbers
   String _generateRandomPredictionLine(String prefix) {
-    final numbers = _generateRandomTwoDigitNumbers(6);
+    final numbers = _generateRandomThreeDigitNumbers(6);
     final numbersStr =
-        numbers.map((n) => n.toString().padLeft(2, '0')).join('  ');
+        numbers.map((n) => n.toString().padLeft(3, '0')).join('  ');
     return '$prefix - $numbersStr';
   }
 
@@ -1492,11 +1538,27 @@ class _PredictScreenState extends State<PredictScreen>
         copyText.writeln();
       }
 
-      // Add Random Prediction Series (AB, BC, AC)
-      copyText.writeln(_generateRandomPredictionLine('AB Series'));
-      copyText.writeln(_generateRandomPredictionLine('BC Series'));
-      copyText.writeln(_generateRandomPredictionLine('AC Series'));
+      // Add Random Prediction Series (ABC, BCA, ACB)
+      copyText.writeln(_generateRandomPredictionLine('ABC Series'));
+      copyText.writeln(_generateRandomPredictionLine('BCA Series'));
+      copyText.writeln(_generateRandomPredictionLine('ACB Series'));
       copyText.writeln();
+
+      // Add Number Combinations section if available
+      if (_generatedVariants.isNotEmpty) {
+        copyText.writeln('🎰 Lotto Combination 🎰');
+        copyText.writeln();
+
+        // Group variants into rows of 4
+        for (int i = 0; i < _generatedVariants.length; i += 4) {
+          final row = _generatedVariants.skip(i).take(4).join(', ');
+          copyText.writeln(row);
+        }
+
+        copyText.writeln();
+        copyText.writeln('Total ${_generatedVariants.length} Combinations');
+        copyText.writeln();
+      }
 
       // Add download link at the end
       copyText.writeln(
@@ -1525,7 +1587,7 @@ class _PredictScreenState extends State<PredictScreen>
           label: 'copy_prediction_numbers',
           parameters: {
             'prize_type': _selectedPrizeType,
-            'has_ai_numbers': aiPrediction != null,
+            'has_ai_numbers': (aiPrediction != null).toString(),
             'repeated_numbers_count': data.repeatedNumbers.length,
             'two_digits_count': data.repeatedTwoDigits.length,
           },
