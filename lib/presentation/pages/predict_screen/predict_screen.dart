@@ -22,6 +22,9 @@ import 'package:lotto_app/core/helpers/feedback_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:lotto_app/data/services/number_combination_service.dart';
+import 'package:typewritertext/typewritertext.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/predict_shimmer_loading.dart';
 
 class PredictScreen extends StatefulWidget {
   const PredictScreen({super.key});
@@ -41,8 +44,8 @@ class _PredictScreenState extends State<PredictScreen>
 
   // State for Number Variants Generator
   late TextEditingController _variantsInputController;
-  final List<String> _generatedVariants =
-      List.generate(16, (index) => "1256"); // Mock data for UI
+  List<String> _generatedVariants = []; // Initialized in initState
+  int _generationId = 0; // To force rebuild of animation widgets
 
   // Interstitial ad cooldown tracking (stored in memory, resets on app restart)
   static DateTime? _lastAdShowTime;
@@ -62,6 +65,7 @@ class _PredictScreenState extends State<PredictScreen>
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _variantsInputController = TextEditingController();
+    _generatedVariants = NumberCombinationService.generateCombinations("1256");
 
     // Consolidated post-frame callback for all initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -216,10 +220,8 @@ class _PredictScreenState extends State<PredictScreen>
   }
 
   Widget _buildBody(ThemeData theme, PredictState state) {
-    if (state is PredictLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+    if (state is PredictLoading || state is PredictInitial) {
+      return const PredictShimmerLoading();
     }
 
     if (state is PredictError) {
@@ -1026,7 +1028,7 @@ class _PredictScreenState extends State<PredictScreen>
   // Number Variants Generator Card
   Widget _buildNumberVariantsGeneratorCard(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.cardColor,
         border: Border.all(
@@ -1049,10 +1051,12 @@ class _PredictScreenState extends State<PredictScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  "Number Combinations",
+                  'number_combinations'.tr(),
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
@@ -1114,8 +1118,19 @@ class _PredictScreenState extends State<PredictScreen>
                 ),
                 child: IconButton(
                   onPressed: () {
+                    // Dismiss keyboard
+                    // FocusScope.of(context).unfocus();
+                    HapticFeedback.mediumImpact();
                     // Logic to generate variants will go here
-                    HapticFeedback.lightImpact();
+                    final input = _variantsInputController.text;
+                    if (input.isNotEmpty) {
+                      setState(() {
+                        _generationId++;
+                        _generatedVariants =
+                            NumberCombinationService.generateCombinations(
+                                input);
+                      });
+                    }
                   },
                   icon: const Icon(
                     Icons.auto_fix_high,
@@ -1134,12 +1149,15 @@ class _PredictScreenState extends State<PredictScreen>
               return Wrap(
                 spacing: 8, // Gap between chips
                 runSpacing: 8, // Gap between lines
-                children: _generatedVariants.map((variant) {
+                children: _generatedVariants.asMap().entries.map((entry) {
+                  final int index = entry.key;
+                  final String variant = entry.value;
                   // Calculate width for 4 items per row accounting for spacing
                   // (Total Width - (3 * spacing)) / 4
                   final double itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
 
                   return Container(
+                    key: ValueKey('variant-$index-$_generationId'),
                     width: itemWidth,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
@@ -1149,11 +1167,12 @@ class _PredictScreenState extends State<PredictScreen>
                           color: theme.dividerColor.withValues(alpha: 0.2)),
                     ),
                     alignment: Alignment.center,
-                    child: Text(
+                    child: TypeWriter.text(
                       variant,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                      duration: const Duration(milliseconds: 200),
                     ),
                   );
                 }).toList(),
