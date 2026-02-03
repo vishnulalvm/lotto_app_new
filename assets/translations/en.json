@@ -498,7 +498,7 @@
   "your_lucky_number": "Your Lucky Number: {number}",
   "prediction_submitted_successfully": "Prediction submitted successfully! Good luck! 🍀",
   "last_7_days_most_repeated_last_digit": "Last 7 Days Most Repeated Last Digit",
-  "top_6_last_2_digits": "Top 6 Last 2 Digits (Last 7 Days)",
+  "top_4_last_2_digits": "Top 4 Last 2 Digits (Last 7 Days)",
   "two_digits_found": "{count} two-digits found 📊",
   "people_predictions": "People Predictions",
   "most_winning_numbers_30_days": "Most Winning Numbers (Last 30 Days)",

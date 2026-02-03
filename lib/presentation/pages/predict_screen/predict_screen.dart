@@ -25,6 +25,7 @@ import 'dart:math';
 import 'package:lotto_app/data/services/number_combination_service.dart';
 import 'package:typewritertext/typewritertext.dart';
 import 'package:lotto_app/presentation/pages/predict_screen/widgets/predict_shimmer_loading.dart';
+import 'package:lotto_app/presentation/pages/predict_screen/widgets/statistics_card.dart';
 
 class PredictScreen extends StatefulWidget {
   const PredictScreen({super.key});
@@ -342,7 +343,6 @@ class _PredictScreenState extends State<PredictScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const SizedBox(height: 12),
                   RepaintBoundary(
                       child:
                           _buildMostRepeatedCard(theme, data.repeatedNumbers)),
@@ -359,17 +359,44 @@ class _PredictScreenState extends State<PredictScreen>
                   ),
                   const SizedBox(height: 12),
                   RepaintBoundary(
-                      child: _buildPeoplePredictionsCard(
-                          theme, data.peoplesPredictions)),
-                  const SizedBox(height: 12),
-                  RepaintBoundary(
-                    child: _buildMostRepeatedLast7DaysCard(
-                        theme, data.repeatedSingleDigits),
+                    child: StatisticsCard(
+                      icon: Icons.people,
+                      iconColor: Colors.green[600]!,
+                      title: 'people_predictions'.tr(),
+                      numberData: data.peoplesPredictions
+                          .map((e) => {'number': e.digit, 'count': e.count})
+                          .toList(),
+                      borderColor: Colors.green[700]!,
+                      footerTranslationKey: 'digits_found',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   RepaintBoundary(
-                    child: _buildMostRepeatedLast2DigitsCard(
-                        theme, data.repeatedTwoDigits),
+                    child: StatisticsCard(
+                      icon: Icons.trending_up,
+                      iconColor: Colors.blue[600]!,
+                      title: 'last_7_days_most_repeated_last_digit'.tr(),
+                      numberData: data.repeatedSingleDigits
+                          .map((e) => {'number': e.digit, 'count': e.count})
+                          .toList(),
+                      borderColor: Colors.blue[700]!,
+                      footerTranslationKey: 'digits_found',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  RepaintBoundary(
+                    child: StatisticsCard(
+                      icon: Icons.stars,
+                      iconColor: Colors.purple[600]!,
+                      title: 'top_4_last_2_digits'.tr(),
+                      numberData: data.repeatedTwoDigits
+                          .take(4)
+                          .map((e) => {'number': e.digits, 'count': e.count})
+                          .toList(),
+                      borderColor: Colors.purple[700]!,
+                      footerTranslationKey: 'two_digits_found',
+                      maxItems: 4,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   RepaintBoundary(
@@ -378,6 +405,7 @@ class _PredictScreenState extends State<PredictScreen>
                       selectedPrizeType: _selectedPrizeType,
                     ),
                   ),
+                   const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -529,361 +557,6 @@ class _PredictScreenState extends State<PredictScreen>
     }
   }
 
-  // Last 7 days most repeated numbers
-  Widget _buildMostRepeatedLast7DaysCard(
-      ThemeData theme, List<RepeatedSingleDigit> data) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border.all(
-          color: theme.primaryColor,
-          width: .5,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.trending_up,
-                  color: Colors.blue[600],
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'last_7_days_most_repeated_last_digit'.tr(),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildSingleDigitsRow(
-                theme,
-                data.map((e) => {'number': e.digit, 'count': e.count}).toList(),
-                null,
-                false,
-                true),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Top 6 Last 2 Digits from cached data
-  Widget _buildMostRepeatedLast2DigitsCard(
-      ThemeData theme, List<RepeatedTwoDigit> data) {
-    // If no data, don't show the card
-    if (data.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border.all(
-          color: theme.primaryColor,
-          width: .5,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.stars,
-                  color: Colors.purple[600],
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'top_6_last_2_digits'.tr(),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildTwoDigitsRow(
-                theme,
-                data
-                    .map((e) => {'number': e.digits, 'count': e.count})
-                    .toList()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Helper method to build two digits in a responsive grid with purple theme
-  Widget _buildTwoDigitsRow(
-      ThemeData theme, List<Map<String, dynamic>> numberData) {
-    final borderColor = Colors.purple[700]!;
-    final textColor = theme.colorScheme.onSurface;
-
-    return Column(
-      children: [
-        // Use GridView for better responsiveness
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, // 3 columns
-            childAspectRatio: 1.4, // Width to height ratio
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: numberData.length,
-          itemBuilder: (context, index) {
-            final data = numberData[index];
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                border: Border.all(
-                  color: borderColor,
-                  width: .5,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      data['number'],
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: textColor,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        border: Border.all(
-                          color: borderColor,
-                          width: .5,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'count_times'.tr(
-                              namedArgs: {'count': data['count'].toString()}),
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(
-              color: borderColor,
-              width: .5,
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'two_digits_found'
-                .tr(namedArgs: {'count': numberData.length.toString()}),
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // People predictions section
-  Widget _buildPeoplePredictionsCard(
-      ThemeData theme, List<PeoplesPrediction> data) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border.all(
-          color: theme.primaryColor,
-          width: .5,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.people,
-                  color: Colors.green[600],
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'people_predictions'.tr(),
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildSingleDigitsRow(
-                theme,
-                data.map((e) => {'number': e.digit, 'count': e.count}).toList(),
-                null,
-                true),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Helper method to build single digits in a row
-  Widget _buildSingleDigitsRow(ThemeData theme,
-      List<Map<String, dynamic>> numberData, MaterialColor? color,
-      [bool isDarkGreen = false, bool isDarkBlue = false]) {
-    // Determine border color based on the type
-    final borderColor = isDarkGreen
-        ? Colors.green[700]!
-        : isDarkBlue
-            ? Colors.blue[700]!
-            : color![700]!;
-
-    // Determine text color based on theme
-    final textColor = theme.colorScheme.onSurface;
-
-    return Column(
-      children: [
-        Row(
-          children: numberData.map((data) {
-            return Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: theme.scaffoldBackgroundColor,
-                  border: Border.all(
-                    color: borderColor,
-                    width: .5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      data['number'],
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          border: Border.all(
-                            color: borderColor,
-                            width: .5,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'count_times'.tr(
-                              namedArgs: {'count': data['count'].toString()}),
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(
-              color: borderColor,
-              width: .5,
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'digits_found'
-                .tr(namedArgs: {'count': numberData.length.toString()}),
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   // Helper method to build numbers with count grid
   Widget _buildNumbersWithCountGrid(ThemeData theme,
       List<Map<String, dynamic>> numberData, MaterialColor color) {
@@ -892,86 +565,84 @@ class _PredictScreenState extends State<PredictScreen>
 
     return Column(
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 1.6,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: numberData.length,
-          itemBuilder: (context, index) {
-            final data = numberData[index];
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                border: Border.all(
-                  color: borderColor,
-                  width: .5,
-                ),
-                borderRadius: BorderRadius.circular(12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Simple responsive: 2 columns for small phones, 3 for normal
+            final screenWidth = MediaQuery.of(context).size.width;
+            final crossAxisCount = screenWidth < 360 ? 2 : 3;
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: 1.6,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      data['number'],
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: textColor,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        border: Border.all(
-                          color: borderColor,
-                          width: .2,
+              itemCount: numberData.length,
+              itemBuilder: (context, index) {
+                final data = numberData[index];
+                return Container(
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    border: Border.all(
+                        color: theme.dividerColor.withValues(alpha: 0.2)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              data['number'],
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: textColor,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'count_times'
-                            .tr(namedArgs: {'count': data['count'].toString()}),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
+                        const SizedBox(height: 4),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.scaffoldBackgroundColor,
+                              border: Border.all(
+                                color: borderColor,
+                                width: .2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'count_times'.tr(namedArgs: {
+                                  'count': data['count'].toString()
+                                }),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10,
+                                ),
+                                maxLines: 1,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(
-              color: borderColor,
-              width: .5,
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'patterns_found'
-                .tr(namedArgs: {'count': numberData.length.toString()}),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
         ),
       ],
     );
@@ -988,7 +659,7 @@ class _PredictScreenState extends State<PredictScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.only(top: 24.0, left: 24.0, right: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -997,7 +668,7 @@ class _PredictScreenState extends State<PredictScreen>
                 Icon(
                   Icons.auto_awesome,
                   color: Colors.orange[600],
-                  size: 20,
+                  size: 22,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1046,7 +717,7 @@ class _PredictScreenState extends State<PredictScreen>
               Icon(
                 Icons.auto_fix_high,
                 color: theme.colorScheme.primary,
-                size: 20,
+                size: 22,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1059,71 +730,65 @@ class _PredictScreenState extends State<PredictScreen>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+              IconButton(
+                icon: Icon(
+                  Icons.copy,
+                  color: theme.colorScheme.onSurface,
+                  size: 25,
                 ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.copy,
-                    color: theme.colorScheme.onSurface,
-                    size: 20,
-                  ),
-                  onPressed: () async {
-                    HapticFeedback.lightImpact();
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
 
-                    // Check if there are any generated variants
-                    if (_generatedVariants.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text(
-                              'No combinations to copy. Generate some first!'),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: Colors.orange[700],
-                        ),
-                      );
-                      return;
-                    }
+                  // Check if there are any generated variants
+                  if (_generatedVariants.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                            'No combinations to copy. Generate some first!'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Colors.orange[700],
+                      ),
+                    );
+                    return;
+                  }
 
-                    // Format for WhatsApp with heading and 4 digits per row
-                    StringBuffer copyText = StringBuffer();
-                    copyText.writeln('🎰 Lotto Combination 🎰');
-                    copyText.writeln();
+                  // Format for WhatsApp with heading and 4 digits per row
+                  StringBuffer copyText = StringBuffer();
+                  copyText.writeln('🎰 Lotto Combination 🎰');
+                  copyText.writeln();
 
-                    // Group variants into rows of 4
-                    for (int i = 0; i < _generatedVariants.length; i += 4) {
-                      final row = _generatedVariants.skip(i).take(4).join(', ');
-                      copyText.writeln(row);
-                    }
+                  // Group variants into rows of 4
+                  for (int i = 0; i < _generatedVariants.length; i += 4) {
+                    final row = _generatedVariants.skip(i).take(4).join(', ');
+                    copyText.writeln(row);
+                  }
 
-                    copyText.writeln();
-                    copyText.writeln(
-                        'Total ${_generatedVariants.length} Combinations');
+                  copyText.writeln();
+                  copyText.writeln(
+                      'Total ${_generatedVariants.length} Combinations');
 
-                    // Copy to clipboard
-                    await Clipboard.setData(
-                        ClipboardData(text: copyText.toString()));
+                  // Copy to clipboard
+                  await Clipboard.setData(
+                      ClipboardData(text: copyText.toString()));
 
-                    // Show success feedback
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              '${_generatedVariants.length} combinations copied to clipboard!'),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: Colors.green[700],
-                        ),
-                      );
-                    }
-                  },
-                ),
+                  // Show success feedback
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            '${_generatedVariants.length} combinations copied to clipboard!'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Colors.green[700],
+                      ),
+                    );
+                  }
+                },
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
 
           // Input Row
           Row(
@@ -1141,6 +806,7 @@ class _PredictScreenState extends State<PredictScreen>
                   child: TextField(
                     controller: _variantsInputController,
                     keyboardType: TextInputType.number,
+                    showCursor: true,
                     decoration: InputDecoration(
                       hintText: "Enter numbers Eg: 1256",
                       hintStyle: TextStyle(
@@ -1192,15 +858,22 @@ class _PredictScreenState extends State<PredictScreen>
           // Results Grid
           LayoutBuilder(
             builder: (context, constraints) {
+              // Simple responsive: 3 items per row for small phones, 4 for normal
+              final screenWidth = MediaQuery.of(context).size.width;
+              final itemsPerRow = screenWidth < 360 ? 3 : 4;
+              final spacing = 8.0;
+
               return Wrap(
-                spacing: 8, // Gap between chips
-                runSpacing: 8, // Gap between lines
+                spacing: spacing, // Gap between chips
+                runSpacing: spacing, // Gap between lines
                 children: _generatedVariants.asMap().entries.map((entry) {
                   final int index = entry.key;
                   final String variant = entry.value;
-                  // Calculate width for 4 items per row accounting for spacing
-                  // (Total Width - (3 * spacing)) / 4
-                  final double itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
+                  // Calculate width for items per row accounting for spacing
+                  // (Total Width - ((itemsPerRow - 1) * spacing)) / itemsPerRow
+                  final double itemWidth =
+                      (constraints.maxWidth - ((itemsPerRow - 1) * spacing)) /
+                          itemsPerRow;
 
                   return Container(
                     key: ValueKey('variant-$index-$_generationId'),
@@ -1213,41 +886,25 @@ class _PredictScreenState extends State<PredictScreen>
                           color: theme.dividerColor.withValues(alpha: 0.2)),
                     ),
                     alignment: Alignment.center,
-                    child: TypeWriter.text(
-                      variant,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: TypeWriter.text(
+                          variant,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 18,
+                          ),
+                          duration: const Duration(milliseconds: 50),
+                        ),
                       ),
-                      duration: const Duration(milliseconds: 200),
                     ),
                   );
                 }).toList(),
               );
             },
-          ),
-
-          const SizedBox(height: 20),
-
-          // Total Count Footer
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                border: Border.all(
-                  color: theme.primaryColor,
-                  width: .5,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Total ${_generatedVariants.length} Combinations',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
           ),
         ],
       ),

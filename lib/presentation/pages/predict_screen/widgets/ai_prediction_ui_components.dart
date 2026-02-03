@@ -104,51 +104,49 @@ class AIPredictionUIComponents {
   }
 
   /// Builds the footer with prediction count
-  static Widget buildFooter(ThemeData theme, int predictionCount) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.primaryColor,
-          width: .5,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'predictions_generated'
-                .tr(namedArgs: {'count': predictionCount.toString()}),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-          Text(
-            '✨',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // static Widget buildFooter(ThemeData theme, int predictionCount) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  //     decoration: BoxDecoration(
+  //       color: theme.cardColor,
+  //       borderRadius: BorderRadius.circular(20),
+  //       border: Border.all(
+  //         color: theme.primaryColor,
+  //         width: .5,
+  //       ),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         Text(
+  //           'predictions_generated'
+  //               .tr(namedArgs: {'count': predictionCount.toString()}),
+  //           style: theme.textTheme.bodySmall?.copyWith(
+  //             color: theme.textTheme.bodySmall?.color,
+  //             fontWeight: FontWeight.w500,
+  //             fontSize: 12,
+  //           ),
+  //         ),
+  //         Text(
+  //           '✨',
+  //           style: theme.textTheme.bodySmall?.copyWith(
+  //             fontSize: 20,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   /// Builds content based on state
   static Widget buildStateContent(ThemeData theme, AIPredictionState state) {
     return switch (state) {
       AIPredictionLoading() => buildLoadingIndicator(),
       AIPredictionError(:final message) => buildErrorState(theme, message),
-      AIPredictionLoaded(:final prediction, :final predictionCount) => Column(
+      AIPredictionLoaded(:final prediction) => Column(
           children: [
             buildNumbersGrid(theme, prediction.predictedNumbers,
                 triggerAnimation: true),
-            const SizedBox(height: 12),
-            buildFooter(theme, predictionCount),
           ],
         ),
       AIPredictionInitial() => buildLoadingIndicator(),
@@ -166,7 +164,7 @@ class AIIconContainer extends StatelessWidget {
     return Icon(
       Icons.auto_awesome,
       color: theme.primaryColor,
-      size: 16,
+      size: 22,
     );
   }
 }
@@ -318,10 +316,8 @@ class PredictionNumberTile extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        border: Border.all(
-          color: theme.primaryColor,
-          width: .5,
-        ),
+ border: Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
@@ -331,8 +327,8 @@ class PredictionNumberTile extends StatelessWidget {
                 duration: const Duration(milliseconds: 50),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 18,
                 ),
               )
             : const SizedBox(width: 20, height: 20),

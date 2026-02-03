@@ -52,13 +52,9 @@ class PredictionMatchUIComponents {
         now.day == resultDate.day;
 
     // Format date
-    String dateLabel;
     if (isToday) {
-      dateLabel = 'today'.tr();
     } else if (isYesterday) {
-      dateLabel = 'yesterday'.tr();
     } else {
-      dateLabel = DateFormat('MMM dd, yyyy').format(resultDate);
     }
 
     return Column(
@@ -75,39 +71,6 @@ class PredictionMatchUIComponents {
           ),
         ),
         const SizedBox(height: 8),
-
-        // Date badge showing when this result is from
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isYesterday ? Colors.orange[50] : Colors.blue[50],
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isYesterday ? Colors.orange[200]! : Colors.blue[200]!,
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.calendar_today,
-                size: 14,
-                color: isYesterday ? Colors.orange[700] : Colors.blue[700],
-              ),
-              const SizedBox(width: 6),
-              Text(
-                dateLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isYesterday ? Colors.orange[700] : Colors.blue[700],
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
         // No matches message
         Container(
           padding: const EdgeInsets.all(16),
@@ -149,13 +112,9 @@ class PredictionMatchUIComponents {
         now.day == resultDate.day;
 
     // Format date
-    String dateLabel;
     if (isToday) {
-      dateLabel = 'today'.tr();
     } else if (isYesterday) {
-      dateLabel = 'yesterday'.tr();
     } else {
-      dateLabel = DateFormat('MMM dd, yyyy').format(resultDate);
     }
 
     return Column(
@@ -172,40 +131,6 @@ class PredictionMatchUIComponents {
           ),
         ),
         const SizedBox(height: 8),
-
-        // Date badge showing when this result is from
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isYesterday ? Colors.orange[50] : Colors.blue[50],
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isYesterday ? Colors.orange[200]! : Colors.blue[200]!,
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.calendar_today,
-                size: 14,
-                color: isYesterday ? Colors.orange[700] : Colors.blue[700],
-              ),
-              const SizedBox(width: 6),
-              Text(
-                dateLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isYesterday ? Colors.orange[700] : Colors.blue[700],
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        
         // Prize type chips showing which types had matches
         _buildPrizeTypeChips(theme, matchResult.matchedPrizeTypes),
         const SizedBox(height: 16),

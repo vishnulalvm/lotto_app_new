@@ -453,9 +453,9 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.purple.withValues(alpha: 0.1),
+            // color: Colors.purple.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Colors.purple.withValues(alpha: 0.3),
@@ -468,7 +468,7 @@ class _PatternStatisticsCardState extends State<PatternStatisticsCard>
               Text(
                 _isExpanded ? 'show_less'.tr() : 'show_more_patterns'.tr(),
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.purple[600],
+                 color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),

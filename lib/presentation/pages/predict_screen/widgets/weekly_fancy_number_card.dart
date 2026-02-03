@@ -56,7 +56,8 @@ class _WeeklyFancyNumberCardState extends State<WeeklyFancyNumberCard> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         border: Border.all(
-          color: Colors.purple[300]!,
+          color: theme.primaryColor,
+         
           width: 0.5,
         ),
         borderRadius: BorderRadius.circular(16),

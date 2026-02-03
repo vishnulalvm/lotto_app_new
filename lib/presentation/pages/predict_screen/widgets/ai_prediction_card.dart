@@ -92,7 +92,7 @@ class _AiPredictionCardState extends State<AiPredictionCard> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.only(top: 24.0,left: 24.0,right: 24.0,),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
