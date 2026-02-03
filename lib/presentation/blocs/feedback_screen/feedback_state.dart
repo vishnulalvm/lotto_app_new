@@ -1,17 +1,34 @@
-abstract class FeedbackState {}
+import 'package:equatable/equatable.dart';
 
-class FeedbackInitial extends FeedbackState {}
+abstract class FeedbackState extends Equatable {
+  const FeedbackState();
 
-class FeedbackLoading extends FeedbackState {}
+  @override
+  List<Object?> get props => [];
+}
+
+class FeedbackInitial extends FeedbackState {
+  const FeedbackInitial();
+}
+
+class FeedbackLoading extends FeedbackState {
+  const FeedbackLoading();
+}
 
 class FeedbackSuccess extends FeedbackState {
   final String message;
 
-  FeedbackSuccess({this.message = 'Feedback submitted successfully'});
+  const FeedbackSuccess({this.message = 'Feedback submitted successfully'});
+
+  @override
+  List<Object?> get props => [message];
 }
 
 class FeedbackError extends FeedbackState {
   final String errorMessage;
 
-  FeedbackError({required this.errorMessage});
+  const FeedbackError({required this.errorMessage});
+
+  @override
+  List<Object?> get props => [errorMessage];
 }

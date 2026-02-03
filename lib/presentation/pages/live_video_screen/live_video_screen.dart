@@ -27,7 +27,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
   bool _isExpanded = true;
-  bool _isScrollingDown = false;
 
   @override
   void initState() {
@@ -84,25 +83,17 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
 
     if (direction == ScrollDirection.reverse) {
       // Scrolling down - collapse FAB
-      if (!_isScrollingDown) {
-        _isScrollingDown = true;
-        if (_isExpanded) {
-          setState(() {
-            _isExpanded = false;
-          });
-          _fabAnimationController.reverse();
-        }
+      // Only trigger animation if not already animating in that direction
+      if (_isExpanded && !_fabAnimationController.isAnimating) {
+        _isExpanded = false;
+        _fabAnimationController.reverse();
       }
     } else if (direction == ScrollDirection.forward) {
       // Scrolling up - expand FAB
-      if (_isScrollingDown) {
-        _isScrollingDown = false;
-        if (!_isExpanded) {
-          setState(() {
-            _isExpanded = true;
-          });
-          _fabAnimationController.forward();
-        }
+      // Only trigger animation if not already animating in that direction
+      if (!_isExpanded && !_fabAnimationController.isAnimating) {
+        _isExpanded = true;
+        _fabAnimationController.forward();
       }
     }
   }
@@ -146,7 +137,6 @@ class _LiveVideoScreenState extends State<LiveVideoScreen>
       );
     }
   }
-
 
   /// Format date for display (following home screen pattern)
   String _formatDateForDisplay(DateTime date) {

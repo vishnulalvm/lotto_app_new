@@ -1,5 +1,16 @@
-abstract class LiveVideoEvent {}
+import 'package:equatable/equatable.dart';
 
-class LoadLiveVideosEvent extends LiveVideoEvent {}
+abstract class LiveVideoEvent extends Equatable {
+  const LiveVideoEvent();
 
-class RefreshLiveVideosEvent extends LiveVideoEvent {}
+  @override
+  List<Object?> get props => [];
+}
+
+class LoadLiveVideosEvent extends LiveVideoEvent {
+  const LoadLiveVideosEvent();
+}
+
+class RefreshLiveVideosEvent extends LiveVideoEvent {
+  const RefreshLiveVideosEvent();
+}

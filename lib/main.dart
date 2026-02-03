@@ -4,40 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:lotto_app/core/constants/theme/app_theme.dart';
 import 'firebase_options.dart';
-import 'package:lotto_app/data/datasource/api/auth_screen/auth_api_service.dart';
-import 'package:lotto_app/data/datasource/api/home_screen/home_screen_api.dart';
-import 'package:lotto_app/data/datasource/api/results_screen/results_screen.dart';
-import 'package:lotto_app/data/datasource/api/scratch_card_screen/result_checker.dart';
-import 'package:lotto_app/data/datasource/api/predict_screen/predict_api_service.dart';
-import 'package:lotto_app/data/datasource/api/live_video_screen/live_video_api_service.dart';
-import 'package:lotto_app/data/datasource/api/probability_screen/probability_api_service.dart';
-import 'package:lotto_app/data/repositories/auth_screen/auth_repository.dart';
-import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
-import 'package:lotto_app/data/repositories/cache/home_screen_cache_repository.dart';
-import 'package:lotto_app/data/repositories/cache/result_details_cache_repository.dart';
-import 'package:lotto_app/data/repositories/results_screen/result_screen.dart';
-import 'package:lotto_app/data/repositories/scratch_card_screen/check_result.dart';
-import 'package:lotto_app/data/repositories/predict_screen/predict_repository.dart';
-import 'package:lotto_app/data/repositories/live_video_screen/live_video_repository.dart';
-import 'package:lotto_app/data/repositories/probability_screen/probability_repository.dart';
-import 'package:lotto_app/data/services/connectivity_service.dart';
-import 'package:lotto_app/core/services/theme_service.dart';
-import 'package:lotto_app/data/services/user_service.dart';
-import 'package:lotto_app/data/services/predict_cache_service.dart';
-import 'package:lotto_app/data/services/audio_service.dart';
-import 'package:lotto_app/domain/usecases/home_screen/home_screen_usecase.dart';
-import 'package:lotto_app/domain/usecases/results_screen/results_screen.dart';
-import 'package:lotto_app/domain/usecases/scratch_card_screen/check_result.dart';
-import 'package:lotto_app/domain/usecases/predict_screen/predict_usecase.dart';
-import 'package:lotto_app/domain/usecases/live_video_screen/live_video_usecase.dart';
-import 'package:lotto_app/domain/usecases/probability_screen/probability_usecase.dart';
-import 'package:lotto_app/domain/usecases/lottery_purchase/lottery_purchase_usecase.dart';
-import 'package:lotto_app/domain/usecases/lottery_statistics/lottery_statistics_usecase.dart';
-import 'package:lotto_app/data/datasource/api/lottery_purchase/lottery_purchase_api_service.dart';
-import 'package:lotto_app/data/datasource/api/lottery_statistics/lottery_statistics_api_service.dart';
-import 'package:lotto_app/data/repositories/lottery_purchase/lottery_purchase_repository.dart';
-import 'package:lotto_app/data/repositories/lottery_statistics/lottery_statistics_repository.dart';
-import 'package:lotto_app/data/repositories/cache/lottery_statistics_cache_repository.dart';
+import 'package:lotto_app/core/di/service_locator.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lottery_purchase/lottery_purchase_bloc.dart';
 import 'package:lotto_app/presentation/blocs/lottery_statistics/lottery_statistics_bloc.dart';
@@ -50,30 +17,12 @@ import 'package:lotto_app/presentation/blocs/predict_screen/predict_bloc.dart';
 import 'package:lotto_app/presentation/blocs/live_video_screen/live_video_bloc.dart';
 import 'package:lotto_app/presentation/blocs/probability_screen/probability_bloc.dart';
 import 'package:lotto_app/presentation/blocs/rate_us/rate_us_bloc.dart';
-import 'package:lotto_app/data/repositories/rate_us/rate_us_repository.dart';
 import 'package:lotto_app/presentation/blocs/feedback_screen/feedback_bloc.dart';
-import 'package:lotto_app/data/repositories/feedback_screen/feedback_repository.dart';
-import 'package:lotto_app/data/datasource/api/feedback_screen/feedback_api_service.dart';
 import 'package:lotto_app/routes/route_names.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'dart:async';
-
-// Singleton services to avoid multiple instances
-ConnectivityService? _connectivityServiceInstance;
-ConnectivityService _getConnectivityService() {
-  return _connectivityServiceInstance ??= ConnectivityService();
-}
-
-// Lazy service creation to improve startup performance
-final AuthApiService _authApiService = AuthApiService();
-final UserService _userService = UserService();
-final HomeScreenResultsApiService _homeScreenApiService =
-    HomeScreenResultsApiService();
-final HomeScreenCacheRepositoryImpl _homeScreenCacheRepo =
-    HomeScreenCacheRepositoryImpl();
-final ThemeService _themeService = ThemeService();
 
 // Top-level function for background message handling
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialize Firebase if not already initialized
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -87,23 +36,21 @@ void main() async {
   await Future.wait([
     EasyLocalization.ensureInitialized(),
     Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+    setupServiceLocator(), // Initialize DI container
   ]);
-
-  // Initialize audio service early for instant playback (must be sequential for warm-up)
-  await AudioService().initialize();
-  await AudioService().ensureWarmedUp();
 
   // Set up background message handler after Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Render app immediately - SplashScreen will handle all other initialization
+  // AudioService initialization moved to SplashScreen for faster cold start
   runApp(
     EasyLocalization(
       supportedLocales: const [
         Locale('en'), // English
         Locale('ml'), // Malayalam
         Locale('hi'), // Hindi
-        Locale('ta'), // Tamil - Added
+        Locale('ta'), // Tamil
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
@@ -119,125 +66,51 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        // Critical BLoCs - loaded immediately
+        // Critical BLoCs - loaded immediately (using DI)
         BlocProvider(
-          create: (context) => ThemeCubit(_themeService),
+          create: (context) => getIt<ThemeCubit>(),
         ),
         BlocProvider(
-          create: (context) => AuthBloc(
-            repository: AuthRepository(
-              apiService: _authApiService,
-              userService: _userService,
-            ),
-          ),
+          create: (context) => getIt<AuthBloc>(),
         ),
         BlocProvider<HomeScreenResultsBloc>(
-          create: (context) => HomeScreenResultsBloc(
-            HomeScreenResultsUseCase(
-              HomeScreenResultsRepository(
-                _homeScreenApiService,
-                _homeScreenCacheRepo,
-                _getConnectivityService(),
-              ),
-            ),
-            _getConnectivityService(),
-          ),
+          create: (context) => getIt<HomeScreenResultsBloc>(),
         ),
-        // Non-critical BLoCs - lazy loaded
+        // Non-critical BLoCs - lazy loaded (using DI)
         BlocProvider(
           lazy: true,
-          create: (context) => LotteryResultDetailsBloc(
-            LotteryResultDetailsUseCase(
-              LotteryResultDetailsRepository(
-                LotteryResultDetailsApiService(),
-                ResultDetailsCacheRepositoryImpl(),
-                _getConnectivityService(),
-              ),
-            ),
-          ),
-        ),
-
-        BlocProvider(
-          lazy: true,
-          create: (context) => TicketCheckBloc(
-            TicketCheckUseCase(
-              TicketCheckRepository(
-                TicketCheckApiService(),
-              ),
-            ),
-            LotteryResultDetailsRepository(
-              LotteryResultDetailsApiService(),
-              ResultDetailsCacheRepositoryImpl(),
-              _getConnectivityService(),
-            ),
-          ),
+          create: (context) => getIt<LotteryResultDetailsBloc>(),
         ),
         BlocProvider(
           lazy: true,
-          create: (context) => PredictBloc(
-            PredictUseCase(
-              PredictRepositoryImpl(
-                PredictApiService(),
-                PredictCacheService(),
-              ),
-            ),
-          ),
+          create: (context) => getIt<TicketCheckBloc>(),
         ),
         BlocProvider(
           lazy: true,
-          create: (context) => ProbabilityBloc(
-            useCase: ProbabilityUseCase(
-              repository: ProbabilityRepositoryImpl(
-                apiService: ProbabilityApiService(),
-              ),
-            ),
-          ),
+          create: (context) => getIt<PredictBloc>(),
         ),
         BlocProvider(
           lazy: true,
-          create: (context) => LiveVideoBloc(
-            LiveVideoUseCase(
-              LiveVideoRepositoryImpl(
-                LiveVideoApiService(),
-              ),
-            ),
-          ),
-        ),
-
-        BlocProvider(
-          lazy: true,
-          create: (context) => LotteryPurchaseBloc(
-            useCase: LotteryPurchaseUseCase(
-              LotteryPurchaseRepository(
-                apiService: LotteryPurchaseApiService(),
-              ),
-            ),
-          ),
+          create: (context) => getIt<ProbabilityBloc>(),
         ),
         BlocProvider(
           lazy: true,
-          create: (context) => LotteryStatisticsBloc(
-            useCase: LotteryStatisticsUseCase(
-              LotteryStatisticsRepository(
-                apiService: LotteryStatisticsApiService(),
-                cacheRepository: LotteryStatisticsCacheRepositoryImpl(),
-                connectivityService: _getConnectivityService(),
-              ),
-            ),
-          ),
-        ),
-        BlocProvider(
-          create: (context) => RateUsBloc(
-            RateUsRepositoryImpl(),
-          ),
+          create: (context) => getIt<LiveVideoBloc>(),
         ),
         BlocProvider(
           lazy: true,
-          create: (context) => FeedbackBloc(
-            repository: FeedbackRepository(
-              apiService: FeedbackApiService(),
-            ),
-          ),
+          create: (context) => getIt<LotteryPurchaseBloc>(),
+        ),
+        BlocProvider(
+          lazy: true,
+          create: (context) => getIt<LotteryStatisticsBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<RateUsBloc>(),
+        ),
+        BlocProvider(
+          lazy: true,
+          create: (context) => getIt<FeedbackBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(
@@ -250,9 +123,8 @@ class MyApp extends StatelessWidget {
             title: 'Lotto App',
             theme: AppTheme.lightTheme(themeState.colorScheme),
             darkTheme: AppTheme.darkTheme(themeState.colorScheme),
-            themeMode: themeState.themeMode, // Use the cubit state
+            themeMode: themeState.themeMode,
             routerConfig: AppRouter.router,
-            // Add Firebase Analytics observer
             builder: (context, child) {
               return child ?? const SizedBox();
             },
@@ -262,7 +134,7 @@ class MyApp extends StatelessWidget {
               Locale('en'), // English
               Locale('ml'), // Malayalam
               Locale('hi'), // Hindi
-              Locale('ta'), // Tamil - Added
+              Locale('ta'), // Tamil
             ],
             locale: context.locale,
           );

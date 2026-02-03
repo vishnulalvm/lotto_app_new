@@ -12,12 +12,15 @@ import 'package:lotto_app/data/services/admob_service.dart';
 import 'package:lotto_app/data/services/user_service.dart';
 import 'package:lotto_app/data/services/audio_service.dart';
 import 'package:lotto_app/data/services/app_update_service.dart';
+import 'package:lotto_app/core/constants/timing_constants.dart';
+import 'package:lotto_app/core/di/service_locator.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_bloc.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_event.dart';
 import 'package:lotto_app/presentation/blocs/auth_screen/bloc/auth_state.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 
+@immutable
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -32,15 +35,18 @@ class _SplashScreenState extends State<SplashScreen> {
     _initializeApp();
   }
 
-
   Future<void> _initializeApp() async {
     try {
       // Phase 1: Initialize CRITICAL services required for app to function
       // These must complete before navigation
+      // Note: AudioService is already registered via DI, just initialize it here
       await Future.wait([
         HiveService.init(), // Required for cache and user data
-        AudioService().initialize(), // Audio service for UI feedback
+        getIt<AudioService>().initialize(), // Audio service for UI feedback
       ]);
+
+      // Warm up audio in background (non-blocking)
+      unawaited(getIt<AudioService>().ensureWarmedUp());
 
       // Phase 2: Check login status (requires Hive to be initialized)
       await _checkLoginStatus();
@@ -59,31 +65,31 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeBackgroundServices() async {
     try {
       // Phase 1: Lightweight services - start immediately after navigation
-      unawaited(ConnectivityService().initialize().catchError((e) {}));
+      unawaited(getIt<ConnectivityService>().initialize().catchError((e) {}));
       unawaited(SavedResultsService.init().catchError((e) {}));
 
-      // Phase 2: Analytics - 50ms delay (lightweight but non-critical)
-      unawaited(Future.delayed(const Duration(milliseconds: 50), () {
+      // Phase 2: Analytics - using timing constant
+      unawaited(Future.delayed(TimingConstants.analyticsInitDelay, () {
         AnalyticsService.initialize().catchError((e) {});
       }));
 
-      // Phase 3: App updates check - 100ms delay
-      unawaited(Future.delayed(const Duration(milliseconds: 100), () {
+      // Phase 3: App updates check - using timing constant
+      unawaited(Future.delayed(TimingConstants.appUpdateInitDelay, () {
         AppUpdateService().initialize().catchError((e) {});
       }));
 
-      // Phase 4: FCM initialization - 200ms delay (after user sees main screen)
-      unawaited(Future.delayed(const Duration(milliseconds: 200), () {
+      // Phase 4: FCM initialization - using timing constant
+      unawaited(Future.delayed(TimingConstants.fcmInitDelay, () {
         FirebaseMessagingService.initialize().catchError((e) {});
       }));
 
-      // Phase 5: AdMob services - 300ms delay (heavy operation)
-      unawaited(Future.delayed(const Duration(milliseconds: 300), () {
+      // Phase 5: AdMob services - using timing constant
+      unawaited(Future.delayed(TimingConstants.adMobInitDelay, () {
         _initializeAdMobServices().catchError((e) {});
       }));
 
-      // Phase 6: Cache manager - 400ms delay (maintenance tasks)
-      unawaited(Future.delayed(const Duration(milliseconds: 400), () {
+      // Phase 6: Cache manager - using timing constant
+      unawaited(Future.delayed(TimingConstants.cacheManagerInitDelay, () {
         try {
           CacheManager.initialize();
         } catch (e) {
@@ -91,9 +97,9 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }));
 
-      // Phase 7: User activity tracking - 500ms delay (least critical)
-      unawaited(Future.delayed(const Duration(milliseconds: 500), () {
-        UserService().trackActivity().catchError((e) => false);
+      // Phase 7: User activity tracking - using timing constant
+      unawaited(Future.delayed(TimingConstants.userActivityInitDelay, () {
+        getIt<UserService>().trackActivity().catchError((e) => false);
       }));
     } catch (e) {
       // Silent fail - background services are non-critical
@@ -109,7 +115,6 @@ class _SplashScreenState extends State<SplashScreen> {
       unawaited(_createNotificationChannel().catchError((e) {
         // Ignore notification channel creation errors
       }));
-
     } catch (e) {
       // Ignore AdMob services initialization errors
     }
@@ -131,7 +136,6 @@ class _SplashScreenState extends State<SplashScreen> {
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
-      
     } catch (e) {
       // Ignore notification channel creation errors
     }
@@ -144,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkLoginStatus() async {
     try {
-      final userService = UserService();
+      final userService = getIt<UserService>();
       final isLoggedIn = await userService.isLoggedIn();
 
       if (!mounted) {
@@ -157,7 +161,6 @@ class _SplashScreenState extends State<SplashScreen> {
         // Auto-login for new users
         await _performAutoLogin();
       }
-
     } catch (e) {
       if (mounted) {
         // On error, try auto-login anyway
@@ -211,45 +214,45 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // App logo
-                    SvgPicture.asset(
-                      'assets/icons/LOTTOSVG.svg',
-                      width: 150,
-                      height: 150,
-                      fit: BoxFit.contain,
+        children: [
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App logo
+                  SvgPicture.asset(
+                    'assets/icons/LOTTOSVG.svg',
+                    width: 150,
+                    height: 150,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'LOTTO',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'LOTTO',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            // Company name at bottom center
-            Padding(
-              padding: const EdgeInsets.only(bottom: 60),
-              child: Text(
-                'SOLID APPS',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: theme.primaryColor,
-                ),
+          ),
+          // Company name at bottom center
+          Padding(
+            padding: const EdgeInsets.only(bottom: 60),
+            child: Text(
+              'SOLID APPS',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: theme.primaryColor,
               ),
             ),
-          ],
+          ),
+        ],
       ),
     );
   }

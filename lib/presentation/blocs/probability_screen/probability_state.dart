@@ -5,7 +5,7 @@ abstract class ProbabilityState extends Equatable {
   const ProbabilityState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class ProbabilityInitial extends ProbabilityState {}
@@ -18,7 +18,7 @@ class ProbabilityLoaded extends ProbabilityState {
   const ProbabilityLoaded({required this.response});
 
   @override
-  List<Object> get props => [response];
+  List<Object?> get props => [response];
 }
 
 class ProbabilityError extends ProbabilityState {
@@ -27,5 +27,5 @@ class ProbabilityError extends ProbabilityState {
   const ProbabilityError({required this.message});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }

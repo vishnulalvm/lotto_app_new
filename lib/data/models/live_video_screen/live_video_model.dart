@@ -1,9 +1,11 @@
-class LiveVideoResponseModel {
+import 'package:equatable/equatable.dart';
+
+class LiveVideoResponseModel extends Equatable {
   final String message;
   final int count;
   final List<LiveVideoModel> data;
 
-  LiveVideoResponseModel({
+  const LiveVideoResponseModel({
     required this.message,
     required this.count,
     required this.data,
@@ -14,13 +16,17 @@ class LiveVideoResponseModel {
       message: json['message'] ?? '',
       count: json['count'] ?? 0,
       data: (json['data'] as List<dynamic>?)
-          ?.map((item) => LiveVideoModel.fromJson(item))
-          .toList() ?? [],
+              ?.map((item) => LiveVideoModel.fromJson(item))
+              .toList() ??
+          [],
     );
   }
+
+  @override
+  List<Object?> get props => [message, count, data];
 }
 
-class LiveVideoModel {
+class LiveVideoModel extends Equatable {
   final int id;
   final String lotteryName;
   final String youtubeUrl;
@@ -33,7 +39,7 @@ class LiveVideoModel {
   final String createdAt;
   final String updatedAt;
 
-  LiveVideoModel({
+  const LiveVideoModel({
     required this.id,
     required this.lotteryName,
     required this.youtubeUrl,
@@ -65,9 +71,10 @@ class LiveVideoModel {
 
   // Helper methods for UI display
   String get formattedTitle => lotteryName;
-  
-  String get thumbnail => 'https://img.youtube.com/vi/$youtubeVideoId/maxresdefault.jpg';
-  
+
+  String get thumbnail =>
+      'https://img.youtube.com/vi/$youtubeVideoId/maxresdefault.jpg';
+
   DateTime get dateTime {
     try {
       return DateTime.parse(date);
@@ -75,7 +82,7 @@ class LiveVideoModel {
       return DateTime.now();
     }
   }
-  
+
   String get statusLabel {
     switch (status.toLowerCase()) {
       case 'live':
@@ -86,13 +93,28 @@ class LiveVideoModel {
         return status.toUpperCase();
     }
   }
-  
+
   bool get isLive => status.toLowerCase() == 'live' && isLiveNow;
-  
+
   String get formattedDescription {
     if (description.length > 100) {
       return '${description.substring(0, 100)}...';
     }
     return description;
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        lotteryName,
+        youtubeUrl,
+        youtubeVideoId,
+        embedUrl,
+        date,
+        description,
+        status,
+        isLiveNow,
+        createdAt,
+        updatedAt
+      ];
 }

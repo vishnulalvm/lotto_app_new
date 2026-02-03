@@ -5,7 +5,7 @@ abstract class ProbabilityEvent extends Equatable {
   const ProbabilityEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class GetProbabilityEvent extends ProbabilityEvent {
@@ -14,7 +14,7 @@ class GetProbabilityEvent extends ProbabilityEvent {
   const GetProbabilityEvent({required this.request});
 
   @override
-  List<Object> get props => [request];
+  List<Object?> get props => [request];
 }
 
 class GetProbabilityByLotteryNumberEvent extends ProbabilityEvent {
@@ -23,7 +23,7 @@ class GetProbabilityByLotteryNumberEvent extends ProbabilityEvent {
   const GetProbabilityByLotteryNumberEvent({required this.lotteryNumber});
 
   @override
-  List<Object> get props => [lotteryNumber];
+  List<Object?> get props => [lotteryNumber];
 }
 
 class ResetProbabilityEvent extends ProbabilityEvent {

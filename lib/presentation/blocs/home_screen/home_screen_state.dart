@@ -1,14 +1,25 @@
+import 'package:equatable/equatable.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
 import 'package:lotto_app/data/repositories/home_screen/home_screen_repo.dart';
 
-abstract class HomeScreenResultsState {}
+abstract class HomeScreenResultsState extends Equatable {
+  const HomeScreenResultsState();
 
-class HomeScreenResultsInitial extends HomeScreenResultsState {}
+  @override
+  List<Object?> get props => [];
+}
+
+class HomeScreenResultsInitial extends HomeScreenResultsState {
+  const HomeScreenResultsInitial();
+}
 
 class HomeScreenResultsLoading extends HomeScreenResultsState {
   final bool isRefreshing;
-  
-  HomeScreenResultsLoading({this.isRefreshing = false});
+
+  const HomeScreenResultsLoading({this.isRefreshing = false});
+
+  @override
+  List<Object?> get props => [isRefreshing];
 }
 
 class HomeScreenResultsLoaded extends HomeScreenResultsState {
@@ -19,7 +30,7 @@ class HomeScreenResultsLoaded extends HomeScreenResultsState {
   final DataSource dataSource;
   final int? cacheAgeInMinutes;
 
-  HomeScreenResultsLoaded(
+  const HomeScreenResultsLoaded(
     this.data, {
     this.filteredDate,
     this.isFiltered = false,
@@ -48,6 +59,16 @@ class HomeScreenResultsLoaded extends HomeScreenResultsState {
   }
 
   @override
+  List<Object?> get props => [
+        data,
+        filteredDate,
+        isFiltered,
+        isOffline,
+        dataSource,
+        cacheAgeInMinutes
+      ];
+
+  @override
   String toString() =>
       'HomeScreenResultsLoaded(count: ${data.count}, isFiltered: $isFiltered, filteredDate: $filteredDate, isOffline: $isOffline, dataSource: $dataSource, cacheAge: ${cacheAgeInMinutes}min)';
 }
@@ -57,14 +78,18 @@ class HomeScreenResultsError extends HomeScreenResultsState {
   final bool hasOfflineData;
   final HomeScreenResultsModel? offlineData;
 
-  HomeScreenResultsError(
+  const HomeScreenResultsError(
     this.message, {
     this.hasOfflineData = false,
     this.offlineData,
   });
 
   @override
-  String toString() => 'HomeScreenResultsError(message: $message, hasOfflineData: $hasOfflineData)';
+  List<Object?> get props => [message, hasOfflineData, offlineData];
+
+  @override
+  String toString() =>
+      'HomeScreenResultsError(message: $message, hasOfflineData: $hasOfflineData)';
 }
 
 /// State for connectivity changes
@@ -72,5 +97,8 @@ class HomeScreenResultsConnectivityChanged extends HomeScreenResultsState {
   final bool isOnline;
   final HomeScreenResultsState previousState;
 
-  HomeScreenResultsConnectivityChanged(this.isOnline, this.previousState);
+  const HomeScreenResultsConnectivityChanged(this.isOnline, this.previousState);
+
+  @override
+  List<Object?> get props => [isOnline, previousState];
 }
