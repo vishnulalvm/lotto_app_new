@@ -12,7 +12,8 @@ class AiPredictionService {
 
   static Box<AiPredictionModel>? _box;
   static final Random _random = Random();
-  static final StatisticalPredictionEngine _predictionEngine = StatisticalPredictionEngine();
+  static final StatisticalPredictionEngine _predictionEngine =
+      StatisticalPredictionEngine();
 
   static Future<void> init() async {
     if (!Hive.isBoxOpen(_boxName)) {
@@ -29,7 +30,8 @@ class AiPredictionService {
       // Ensure Hive is initialized
       await HiveService.init();
 
-      final cacheBox = await Hive.openBox<CachedHomeScreenModel>('home_screen_cache');
+      final cacheBox =
+          await Hive.openBox<CachedHomeScreenModel>('home_screen_cache');
       final List<CachedHomeScreenResultModel> allResults = [];
 
       // Collect results from all cached entries
@@ -53,10 +55,10 @@ class AiPredictionService {
 
   static Future<AiPredictionModel?> getTodaysPrediction(int prizeType) async {
     await init();
-    
+
     final today = _getTodayDateString();
     final key = '${today}_$prizeType';
-    
+
     // Check if we have prediction for today and this prize type
     final prediction = _box?.get(key);
     if (prediction != null) {
@@ -69,11 +71,13 @@ class AiPredictionService {
 
   /// Gets prediction specifically for the actual today's date (not affected by 3 PM rule)
   /// This is used for comparing with today's lottery results
-  static Future<AiPredictionModel?> getActualTodaysPrediction(int prizeType) async {
+  static Future<AiPredictionModel?> getActualTodaysPrediction(
+      int prizeType) async {
     await init();
 
     final now = DateTime.now();
-    final actualToday = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final actualToday =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final key = '${actualToday}_$prizeType';
 
     // Check if we have prediction stored for actual today's date
@@ -97,7 +101,8 @@ class AiPredictionService {
   }
 
   /// Gets prediction for a specific date and prize type
-  static Future<AiPredictionModel?> getPredictionForDate(String date, int prizeType) async {
+  static Future<AiPredictionModel?> getPredictionForDate(
+      String date, int prizeType) async {
     await init();
 
     final key = '${date}_$prizeType';
@@ -122,7 +127,8 @@ class AiPredictionService {
     return newPrediction;
   }
 
-  static Future<AiPredictionModel> _generateAndStorePrediction(int prizeType) async {
+  static Future<AiPredictionModel> _generateAndStorePrediction(
+      int prizeType) async {
     final today = _getTodayDateString();
     final numbers = await _generateRandomNumbers(prizeType);
 
@@ -149,13 +155,33 @@ class AiPredictionService {
         // Analyze patterns and digit frequency from cached results
         final statistics = _predictionEngine.analyzeResults(cachedResults);
 
-        // Generate 12 predictions based on pattern probabilities and digit frequency
-        final predictions = _predictionEngine.generatePredictions(
+        // 70:30 ratio - 8 from statistical analysis, 4 completely random
+        final patternCount = 8;
+        final randomCount = 4;
+
+        // Generate pattern-based predictions
+        final patternPredictions = _predictionEngine.generatePredictions(
           statistics,
-          count: 12,
+          count: patternCount,
         );
 
-        return predictions;
+        // Generate completely random numbers
+        final randomPredictions = <String>[];
+        final usedNumbers = Set<String>.from(patternPredictions);
+
+        while (randomPredictions.length < randomCount) {
+          final randomNumber = _generateCompletelyRandomNumber();
+          if (!usedNumbers.contains(randomNumber)) {
+            randomPredictions.add(randomNumber);
+            usedNumbers.add(randomNumber);
+          }
+        }
+
+        // Combine and shuffle to mix pattern and random numbers
+        final allPredictions = [...patternPredictions, ...randomPredictions];
+        allPredictions.shuffle(_random);
+
+        return allPredictions;
       } catch (e) {
         // If statistical analysis fails, fall back to random generation
         return _generateRandomNumbersFallback();
@@ -167,12 +193,17 @@ class AiPredictionService {
   }
 
   /// Fallback method for generating random numbers when no cached data is available
+  /// Uses 70:30 ratio - 70% pattern-based, 30% completely random
   static List<String> _generateRandomNumbersFallback() {
     final numbers = <String>[];
     final usedNumbers = <String>{};
 
-    // Generate 12 unique fancy 4-digit numbers
-    while (numbers.length < 12) {
+    // 70:30 ratio - 8 pattern-based, 4 completely random
+    final patternCount = 8;
+    final randomCount = 4;
+
+    // Generate pattern-based fancy numbers (70%)
+    while (numbers.length < patternCount) {
       String number = _generateFancyNumber();
 
       if (!usedNumbers.contains(number)) {
@@ -181,7 +212,26 @@ class AiPredictionService {
       }
     }
 
+    // Generate completely random numbers (30%)
+    while (numbers.length < (patternCount + randomCount)) {
+      String number = _generateCompletelyRandomNumber();
+
+      if (!usedNumbers.contains(number)) {
+        numbers.add(number);
+        usedNumbers.add(number);
+      }
+    }
+
+    // Shuffle to mix pattern and random numbers
+    numbers.shuffle(_random);
+
     return numbers;
+  }
+
+  /// Generates a completely random 4-digit number (0000-9999)
+  static String _generateCompletelyRandomNumber() {
+    final number = _random.nextInt(10000); // 0 to 9999
+    return number.toString().padLeft(4, '0');
   }
 
   static String _generateFancyNumber() {
@@ -208,7 +258,8 @@ class AiPredictionService {
     ];
 
     // 100% pattern-based: randomly select a pattern type
-    final patternGenerator = patternGenerators[_random.nextInt(patternGenerators.length)];
+    final patternGenerator =
+        patternGenerators[_random.nextInt(patternGenerators.length)];
     return patternGenerator();
   }
 
@@ -239,7 +290,7 @@ class AiPredictionService {
         return '$a$a$a$b';
       },
     ];
-    
+
     return patterns[_random.nextInt(patterns.length)]();
   }
 
@@ -263,7 +314,7 @@ class AiPredictionService {
         return '$first${second}00';
       },
     ];
-    
+
     return patterns[_random.nextInt(patterns.length)]();
   }
 
@@ -276,7 +327,8 @@ class AiPredictionService {
       },
       // Descending Sequential (like 4321, 5432, 6543)
       () {
-        final start = 3 + _random.nextInt(7); // 3-9, so min is 3210, max is 9876
+        final start =
+            3 + _random.nextInt(7); // 3-9, so min is 3210, max is 9876
         return '$start${start - 1}${start - 2}${start - 3}';
       },
       // Near Sequential - close progression with small gaps
@@ -371,30 +423,31 @@ class AiPredictionService {
 
   static String _getTodayDateString() {
     final now = DateTime.now();
-    
+
     // If it's after 3 PM, generate predictions for tomorrow's lottery
     final targetDate = now.hour >= 15 ? now.add(const Duration(days: 1)) : now;
-    
+
     return '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
   }
 
   static Future<void> clearOldPredictions() async {
     await init();
-    
+
     final today = DateTime.now();
     final sevenDaysAgo = today.subtract(const Duration(days: 7));
-    
+
     final keysToDelete = <String>[];
     final box = _box;
-    
+
     if (box != null) {
       for (var key in box.keys) {
         final prediction = box.get(key);
-        if (prediction != null && prediction.generatedAt.isBefore(sevenDaysAgo)) {
+        if (prediction != null &&
+            prediction.generatedAt.isBefore(sevenDaysAgo)) {
           keysToDelete.add(key.toString());
         }
       }
-      
+
       for (final key in keysToDelete) {
         await box.delete(key);
       }
@@ -415,22 +468,22 @@ class AiPredictionService {
 
   static Future<Map<String, dynamic>> getPredictionStats() async {
     await init();
-    
+
     final box = _box;
     int totalPredictions = 0;
     int todayPredictions = 0;
     final today = _getTodayDateString();
-    
+
     if (box != null) {
       totalPredictions = box.length;
-      
+
       for (var prediction in box.values) {
         if (prediction.date == today) {
           todayPredictions++;
         }
       }
     }
-    
+
     return {
       'total': totalPredictions,
       'today': todayPredictions,

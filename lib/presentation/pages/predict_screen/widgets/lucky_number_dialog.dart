@@ -20,9 +20,15 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
   late Animation<Offset> _slideAnimation;
 
   final List<String> numbers = [
-    '1', '2', '3',
-    '4', '5', '6', 
-    '7', '8', '9',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
     '0'
   ];
 
@@ -61,20 +67,24 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(
-        horizontal: isVerySmallScreen ? 16 : isSmallScreen ? 20 : 24,
+        horizontal: isVerySmallScreen
+            ? 16
+            : isSmallScreen
+                ? 20
+                : 24,
         vertical: isSmallScreen ? 16 : 24,
       ),
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: isVerySmallScreen 
-                ? screenSize.width * 0.95 
-                : isSmallScreen 
+            maxWidth: isVerySmallScreen
+                ? screenSize.width * 0.95
+                : isSmallScreen
                     ? screenSize.width * 0.9
                     : screenSize.width * 0.85,
-            maxHeight: isSmallScreen 
-                ? screenSize.height * 0.75 
+            maxHeight: isSmallScreen
+                ? screenSize.height * 0.75
                 : screenSize.height * 0.6,
           ),
           decoration: BoxDecoration(
@@ -100,11 +110,24 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
     );
   }
 
-  Widget _buildHeader(ThemeData theme, bool isSmallScreen, bool isVerySmallScreen) {
+  Widget _buildHeader(
+      ThemeData theme, bool isSmallScreen, bool isVerySmallScreen) {
     final borderRadius = isSmallScreen ? 16.0 : 24.0;
-    final padding = isVerySmallScreen ? 16.0 : isSmallScreen ? 20.0 : 24.0;
-    final iconSize = isVerySmallScreen ? 20.0 : isSmallScreen ? 22.0 : 24.0;
-    final iconPadding = isVerySmallScreen ? 8.0 : isSmallScreen ? 10.0 : 12.0;
+    final padding = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 20.0
+            : 24.0;
+    final iconSize = isVerySmallScreen
+        ? 20.0
+        : isSmallScreen
+            ? 22.0
+            : 24.0;
+    final iconPadding = isVerySmallScreen
+        ? 8.0
+        : isSmallScreen
+            ? 10.0
+            : 12.0;
 
     return Container(
       padding: EdgeInsets.all(padding),
@@ -147,17 +170,18 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
                   children: [
                     Text(
                       'Guessing a Number',
-                      style: (isVerySmallScreen 
-                          ? theme.textTheme.titleMedium 
-                          : theme.textTheme.titleLarge)?.copyWith(
+                      style: (isVerySmallScreen
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.titleLarge)
+                          ?.copyWith(
                         color: theme.primaryColor,
                       ),
                     ),
                     SizedBox(height: isVerySmallScreen ? 2 : 4),
                     Text(
                       'Tap a number that feels lucky to you today',
-                      style: isVerySmallScreen 
-                          ? theme.textTheme.bodySmall 
+                      style: isVerySmallScreen
+                          ? theme.textTheme.bodySmall
                           : theme.textTheme.bodyMedium,
                     ),
                   ],
@@ -170,10 +194,23 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
     );
   }
 
-  Widget _buildNumberGrid(ThemeData theme, bool isSmallScreen, bool isVerySmallScreen) {
-    final padding = isVerySmallScreen ? 16.0 : isSmallScreen ? 20.0 : 24.0;
-    final spacing = isVerySmallScreen ? 10.0 : isSmallScreen ? 12.0 : 16.0;
-    final zeroButtonHeight = isVerySmallScreen ? 50.0 : isSmallScreen ? 60.0 : 70.0;
+  Widget _buildNumberGrid(
+      ThemeData theme, bool isSmallScreen, bool isVerySmallScreen) {
+    final padding = isVerySmallScreen
+        ? 16.0
+        : isSmallScreen
+            ? 20.0
+            : 24.0;
+    final spacing = isVerySmallScreen
+        ? 10.0
+        : isSmallScreen
+            ? 12.0
+            : 16.0;
+    final zeroButtonHeight = isVerySmallScreen
+        ? 50.0
+        : isSmallScreen
+            ? 60.0
+            : 70.0;
 
     return Padding(
       padding: EdgeInsets.all(padding),
@@ -192,25 +229,41 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
             itemCount: 9,
             itemBuilder: (context, index) {
               final number = numbers[index];
-              
-              return _buildNumberButton(theme, number, isSmallScreen: isSmallScreen, isVerySmallScreen: isVerySmallScreen);
+
+              return _buildNumberButton(theme, number,
+                  isSmallScreen: isSmallScreen,
+                  isVerySmallScreen: isVerySmallScreen);
             },
           ),
           SizedBox(height: spacing),
           SizedBox(
             width: double.infinity,
             height: zeroButtonHeight,
-            child: _buildNumberButton(theme, '0', isZero: true, isSmallScreen: isSmallScreen, isVerySmallScreen: isVerySmallScreen),
+            child: _buildNumberButton(theme, '0',
+                isZero: true,
+                isSmallScreen: isSmallScreen,
+                isVerySmallScreen: isVerySmallScreen),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNumberButton(ThemeData theme, String number, {bool isZero = false, bool isSmallScreen = false, bool isVerySmallScreen = false}) {
-    final borderRadius = isVerySmallScreen ? 12.0 : isSmallScreen ? 16.0 : 20.0;
-    final fontSize = isVerySmallScreen ? 20.0 : isSmallScreen ? 24.0 : 28.0;
-    
+  Widget _buildNumberButton(ThemeData theme, String number,
+      {bool isZero = false,
+      bool isSmallScreen = false,
+      bool isVerySmallScreen = false}) {
+    final borderRadius = isVerySmallScreen
+        ? 12.0
+        : isSmallScreen
+            ? 16.0
+            : 20.0;
+    final fontSize = isVerySmallScreen
+        ? 20.0
+        : isSmallScreen
+            ? 24.0
+            : 28.0;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: Material(
@@ -221,17 +274,17 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
           borderRadius: BorderRadius.circular(borderRadius),
           onTap: () async {
             HapticFeedback.mediumImpact();
-            
+
             final bloc = context.read<PredictBloc>();
             final navigator = Navigator.of(context);
-            
+
             bloc.add(
               GetPredictionEvent(peoplesPrediction: number),
             );
-            
+
             // Save today's date to prevent showing again today
             await _saveLuckyNumberDialogDate();
-            
+
             navigator.pop();
           },
           child: AnimatedContainer(
@@ -254,9 +307,10 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
             child: Center(
               child: AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
-                style: (isVerySmallScreen 
-                    ? theme.textTheme.headlineSmall 
-                    : theme.textTheme.headlineMedium)!.copyWith(
+                style: (isVerySmallScreen
+                        ? theme.textTheme.headlineSmall
+                        : theme.textTheme.headlineMedium)!
+                    .copyWith(
                   color: theme.primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: fontSize,
@@ -274,13 +328,16 @@ class _LuckyNumberDialogState extends State<LuckyNumberDialog>
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
 
-    // Save the current 3 PM cycle date
-    // This ensures the dialog won't show again until after 3 PM tomorrow
+    // Save the current lottery cycle date (3 PM to 3 PM window)
+    // This ensures the dialog won't show again until the next lottery cycle
+    // Lottery cycle: Today 3 PM → Tomorrow 3 PM
     final cycleDate = now.hour >= 15
         ? DateTime(now.year, now.month, now.day)
-        : DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+        : DateTime(now.year, now.month, now.day)
+            .subtract(const Duration(days: 1));
 
-    final cycleDateString = '${cycleDate.year}-${cycleDate.month}-${cycleDate.day}';
+    final cycleDateString =
+        '${cycleDate.year}-${cycleDate.month}-${cycleDate.day}';
     await prefs.setString('lucky_number_dialog_last_shown', cycleDateString);
   }
 }

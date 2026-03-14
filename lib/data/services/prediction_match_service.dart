@@ -7,8 +7,10 @@ import 'package:lotto_app/data/repositories/cache/result_details_cache_repositor
 
 /// Service responsible for matching AI predictions with lottery results
 class PredictionMatchService {
-  static final HomeScreenCacheRepositoryImpl _homeScreenCacheRepo = HomeScreenCacheRepositoryImpl();
-  static final ResultDetailsCacheRepositoryImpl _detailsCacheRepo = ResultDetailsCacheRepositoryImpl();
+  static final HomeScreenCacheRepositoryImpl _homeScreenCacheRepo =
+      HomeScreenCacheRepositoryImpl();
+  static final ResultDetailsCacheRepositoryImpl _detailsCacheRepo =
+      ResultDetailsCacheRepositoryImpl();
 
   /// Fetches prediction for the appropriate date based on current time
   /// Before 4:10 PM: gets yesterday's prediction
@@ -16,9 +18,10 @@ class PredictionMatchService {
   static Future<AiPredictionModel?> getTodaysPrediction(int prizeType) async {
     try {
       final targetDate = getTargetDateForPrediction();
-      
+
       // Get prediction for the appropriate date
-      return await AiPredictionService.getPredictionForDate(targetDate, prizeType);
+      return await AiPredictionService.getPredictionForDate(
+          targetDate, prizeType);
     } catch (e) {
       return null;
     }
@@ -28,33 +31,35 @@ class PredictionMatchService {
   /// Uses the same target date logic as predictions to ensure they match
   static Future<HomeScreenResultModel?> getTodaysResults() async {
     try {
-      final cachedResults = await _homeScreenCacheRepo.getCachedHomeScreenResults();
+      final cachedResults =
+          await _homeScreenCacheRepo.getCachedHomeScreenResults();
       if (cachedResults == null || cachedResults.results.isEmpty) {
         return null;
       }
 
       // Use the same target date as predictions for consistency
       final targetDate = getTargetDateForPrediction();
-      
+
       // Try to find results for the target date
       HomeScreenResultModel? targetResult;
       for (final result in cachedResults.results) {
-        if (result.date == targetDate && result.isPublished) {
+        // Check isPublished AND liveEnd (draw must be completed)
+        if (result.date == targetDate && result.isPublished && result.liveEnd) {
           targetResult = result;
           break;
         }
       }
-      
-      // If no results for target date, get the latest published result
+
+      // If no results for target date, get the latest published result where liveEnd = true
       if (targetResult == null) {
         for (final result in cachedResults.results) {
-          if (result.isPublished) {
+          if (result.isPublished && result.liveEnd) {
             targetResult = result;
             break;
           }
         }
       }
-      
+
       return targetResult;
     } catch (e) {
       return null;
@@ -64,7 +69,8 @@ class PredictionMatchService {
   /// Gets detailed lottery results from result details cache
   static Future<LotteryResultModel?> getDetailedResults(String uniqueId) async {
     try {
-      final cachedDetails = await _detailsCacheRepo.getCachedResultDetails(uniqueId);
+      final cachedDetails =
+          await _detailsCacheRepo.getCachedResultDetails(uniqueId);
       return cachedDetails?.toResultDetails().result;
     } catch (e) {
       return null;
@@ -83,25 +89,22 @@ class PredictionMatchService {
     final prizeTypeString = _getPrizeTypeString(prizeType);
     final targetPrizes = result.getPrizesByType(prizeTypeString);
 
-
     if (targetPrizes.isNotEmpty) {
       final winningNumbers = <String>[];
-      
+
       // Collect ALL winning numbers for this prize type (from all prizes)
       for (final prize in targetPrizes) {
         final prizeNumbers = prize.getAllTicketNumbers();
         winningNumbers.addAll(prizeNumbers);
       }
-      
-      
+
       // Compare predictions with winning numbers
       for (final prediction in predictions) {
         if (winningNumbers.contains(prediction)) {
           matchedNumbers.add(prediction);
         }
       }
-    } else {
-    }
+    } else {}
 
     return matchedNumbers;
   }
@@ -113,16 +116,14 @@ class PredictionMatchService {
     LotteryResultModel result,
   ) {
     final matchedNumbersWithPrizeType = <String, String>{};
-    
-    
+
     // Get all winning numbers from ALL prize types (5th to 9th)
     final allWinningNumbers = <String, String>{}; // number -> prize type
-    
+
     for (int prizeType = 5; prizeType <= 9; prizeType++) {
       final prizeTypeString = _getPrizeTypeString(prizeType);
       final targetPrizes = result.getPrizesByType(prizeTypeString);
-      
-      
+
       for (final prize in targetPrizes) {
         final prizeNumbers = prize.getAllTicketNumbers();
         for (final number in prizeNumbers) {
@@ -130,9 +131,7 @@ class PredictionMatchService {
         }
       }
     }
-    
-    
-    
+
     // Compare ALL prediction numbers against ALL winning numbers
     for (final prediction in allPredictions) {
       for (final predictionNumber in prediction.predictedNumbers) {
@@ -142,8 +141,7 @@ class PredictionMatchService {
         }
       }
     }
-    
-    
+
     return matchedNumbersWithPrizeType;
   }
 
@@ -154,14 +152,14 @@ class PredictionMatchService {
     HomeScreenResultModel result,
   ) {
     final matchedNumbersWithPrizeType = <String, String>{};
-    
-    
+
     final winningNumbers = <String>[];
 
     // Add first prize ticket number (check last 4 digits)
     final firstPrizeNumber = result.firstPrize.ticketNumber;
     if (firstPrizeNumber.length >= 4) {
-      winningNumbers.add(firstPrizeNumber.substring(firstPrizeNumber.length - 4));
+      winningNumbers
+          .add(firstPrizeNumber.substring(firstPrizeNumber.length - 4));
     }
 
     // Add consolation prize numbers (check last 4 digits of each)
@@ -174,7 +172,6 @@ class PredictionMatchService {
       }
     }
 
-    
     // Compare ALL prediction numbers against winning numbers
     for (final prediction in allPredictions) {
       for (final predictionNumber in prediction.predictedNumbers) {
@@ -184,8 +181,7 @@ class PredictionMatchService {
         }
       }
     }
-    
-    
+
     return matchedNumbersWithPrizeType;
   }
 
@@ -200,7 +196,8 @@ class PredictionMatchService {
     // Add first prize ticket number (check last 4 digits)
     final firstPrizeNumber = result.firstPrize.ticketNumber;
     if (firstPrizeNumber.length >= 4) {
-      winningNumbers.add(firstPrizeNumber.substring(firstPrizeNumber.length - 4));
+      winningNumbers
+          .add(firstPrizeNumber.substring(firstPrizeNumber.length - 4));
     }
 
     // Add consolation prize numbers (check last 4 digits of each)
@@ -241,12 +238,13 @@ class PredictionMatchService {
     final now = DateTime.now();
     final isAfter410PM = now.hour > 16 || (now.hour == 16 && now.minute >= 10);
 
-    final targetDate = isAfter410PM ? now : now.subtract(const Duration(days: 1));
-    final dateString = '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
+    final targetDate =
+        isAfter410PM ? now : now.subtract(const Duration(days: 1));
+    final dateString =
+        '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 
     return dateString;
   }
-
 
   /// Gets the lottery name for today based on weekday
   static String getLotteryNameForToday() {
@@ -273,7 +271,6 @@ class PredictionMatchService {
     }
   }
 
-
   /// Converts prize type number to string
   static String _getPrizeTypeString(int prizeType) {
     switch (prizeType) {
@@ -291,6 +288,4 @@ class PredictionMatchService {
         return '5th';
     }
   }
-
-
 }

@@ -21,6 +21,7 @@ import 'package:lotto_app/data/services/ai_prediction_service.dart';
 import 'package:lotto_app/core/helpers/feedback_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:lotto_app/data/services/number_combination_service.dart';
 import 'package:typewritertext/typewritertext.dart';
@@ -52,6 +53,13 @@ class _PredictScreenState extends State<PredictScreen>
   static DateTime? _lastAdShowTime;
   static const Duration _adCooldownDuration = Duration(seconds: 30);
 
+  // Cache keys for Number Variants Generator
+  static const String _lastGeneratedNumberKey = 'number_variants_last_input';
+  static const String _lastGeneratedVariantsKey =
+      'number_variants_last_results';
+  static const String _lastGeneratedDateKey = 'number_variants_last_date';
+  static const Duration _cacheDuration = Duration(days: 7);
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +74,6 @@ class _PredictScreenState extends State<PredictScreen>
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _variantsInputController = TextEditingController();
-    _generatedVariants = NumberCombinationService.generateCombinations("1256");
 
     // Consolidated post-frame callback for all initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -86,6 +93,9 @@ class _PredictScreenState extends State<PredictScreen>
       context.read<PredictBloc>().add(const GetPredictionDataEvent());
       _checkAndShowLuckyNumberDialog();
       _loadAndShowInterstitialAd();
+
+      // Load cached number variants or set default
+      _loadLastGeneratedNumber();
 
       // Trigger FAB animation after a short delay
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -403,9 +413,10 @@ class _PredictScreenState extends State<PredictScreen>
                     child: PredictionMatchCard(
                       key: _predictionMatchCardKey,
                       selectedPrizeType: _selectedPrizeType,
+                      repeatedNumbers: data.repeatedNumbers,
                     ),
                   ),
-                   const SizedBox(height: 30),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -842,6 +853,9 @@ class _PredictScreenState extends State<PredictScreen>
                             NumberCombinationService.generateCombinations(
                                 input);
                       });
+
+                      // Save to cache
+                      _saveLastGeneratedNumber(input, _generatedVariants);
                     }
                   },
                   icon: const Icon(
@@ -1038,12 +1052,12 @@ class _PredictScreenState extends State<PredictScreen>
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
 
-    // Check if it's after 3 PM (15:00)
+    // Calculate the current lottery cycle date (3 PM to 3 PM window)
+    // Lottery cycle: Today 3 PM → Tomorrow 3 PM
+    // If current time is before 3 PM, we're in yesterday's cycle (yesterday 3 PM → today 3 PM)
+    // If current time is after 3 PM, we're in today's cycle (today 3 PM → tomorrow 3 PM)
     final isAfter3PM = now.hour >= 15;
 
-    // Calculate the current 3 PM cycle date
-    // If before 3 PM, use yesterday's 3 PM cycle
-    // If after 3 PM, use today's 3 PM cycle
     final cycleDate = isAfter3PM
         ? DateTime(now.year, now.month, now.day)
         : DateTime(now.year, now.month, now.day)
@@ -1054,8 +1068,9 @@ class _PredictScreenState extends State<PredictScreen>
     final lastShownCycleDate =
         prefs.getString('lucky_number_dialog_last_shown');
 
-    // Only show if it's after 3 PM and we haven't shown it in this 3 PM cycle
-    if (isAfter3PM && lastShownCycleDate != cycleDateString) {
+    // Show dialog if we haven't shown it in this lottery cycle
+    // Dialog can appear anytime during the cycle (not just after 3 PM)
+    if (lastShownCycleDate != cycleDateString) {
       // Show dialog after a small delay to ensure screen is loaded
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {
@@ -1074,6 +1089,60 @@ class _PredictScreenState extends State<PredictScreen>
         return const LuckyNumberDialog();
       },
     );
+  }
+
+  /// Load last generated number and variants from cache
+  /// Cache expires after 7 days
+  Future<void> _loadLastGeneratedNumber() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastInput = prefs.getString(_lastGeneratedNumberKey);
+    final lastVariantsJson = prefs.getString(_lastGeneratedVariantsKey);
+    final lastDateString = prefs.getString(_lastGeneratedDateKey);
+
+    // Check if cache exists and is valid (not expired)
+    if (lastInput != null &&
+        lastVariantsJson != null &&
+        lastDateString != null) {
+      try {
+        final lastDate = DateTime.parse(lastDateString);
+        final now = DateTime.now();
+        final cacheAge = now.difference(lastDate);
+
+        // If cache is less than 7 days old, use it
+        if (cacheAge < _cacheDuration) {
+          final variants = List<String>.from(jsonDecode(lastVariantsJson));
+          setState(() {
+            _variantsInputController.text = lastInput;
+            _generatedVariants = variants;
+          });
+          return;
+        }
+      } catch (e) {
+        // If parsing fails, fall through to default
+      }
+    }
+
+    // Cache doesn't exist or is expired, use default
+    _setDefaultVariants();
+  }
+
+  /// Set default variants (1256)
+  void _setDefaultVariants() {
+    setState(() {
+      _variantsInputController.text = "1256";
+      _generatedVariants =
+          NumberCombinationService.generateCombinations("1256");
+    });
+  }
+
+  /// Save last generated number and variants to cache
+  Future<void> _saveLastGeneratedNumber(
+      String input, List<String> variants) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastGeneratedNumberKey, input);
+    await prefs.setString(_lastGeneratedVariantsKey, jsonEncode(variants));
+    await prefs.setString(
+        _lastGeneratedDateKey, DateTime.now().toIso8601String());
   }
 
   /// Check if cooldown period has passed
