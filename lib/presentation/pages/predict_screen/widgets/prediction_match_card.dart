@@ -25,20 +25,16 @@ class PredictionMatchCardState extends State<PredictionMatchCard> {
   bool _isLoading = false;
   PredictionMatchModel? _matchResult;
   bool _hasData = false;
-  late int _currentPrizeType;
 
   /// Public method to update prize type from external components
+  /// Note: comparison always covers all prize types (5th–9th), no reload needed
   void updatePrizeType(int newPrizeType) {
-    if (_currentPrizeType != newPrizeType) {
-      _currentPrizeType = newPrizeType;
-      _loadPredictionMatches();
-    }
+    // No-op: prize type doesn't affect the match comparison (always checks 5th–9th)
   }
 
   @override
   void initState() {
     super.initState();
-    _currentPrizeType = widget.selectedPrizeType;
     _loadPredictionMatches();
   }
 
@@ -46,20 +42,13 @@ class PredictionMatchCardState extends State<PredictionMatchCard> {
   void didUpdateWidget(PredictionMatchCard oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Check if prize type changed
-    if (oldWidget.selectedPrizeType != widget.selectedPrizeType) {
-      _currentPrizeType = widget.selectedPrizeType;
-    }
-
-    // Check if repeated numbers changed (new lottery draw added)
+    // Reload only when repeated numbers change (new lottery draw data)
     final repeatedNumbersChanged =
         oldWidget.repeatedNumbers.length != widget.repeatedNumbers.length ||
             !_areRepeatedNumbersEqual(
                 oldWidget.repeatedNumbers, widget.repeatedNumbers);
 
-    // Reload if either changed
-    if (oldWidget.selectedPrizeType != widget.selectedPrizeType ||
-        repeatedNumbersChanged) {
+    if (repeatedNumbersChanged) {
       _loadPredictionMatches();
     }
   }
@@ -173,9 +162,10 @@ class PredictionMatchCardState extends State<PredictionMatchCard> {
     return matchedNumbersWithPrizeType.isNotEmpty
         ? PredictionMatchModel.withMatches(
             allPredictions, matchedNumbersWithPrizeType, homeResult.lotteryName,
+            homeResult.uniqueId,
             hasDetailedData: hasDetailedData)
         : PredictionMatchModel.noMatches(
-            allPredictions, homeResult.lotteryName);
+            allPredictions, homeResult.lotteryName, homeResult.uniqueId);
   }
 
   /// Loads cached number variants from SharedPreferences
@@ -228,34 +218,36 @@ class PredictionMatchCardState extends State<PredictionMatchCard> {
   }
 
   /// Compares numbers with basic results (fallback)
+  /// Checks last 4 digits of first prize, consolation, and all available prize numbers
   Map<String, String> _compareNumbersWithBasicResults(
     List<String> numbersToCheck,
     dynamic homeResult,
   ) {
     final matchedNumbersWithPrizeType = <String, String>{};
-    final winningNumbers = <String>[];
 
-    // Add first prize ticket number (check last 4 digits)
+    // Map of last-4-digit number -> prize label
+    final winningNumbers = <String, String>{};
+
+    // 1st prize
     final firstPrizeNumber = homeResult.firstPrize.ticketNumber;
     if (firstPrizeNumber.length >= 4) {
-      winningNumbers
-          .add(firstPrizeNumber.substring(firstPrizeNumber.length - 4));
+      winningNumbers[firstPrizeNumber.substring(firstPrizeNumber.length - 4)] =
+          '1st';
     }
 
-    // Add consolation prize numbers (check last 4 digits of each)
+    // Consolation prizes
     if (homeResult.hasConsolationPrizes) {
-      final consolationNumbers = homeResult.consolationTicketsList;
-      for (final number in consolationNumbers) {
+      for (final number in homeResult.consolationTicketsList) {
         if (number.length >= 4) {
-          winningNumbers.add(number.substring(number.length - 4));
+          winningNumbers[number.substring(number.length - 4)] = 'Consolation';
         }
       }
     }
 
     // Compare ALL numbers against winning numbers
     for (final number in numbersToCheck) {
-      if (winningNumbers.contains(number)) {
-        matchedNumbersWithPrizeType[number] = 'estimated';
+      if (winningNumbers.containsKey(number)) {
+        matchedNumbersWithPrizeType[number] = winningNumbers[number]!;
       }
     }
 

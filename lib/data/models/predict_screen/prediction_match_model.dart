@@ -7,6 +7,7 @@ class PredictionMatchModel {
   final bool hasDetailedData;
   final DateTime checkedAt;
   final String lotteryName;
+  final String uniqueId; // for navigating to LotteryResultDetailsScreen
 
   const PredictionMatchModel({
     required this.allPredictions,
@@ -14,6 +15,7 @@ class PredictionMatchModel {
     required this.hasDetailedData,
     required this.checkedAt,
     required this.lotteryName,
+    required this.uniqueId,
   });
 
   /// Whether any predictions matched
@@ -35,13 +37,18 @@ class PredictionMatchModel {
   String? getPrizeTypeForNumber(String number) => matchedNumbersWithPrizeType[number];
 
   /// Factory constructor for no matches
-  factory PredictionMatchModel.noMatches(List<AiPredictionModel> allPredictions, String lotteryName) {
+  factory PredictionMatchModel.noMatches(
+    List<AiPredictionModel> allPredictions,
+    String lotteryName,
+    String uniqueId,
+  ) {
     return PredictionMatchModel(
       allPredictions: allPredictions,
       matchedNumbersWithPrizeType: const {},
       hasDetailedData: false,
       checkedAt: DateTime.now(),
       lotteryName: lotteryName,
+      uniqueId: uniqueId,
     );
   }
 
@@ -49,7 +56,8 @@ class PredictionMatchModel {
   factory PredictionMatchModel.withMatches(
     List<AiPredictionModel> allPredictions,
     Map<String, String> matchesWithPrizeType,
-    String lotteryName, {
+    String lotteryName,
+    String uniqueId, {
     bool hasDetailedData = false,
   }) {
     return PredictionMatchModel(
@@ -58,6 +66,7 @@ class PredictionMatchModel {
       hasDetailedData: hasDetailedData,
       checkedAt: DateTime.now(),
       lotteryName: lotteryName,
+      uniqueId: uniqueId,
     );
   }
 
@@ -67,13 +76,15 @@ class PredictionMatchModel {
     return other is PredictionMatchModel &&
         other.allPredictions.toString() == allPredictions.toString() &&
         other.matchedNumbersWithPrizeType.toString() == matchedNumbersWithPrizeType.toString() &&
-        other.hasDetailedData == hasDetailedData;
+        other.hasDetailedData == hasDetailedData &&
+        other.uniqueId == uniqueId;
   }
 
   @override
   int get hashCode {
     return allPredictions.hashCode ^
         matchedNumbersWithPrizeType.hashCode ^
-        hasDetailedData.hashCode;
+        hasDetailedData.hashCode ^
+        uniqueId.hashCode;
   }
 }

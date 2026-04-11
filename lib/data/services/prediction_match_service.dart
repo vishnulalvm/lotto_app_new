@@ -1,3 +1,4 @@
+import 'package:lotto_app/data/datasource/api/results_screen/results_screen.dart';
 import 'package:lotto_app/data/models/predict_screen/ai_prediction_model.dart';
 import 'package:lotto_app/data/models/results_screen/results_screen.dart';
 import 'package:lotto_app/data/models/home_screen/home_screen_model.dart';
@@ -11,6 +12,8 @@ class PredictionMatchService {
       HomeScreenCacheRepositoryImpl();
   static final ResultDetailsCacheRepositoryImpl _detailsCacheRepo =
       ResultDetailsCacheRepositoryImpl();
+  static final LotteryResultDetailsApiService _apiService =
+      LotteryResultDetailsApiService();
 
   /// Fetches prediction for the appropriate date based on current time
   /// Before 4:10 PM: gets yesterday's prediction
@@ -66,12 +69,24 @@ class PredictionMatchService {
     }
   }
 
-  /// Gets detailed lottery results from result details cache
+  /// Gets detailed lottery results.
+  /// 1. Tries the Hive cache first.
+  /// 2. If no cache (user never opened LotteryResultDetailsScreen), fetches
+  ///    from the API directly and stores in cache for next time.
   static Future<LotteryResultModel?> getDetailedResults(String uniqueId) async {
     try {
+      // 1. Try cache
       final cachedDetails =
           await _detailsCacheRepo.getCachedResultDetails(uniqueId);
-      return cachedDetails?.toResultDetails().result;
+      if (cachedDetails != null) {
+        return cachedDetails.toResultDetails().result;
+      }
+
+      // 2. Cache miss — fetch from API and store
+      final json = await _apiService.getLotteryResultDetails(uniqueId);
+      final detailsModel = LotteryResultDetailsModel.fromJson(json);
+      await _detailsCacheRepo.cacheResultDetails(uniqueId, detailsModel);
+      return detailsModel.result;
     } catch (e) {
       return null;
     }
@@ -231,15 +246,15 @@ class PredictionMatchService {
   }
 
   /// Gets the target date for both predictions and results based on current time
-  /// Before 4:10 PM: yesterday's date (compare yesterday's prediction vs yesterday's result)
-  /// After 4:10 PM: today's date (compare today's prediction vs today's result)
+  /// Before 4:00 PM: yesterday's date (compare yesterday's prediction vs yesterday's result)
+  /// After 4:00 PM: today's date (compare today's prediction vs today's result)
   /// This ensures predictions and results are always for the same date
   static String getTargetDateForPrediction() {
     final now = DateTime.now();
-    final isAfter410PM = now.hour > 16 || (now.hour == 16 && now.minute >= 10);
+    final isAfter4PM = now.hour >= 16;
 
     final targetDate =
-        isAfter410PM ? now : now.subtract(const Duration(days: 1));
+        isAfter4PM ? now : now.subtract(const Duration(days: 1));
     final dateString =
         '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 

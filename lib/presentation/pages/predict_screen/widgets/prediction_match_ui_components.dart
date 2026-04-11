@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lotto_app/data/models/predict_screen/prediction_match_model.dart';
 
 /// UI components for the PredictionMatchCard widget
@@ -40,23 +41,6 @@ class PredictionMatchUIComponents {
 
   /// Builds the no match widget (no winning numbers matched)
   static Widget buildNoMatchWidget(ThemeData theme, PredictionMatchModel matchResult) {
-    // Calculate if the result is from yesterday
-    final now = DateTime.now();
-    final resultDate = matchResult.checkedAt;
-    final isYesterday = now.year == resultDate.year &&
-        now.month == resultDate.month &&
-        now.day - resultDate.day == 1;
-
-    final isToday = now.year == resultDate.year &&
-        now.month == resultDate.month &&
-        now.day == resultDate.day;
-
-    // Format date
-    if (isToday) {
-    } else if (isYesterday) {
-    } else {
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -100,23 +84,6 @@ class PredictionMatchUIComponents {
 
   /// Builds the match found widget (some numbers matched)
   static Widget buildMatchFoundWidget(ThemeData theme, PredictionMatchModel matchResult) {
-    // Calculate if the result is from yesterday
-    final now = DateTime.now();
-    final resultDate = matchResult.checkedAt;
-    final isYesterday = now.year == resultDate.year &&
-        now.month == resultDate.month &&
-        now.day - resultDate.day == 1;
-
-    final isToday = now.year == resultDate.year &&
-        now.month == resultDate.month &&
-        now.day == resultDate.day;
-
-    // Format date
-    if (isToday) {
-    } else if (isYesterday) {
-    } else {
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -134,7 +101,7 @@ class PredictionMatchUIComponents {
         // Prize type chips showing which types had matches
         _buildPrizeTypeChips(theme, matchResult.matchedPrizeTypes),
         const SizedBox(height: 16),
-        
+
         // Match summary
         Container(
           padding: const EdgeInsets.all(16),
@@ -163,10 +130,47 @@ class PredictionMatchUIComponents {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Show only matched numbers in grid
         _buildMatchedNumbersGrid(theme, matchResult.matchedNumbersWithPrizeType),
+        const SizedBox(height: 16),
+
+        // View Results button — opens LotteryResultDetailsScreen with first matched number highlighted
+        _buildViewResultsButton(theme, matchResult),
       ],
+    );
+  }
+
+  /// Navigates to LotteryResultDetailsScreen and highlights the first matched number
+  static Widget _buildViewResultsButton(ThemeData theme, PredictionMatchModel matchResult) {
+    return Builder(
+      builder: (context) {
+        return SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              final firstMatch = matchResult.matchedNumbers.isNotEmpty
+                  ? matchResult.matchedNumbers.first
+                  : null;
+              context.go('/result-details', extra: {
+                'uniqueId': matchResult.uniqueId,
+                'lotteryNumber': firstMatch,
+                'isNew': false,
+              });
+            },
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: const Text('View Full Results'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.green[700],
+              side: BorderSide(color: Colors.green[700]!, width: .5),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
